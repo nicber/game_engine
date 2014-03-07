@@ -18,4 +18,5 @@ endif()
 
 # Binaries
 
-add_subdirectory(bin)
+add_subdirectory(binsrc)
+add_subdirectory(lib)
