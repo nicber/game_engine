@@ -15,7 +15,7 @@ namespace game_engine
 		{
 		private:
 			/** \brief The percentage of entities that can be unsorted per type. */
-			static const size_t sorting_limit;
+			static const float sorting_limit;
 
 			/** \brief Sorts the entities of a certain type if they are too unsorted.
 			 * This is measured by comparing the percentage of unsorted entities to sorting_limit.

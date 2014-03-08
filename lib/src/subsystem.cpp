@@ -6,6 +6,8 @@ namespace game_engine
 {
 	namespace logic
 	{
+		const float subsystem::sorting_limit = 0.2;
+
 		void subsystem::sort_vector_if_necessary(const std::type_index& tin)
 		{
 			auto& type_vector = reg_entities[tin];
