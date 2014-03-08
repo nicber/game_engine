@@ -1,7 +1,10 @@
 #pragma once
 
-#include <deque>
-#include <typeinfo>
+#include "compiler_util.h"
+
+#include <unordered_map>
+#include <vector>
+#include <typeindex>
 
 namespace game_engine
 {
@@ -10,8 +13,20 @@ namespace game_engine
 		class entity;
 		class subsystem
 		{
+		private:
+			/** \brief The percentage of entities that can be unsorted per type. */
+			static const size_t sorting_limit;
+
+			/** \brief Sorts the entities of a certain type if they are too unsorted.
+			 * This is measured by comparing the percentage of unsorted entities to sorting_limit.
+			 * \param tin Type of entities to sort if necessary.
+			 */
+			void sort_vector_if_necessary(const std::type_index& tin);
 		protected:
-			std::deque<entity*> reg_entities;
+			typedef std::unordered_map<std::type_index, std::vector<entity*>> entities_cont;
+			typedef std::unordered_map<std::type_index, size_t> sort_map;
+			entities_cont reg_entities;
+			sort_map not_sorted_map;
 
 			/** \brief Determines whether ent can be added to the subsystem.
 			 * It has to be overriden by subclasses.
