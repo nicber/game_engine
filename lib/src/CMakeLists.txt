@@ -1,3 +1,4 @@
 list(APPEND GAME_ENGINE_SRCS world.cpp)
 list(APPEND GAME_ENGINE_SRCS subsystem.cpp)
-set(GAME_ENGINE_SRCS ${GAME_ENGINE_SRCS} PARENT_SCOPE)
+
+add_library(game_engine ${GAME_ENGINE_SRCS})
