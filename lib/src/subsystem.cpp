@@ -6,7 +6,7 @@ namespace game_engine
 {
 	namespace logic
 	{
-		const float subsystem::sorting_limit = 0.2;
+		const float subsystem::sorting_limit = 0.2f;
 
 		void subsystem::sort_vector_if_necessary(const std::type_index& tin)
 		{
