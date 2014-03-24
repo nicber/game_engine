@@ -1,4 +1,7 @@
 #pragma once
+
+#include "compiler_util.h"
+
 #include <list>
 #include <memory>
 
@@ -16,6 +19,17 @@ namespace game_engine
 			std::list<std::unique_ptr<subsystem>> subsystems;
 
 		public:
+			friend void swap(game& lhs, game& rhs) no_except;
+
+			/** \brief Default constructor. */
+			game();
+
+			/** \brief Move constructor. */
+			game(game&& other);
+			
+			/** \brief Move assignment operator */
+			game& operator=(game&& rhs) no_except;
+
 			/** \brief Adds a new subsystem to the engine.
 			 * \param subsys A std::unique_ptr pointing to the subsystem to add.
 			 */

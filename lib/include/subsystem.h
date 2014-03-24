@@ -11,6 +11,8 @@ namespace game_engine
 	namespace logic
 	{
 		class entity;
+		class game;
+
 		class subsystem
 		{
 		private:
@@ -23,8 +25,12 @@ namespace game_engine
 			 */
 			void sort_vector_if_necessary(const std::type_index& tin);
 
-			//Used by game_engine::logic::game.
+			/* Used by game_engine::logic::game. */
 			friend class game;
+			friend void swap(game& lhs, game& rhs) no_except;
+
+			/** \brief A pointer to the game_engine::logic::game that owns this subsystem. */
+			game* parent_game;
 
 			/** \brief Member function called by game_engine::logic::game when it has started a tick.
 			 * It can be overriden if necessary.
