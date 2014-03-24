@@ -63,6 +63,11 @@ namespace game_engine
 			 * It has to be overriden by subclasses.
 			 */
 			virtual void update_all() = 0;
+
+			/** \brief Needed for correct destruction of subclasses because they will be
+			 * deleted from a subsystem*.
+			 */
+			virtual ~subsystem() {};
 		};
 	}
 }
