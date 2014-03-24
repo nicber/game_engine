@@ -52,20 +52,17 @@ namespace game_engine
 		{
 			for (auto& subsys_ptr : subsystems)
 			{
-				auto& subsys(*subsys_ptr);
-				subsys.start_tick();
+				subsys_ptr->start_tick();
 			}
 
 			for (auto& subsys_ptr : subsystems)
 			{
-				auto& subsys(*subsys_ptr);
-				subsys.update_all();
+				subsys_ptr->update_all();
 			}
 
 			for (auto& subsys_ptr : subsystems)
 			{
-				auto& subsys(*subsys_ptr);
-				subsys.finish_tick();
+				subsys_ptr->finish_tick();
 			}
 		}
 	}
