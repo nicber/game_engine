@@ -1,5 +1,16 @@
-template <typename T>
-bool specialized_subsystem::accepts(entity& ent)
+#pragma once
+
+namespace game_engine
 {
-	return dynamic_cast<T*>(&ent);
+	namespace logic
+	{
+		namespace util
+		{
+			template <typename T>
+			bool specialized_subsystem::accepts(entity& ent)
+			{
+				return dynamic_cast<T*>(&ent);
+			}
+		}
+	}
 }

@@ -22,8 +22,8 @@ namespace game_engine
 				 */
 				virtual bool accepts(entity& ent) final override;
 			};
-
-#include "spec_subsystem.inl"
 		}
 	}
 }
+
+#include "spec_subsystem.inl"
