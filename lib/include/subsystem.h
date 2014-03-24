@@ -22,6 +22,19 @@ namespace game_engine
 			 * \param tin Type of entities to sort if necessary.
 			 */
 			void sort_vector_if_necessary(const std::type_index& tin);
+
+			//Used by game_engine::logic::game.
+			friend class game;
+
+			/** \brief Member function called by game_engine::logic::game when it has started a tick.
+			 * It can be overriden if necessary.
+			 */
+			virtual void start_tick() {};
+
+			/** \brief Member function called by game_engine::logic::game when it has finished a tick.
+			* It can be overriden if necessary.
+			*/
+			virtual void finish_tick() {};
 		protected:
 			typedef std::unordered_map<std::type_index, std::vector<entity*>> entities_cont;
 			typedef std::unordered_map<std::type_index, size_t> sort_map;
