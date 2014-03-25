@@ -1,4 +1,6 @@
 #include "subsystem.h"
+#include "subsystems/time_subsystem.h"
+#include "world.h"
 
 #include <algorithm>
 
@@ -65,6 +67,36 @@ namespace game_engine
 
 			type_vector.erase(ent_it);
 			after_removal(ent);
+		}
+
+		milliseconds subsystem::absolute_time() const
+		{
+			subsystems::time_subsystem& time_subsys{ parent_game->get<subsystems::time_subsystem>() };
+			return time_subsys.absolute();
+		}
+
+		milliseconds subsystem::ms_since_last_tick() const
+		{
+			return absolute_time() - absolute_time_last_call;
+		}
+
+		void subsystem::start_tick()
+		{
+			after_start_tick();
+		}
+
+		void subsystem::finish_tick()
+		{
+			try
+			{
+				absolute_time_last_call = absolute_time();
+			}
+			catch (game::no_subsystem_found<subsystems::time_subsystem>& e)
+			{
+				//Do nothing
+			}
+
+			after_finish_tick();
 		}
 	}
 }

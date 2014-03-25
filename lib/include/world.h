@@ -49,6 +49,22 @@ namespace game_engine
 			 * the time in ms since the game started.
 			 */
 			void tick();
+
+			/** \brief Gets the subsystem of type T if it's in this game. Otherwise
+			 * it throws no_subsystem_found<T> if it's not in the game.
+			 * \throw no_subsystem_found<T>
+			 */
+			template <typename T>
+			T& get() const;
+
+			/** \brief Class that represents an exception thrown by get<T>() when it can't find
+			 * a subsystem.
+			 */
+			template <typename T>
+			class no_subsystem_found : public std::runtime_error
+			{
+				using std::runtime_error::runtime_error;
+			};
 		};
 	}
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "compiler_util.h"
+#include "time_types.h"
 
 #include <unordered_map>
 #include <vector>
@@ -12,10 +13,16 @@ namespace game_engine
 	{
 		class entity;
 		class game;
-
+		
 		class subsystem
 		{
 		private:
+			/** \brief A pointer to the game_engine::logic::game that owns this subsystem. */
+			game* parent_game = nullptr;
+
+			/** \brief Stores the time of the last call to finish_tick(). */
+			milliseconds absolute_time_last_call = 0;
+
 			/** \brief The percentage of entities that can be unsorted per type. */
 			static const float sorting_limit;
 
@@ -25,22 +32,19 @@ namespace game_engine
 			 */
 			void sort_vector_if_necessary(const std::type_index& tin);
 
+			/** \brief Member function called by game_engine::logic::game when it has started a tick.
+			* It calls after_start_tick() which can be overriden by subclasses.
+			*/
+			void start_tick();
+
+			/** \brief Member function called by game_engine::logic::game when it has finished a tick.
+			* It calls after_finish_tick() which can be overriden by subclasses.
+			*/
+			void finish_tick();
+
 			/* Used by game_engine::logic::game. */
 			friend class game;
 			friend void swap(game& lhs, game& rhs) no_except;
-
-			/** \brief A pointer to the game_engine::logic::game that owns this subsystem. */
-			game* parent_game;
-
-			/** \brief Member function called by game_engine::logic::game when it has started a tick.
-			 * It can be overriden if necessary.
-			 */
-			virtual void start_tick() {};
-
-			/** \brief Member function called by game_engine::logic::game when it has finished a tick.
-			* It can be overriden if necessary.
-			*/
-			virtual void finish_tick() {};
 		protected:
 			typedef std::unordered_map<std::type_index, std::vector<entity*>> entities_cont;
 			typedef std::unordered_map<std::type_index, size_t> sort_map;
@@ -61,6 +65,26 @@ namespace game_engine
 			 * It can be overriden by the subsystem class.
 			 */
 			virtual void after_removal(entity&){}
+
+			/** \brief Called by start_tick() after it runs.
+			 * It can be overriden by subclasses.
+			 */
+			virtual void after_start_tick() {}
+
+			/** \brief Called by start_tick() after it runs.
+			 * It can be overriden by subclasses.
+		 	 */
+			virtual void after_finish_tick() {}
+
+			/** \brief Returns current time in milliseconds. 
+			 * \throw game::no_subsystem_found<subsystems::time_subsystem>
+			 */
+			milliseconds absolute_time() const;
+
+			/** \brief Returns time delta since the previous tick. 
+			 * \throw game::no_subsystem_found<subsystems::time_subsystem>
+			 */
+			milliseconds ms_since_last_tick() const;
 		public:
 			/** \brief Adds an entity to the subsystem.
 			 * It calls accepts() to see if the entity can be added.
