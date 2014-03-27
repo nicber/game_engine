@@ -43,31 +43,40 @@ namespace game_engine
 			return true;
 		}
 
-		void subsystem::remove_entity(entity& ent)
+		bool subsystem::try_remove_entity(entity& ent)
 		{
 			auto& type_vector = reg_entities[typeid(ent)];
 			if (type_vector.size() == 0)
 			{
-				throw std::invalid_argument("Requested to remove an entity that wasn't registered in the system");
+				return false;
 			}
 
 			sort_vector_if_necessary(typeid(ent));
-			auto& not_sorted_number = not_sorted_map[typeid(ent)];
+			auto not_sorted_number = not_sorted_map[typeid(ent)];
 
 			auto ent_it = std::lower_bound(type_vector.cbegin(), type_vector.cend() - not_sorted_number, &ent);
 
-			if (ent_it == type_vector.cend())
+			if (ent_it == type_vector.cend() - not_sorted_number)
 			{
 				ent_it = std::find(type_vector.cend() - not_sorted_number, type_vector.cend(), &ent);
 			}
 
 			if (ent_it == type_vector.cend())
 			{
-				throw std::invalid_argument("Requested to remove an entity that wasn't registered in the system");
+				return false;
 			}
 
 			type_vector.erase(ent_it);
 			after_removal(ent);
+			return true;
+		}
+
+		void subsystem::remove_entity(entity& ent)
+		{
+			if (!try_remove_entity(ent))
+			{
+				throw std::invalid_argument("Requested to remove an entity that wasn't registered in the system");
+			}
 		}
 
 		milliseconds subsystem::absolute_time() const

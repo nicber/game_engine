@@ -85,6 +85,12 @@ namespace game_engine
 			 * \throw game::no_subsystem_found<subsystems::time_subsystem>
 			 */
 			milliseconds ms_since_last_tick() const;
+
+			/** \brief Tries to remove an entity.
+			 * \param ent Entity to remove.
+			 * \return False if the entity wasn't in the system. True otherwise.
+			 */
+			bool try_remove_entity(entity& ent);
 		public:
 			/** \brief Adds an entity to the subsystem.
 			 * It calls accepts() to see if the entity can be added.
