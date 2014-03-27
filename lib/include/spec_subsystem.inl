@@ -7,9 +7,9 @@ namespace game_engine
 		namespace util
 		{
 			template <typename T>
-			bool specialized_subsystem::accepts(entity& ent)
+			bool specialized_subsystem<T>::accepts(entity& ent)
 			{
-				return dynamic_cast<T*>(&ent);
+				return dynamic_cast<T*>(&ent) != nullptr;
 			}
 		}
 	}

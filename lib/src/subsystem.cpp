@@ -1,6 +1,6 @@
 #include "entity.h"
 #include "subsystem.h"
-#include "subsystems/time_subsystem.h"
+#include "subsystems/time.h"
 #include "world.h"
 
 #include <algorithm>
@@ -92,7 +92,7 @@ namespace game_engine
 			{
 				absolute_time_last_call = absolute_time();
 			}
-			catch (game::no_subsystem_found<subsystems::time_subsystem>& e)
+			catch (game::no_subsystem_found<subsystems::time_subsystem>&)
 			{
 				//Do nothing
 			}

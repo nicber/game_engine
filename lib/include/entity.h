@@ -6,6 +6,8 @@ namespace game_engine
 	{
 		class entity
 		{
+		public:
+			virtual ~entity() {};
 		};
 	}
 }
