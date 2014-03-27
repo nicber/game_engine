@@ -35,6 +35,7 @@ namespace game_launcher
 		std::function<Function> get(const std::string& func_name) const
 		{
 			detail::function_handle_t func;
+			detail::get_function(func_name, handle, func);
 			return{ func };
 		}
 	};
