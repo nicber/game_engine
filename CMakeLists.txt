@@ -4,6 +4,16 @@ cmake_minimum_required(VERSION 2.8)
 
 set(GAME_ENGINE_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
 
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+	# It's the default.
+else()
+	message(SEND_ERROR "Your compiler hasn't been recognized and it hasn't been set to C++11 mode.'")
+endif()
+
 # Options
 option(GAME_ENGINE_BUILD_TESTS "Build the GameEngine test library" ON)
 option(GAME_ENGINE_BUILD_DOCS "Build the GameEngine documentation" OFF)

@@ -4,6 +4,10 @@
 #include "win32.h"
 #endif
 
+#ifdef __unix
+#include "posix.h"
+#endif
+
 namespace game_launcher
 {
 	namespace detail

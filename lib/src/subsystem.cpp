@@ -1,3 +1,4 @@
+#include "entity.h"
 #include "subsystem.h"
 #include "subsystems/time_subsystem.h"
 #include "world.h"

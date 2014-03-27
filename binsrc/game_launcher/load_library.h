@@ -34,7 +34,7 @@ namespace game_launcher
 		template <typename Function>
 		std::function<Function> get(const std::string& func_name) const
 		{
-			function_handle_t func;
+			detail::function_handle_t func;
 			return{ func };
 		}
 	};
