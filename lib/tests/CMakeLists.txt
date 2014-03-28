@@ -1,0 +1,1 @@
+define_test("${CMAKE_CURRENT_SOURCE_DIR}/time_test.cpp")
