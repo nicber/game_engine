@@ -1,7 +1,7 @@
 #pragma once
 
 #include "compiler_util.h"
-#include "time_types.h"
+#include "time_access.h"
 
 #include <unordered_map>
 #include <vector>
@@ -20,17 +20,8 @@ namespace game_engine
 			/** \brief A pointer to the game_engine::logic::game that owns this subsystem. */
 			game* parent_game = nullptr;
 
-			/** \brief Stores the time of the last call to finish_tick(). */
-			milliseconds absolute_time_last_call = 0;
-
 			/** \brief The percentage of entities that can be unsorted per type. */
 			static const float sorting_limit;
-
-			/** \brief Sorts the entities of a certain type if they are too unsorted.
-			 * This is measured by comparing the percentage of unsorted entities to sorting_limit.
-			 * \param tin Type of entities to sort if necessary.
-			 */
-			void sort_vector_if_necessary(const std::type_index& tin);
 
 			/** \brief Member function called by game_engine::logic::game when it has started a tick.
 			* It calls after_start_tick() which can be overriden by subclasses.
@@ -75,16 +66,6 @@ namespace game_engine
 			 * It can be overriden by subclasses.
 		 	 */
 			virtual void after_finish_tick() {}
-
-			/** \brief Returns current time in milliseconds. 
-			 * \throw game::no_subsystem_found<subsystems::time_subsystem>
-			 */
-			milliseconds absolute_time() const;
-
-			/** \brief Returns time delta since the previous tick. 
-			 * \throw game::no_subsystem_found<subsystems::time_subsystem>
-			 */
-			milliseconds ms_since_last_tick() const;
 
 			/** \brief Tries to remove an entity.
 			 * \param ent Entity to remove.

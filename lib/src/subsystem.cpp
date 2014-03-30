@@ -1,4 +1,5 @@
 #include "entity.h"
+#include "private/sort_entities_if_necessary.h"
 #include "subsystem.h"
 #include "subsystems/time.h"
 #include "world.h"
@@ -11,23 +12,6 @@ namespace game_engine
 	{
 		const float subsystem::sorting_limit = 0.2f;
 
-		void subsystem::sort_vector_if_necessary(const std::type_index& tin)
-		{
-			auto& type_vector = reg_entities[tin];
-			auto& not_sorted_number = not_sorted_map[tin];
-
-			if (type_vector.size() == 0)
-			{
-				return;
-			}
-
-			if (float(not_sorted_number) / type_vector.size() > sorting_limit)
-			{
-				std::sort(type_vector.begin(), type_vector.end());
-				not_sorted_number = 0;
-			}
-		}
-
 		bool subsystem::add_entity(entity& ent)
 		{
 			if (!accepts(ent))
@@ -37,7 +21,7 @@ namespace game_engine
 
 			reg_entities[typeid(ent)].push_back(&ent);
 			++not_sorted_map[typeid(ent)];
-			sort_vector_if_necessary(typeid(ent));
+			detail::sort_entities_if_necessary(reg_entities, not_sorted_map, typeid(ent), sorting_limit);
 
 			after_addition(ent);
 			return true;
@@ -51,7 +35,7 @@ namespace game_engine
 				return false;
 			}
 
-			sort_vector_if_necessary(typeid(ent));
+			detail::sort_entities_if_necessary(reg_entities, not_sorted_map, typeid(ent), sorting_limit);
 			auto not_sorted_number = not_sorted_map[typeid(ent)];
 
 			auto ent_it = std::lower_bound(type_vector.cbegin(), type_vector.cend() - not_sorted_number, &ent);
@@ -79,17 +63,6 @@ namespace game_engine
 			}
 		}
 
-		milliseconds subsystem::absolute_time() const
-		{
-			subsystems::time_subsystem& time_subsys{ parent_game->get<subsystems::time_subsystem>() };
-			return time_subsys.absolute();
-		}
-
-		milliseconds subsystem::ms_since_last_tick() const
-		{
-			return absolute_time() - absolute_time_last_call;
-		}
-
 		void subsystem::start_tick()
 		{
 			after_start_tick();
@@ -97,15 +70,6 @@ namespace game_engine
 
 		void subsystem::finish_tick()
 		{
-			try
-			{
-				absolute_time_last_call = absolute_time();
-			}
-			catch (game::no_subsystem_found<subsystems::time_subsystem>&)
-			{
-				//Do nothing
-			}
-
 			after_finish_tick();
 		}
 	}

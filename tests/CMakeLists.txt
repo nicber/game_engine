@@ -1,7 +1,0 @@
-if(GAME_ENGINE_TESTS)
-	include_directories(../lib/include)
-	include_directories(${gtest_SOURCE_DIR}/include)
-	add_executable(tests main.cpp ${GAME_ENGINE_TESTS})
-	target_link_libraries(tests game_engine gtest gtest_main)
-	add_test("AllTests" tests)
-endif()

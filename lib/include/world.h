@@ -3,13 +3,18 @@
 #include "compiler_util.h"
 
 #include <list>
+#include <unordered_map>
 #include <memory>
 #include <stdexcept>
+#include <string>
+#include <typeindex>
+#include <vector>
 
 namespace game_engine
 {
 	namespace logic
 	{
+		class entity;
 		class subsystem;
 
 		/** \brief Class responsible for running a game.
@@ -18,12 +23,27 @@ namespace game_engine
 		class game
 		{
 			std::list<std::unique_ptr<subsystem>> subsystems;
+			
+			typedef std::unordered_map<std::type_index, std::vector<std::unique_ptr<entity>>> entity_cont;
+			typedef std::unordered_map<std::type_index, size_t> sort_map;
 
+			/** \brief A map that stores entities in vectors according to their type. */
+			entity_cont entities;
+
+			/** \brief A map that stores how many unsorted entities there are
+			 * at the end of each vector.
+			 */
+			sort_map unsorted_number;
+
+			/** \brief Indicates a maximum percentage of entities that can be
+			 * unsorted in a vector.
+			 */
+			static const float max_unsorted_percentage;
 		public:
 			friend void swap(game& lhs, game& rhs) no_except;
 
 			/** \brief Default constructor. */
-			game();
+			game() = default;
 
 			/** \brief Move constructor. */
 			game(game&& other);
@@ -62,10 +82,15 @@ namespace game_engine
 			 * a subsystem.
 			 */
 			template <typename T>
-			class no_subsystem_found : public std::runtime_error
+			struct no_subsystem_found : public std::runtime_error
 			{
-				using std::runtime_error::runtime_error;
+				no_subsystem_found(std::string message);
 			};
+
+			/** \brief Tries to add an entity to all subsystems. 
+			 * \return True it it has been added to at least one.
+			 */
+			bool add_entity(std::unique_ptr<entity> ent);
 		};
 	}
 }

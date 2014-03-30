@@ -1,9 +1,13 @@
 #include "world.h"
 
+#include "private/sort_entities_if_necessary.h"
+
 namespace game_engine
 {
 	namespace logic
 	{
+		const float game::max_unsorted_percentage = 0.2f;
+
 		void swap(game& lhs, game& rhs) no_except
 		{
 			using std::swap;
@@ -64,6 +68,26 @@ namespace game_engine
 			{
 				subsys_ptr->finish_tick();
 			}
+		}
+
+		bool game::add_entity(std::unique_ptr<entity> ent_ptr)
+		{
+			bool added = false;
+			auto& ent = *ent_ptr;
+
+			for (auto& subsys_ptr : subsystems)
+			{
+				added |= subsys_ptr->add_entity(ent);
+			}
+			
+			if (added)
+			{
+				ent.parent_game = this;
+				entities[typeid(ent)].emplace_back(std::move(ent_ptr));
+				unsorted_number[typeid(ent)]++;
+				detail::sort_entities_if_necessary(entities, unsorted_number, typeid(ent), max_unsorted_percentage);
+			}
+			return added;
 		}
 	}
 }

@@ -22,8 +22,11 @@ add_subdirectory(external)
 
 if(GAME_ENGINE_BUILD_TESTS)
 	enable_testing()
-	set(GAME_ENGINE_TESTS "" CACHE INTERNAL "Internal variable used for tests" FORCE)
-	function(define_test)
+	function(define_test TEST_NAME)
+		include_directories(${gtest_SOURCE_DIR}/include)
+		add_executable("test${TEST_NAME}" ${ARGN})
+		target_link_libraries("test${TEST_NAME}" game_engine gtest gtest_main)
+		add_test("${TEST_NAME}" "test${TEST_NAME}")
 		list(APPEND GAME_ENGINE_TESTS ${ARGN})
 		set(GAME_ENGINE_TESTS ${GAME_ENGINE_TESTS} CACHE INTERNAL "Internal variable used for tests" FORCE)
 	endfunction()
@@ -40,8 +43,3 @@ endif()
 
 add_subdirectory(binsrc)
 add_subdirectory(lib)
-
-# Tests
-if(GAME_ENGINE_BUILD_TESTS)
-	add_subdirectory(tests)
-endif()
