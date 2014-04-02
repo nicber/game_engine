@@ -2,6 +2,7 @@
 
 #include <dlfcn.h>
 #include <sstream>
+#include <stdexcept>
 
 namespace game_launcher
 {

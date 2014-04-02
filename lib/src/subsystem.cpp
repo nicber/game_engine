@@ -38,11 +38,11 @@ namespace game_engine
 			detail::sort_entities_if_necessary(reg_entities, not_sorted_map, typeid(ent), sorting_limit);
 			auto not_sorted_number = not_sorted_map[typeid(ent)];
 
-			auto ent_it = std::lower_bound(type_vector.cbegin(), type_vector.cend() - not_sorted_number, &ent);
+			auto ent_it = std::lower_bound(type_vector.begin(), type_vector.end() - not_sorted_number, &ent);
 
-			if (ent_it == type_vector.cend() - not_sorted_number)
+			if (ent_it == type_vector.end() - not_sorted_number)
 			{
-				ent_it = std::find(type_vector.cend() - not_sorted_number, type_vector.cend(), &ent);
+				ent_it = std::find(type_vector.end() - not_sorted_number, type_vector.end(), &ent);
 			}
 
 			if (ent_it == type_vector.cend())
@@ -52,6 +52,7 @@ namespace game_engine
 
 			type_vector.erase(ent_it);
 			after_removal(ent);
+			detail::sort_entities_if_necessary(reg_entities, not_sorted_map, typeid(ent), sorting_limit);
 			return true;
 		}
 
