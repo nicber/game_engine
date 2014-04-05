@@ -7,7 +7,7 @@ namespace game_engine
 		namespace util
 		{
 			template <typename T>
-			bool specialized_subsystem<T>::accepts(entity& ent)
+			bool specialized_subsystem<T>::accepts(component& ent)
 			{
 				return dynamic_cast<T*>(&ent) != nullptr;
 			}

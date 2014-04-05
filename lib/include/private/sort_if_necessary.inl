@@ -7,9 +7,9 @@ namespace game_engine
 		namespace detail
 		{
 			template <typename T>
-			void sort_entities_if_necessary(entity_cont<T>& entities, sort_map& unsorted_number, std::type_index type, float sorting_limit) no_except
+			void sort_if_necessary(cont<T>& contained, sort_map& unsorted_number, std::type_index type, float sorting_limit) no_except
 			{
-				auto& type_vector = entities[type];
+				auto& type_vector = contained[type];
 				auto& not_sorted_number = unsorted_number[type];
 
 				if (type_vector.size() == 0)

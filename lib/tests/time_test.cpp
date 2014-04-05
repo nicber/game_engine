@@ -1,3 +1,4 @@
+#include "component.h"
 #include "entity.h"
 #include "spec_subsystem.h"
 #include "subsystems/time.h"
@@ -8,17 +9,17 @@
 
 using namespace game_engine::logic;
 
-class test_ent : public entity
+struct test_comp : public component
 {
 	game_engine::logic::time previous_time;
 	bool first_tick = true;
-public:
-	void read_time_from_entity()
+
+	void read_time()
 	{
 		auto& time_sub = get_parent_game().get<subsystems::time_subsystem>();
 		auto time_sub_abs = time_sub.absolute();
 		auto time_delta = time_sub.us_since_last_tick();
-		
+
 		if (first_tick)
 		{
 			first_tick = !first_tick;
@@ -34,10 +35,34 @@ public:
 	}
 };
 
-/* Class needed for the entity to be added to the game. */
-class test_subsystem : public util::specialized_subsystem<test_ent>
+class test_ent : public entity
 {
-	void update_all() {}
+
+public:
+	test_ent()
+	{
+		new_component<test_comp>();
+	}
+
+	void read_time_from_component()
+	{
+		get_comp<test_comp>().read_time();
+	}
+};
+
+/* Class needed for the component to be added to the game. */
+class test_subsystem : public util::specialized_subsystem<test_comp>
+{
+	void update_all()
+	{
+		for (auto& comp_vec : reg_components)
+		{
+			for (auto& comp : comp_vec.second)
+			{
+				static_cast<test_comp&>(*comp).read_time();
+			}
+		}
+	}
 };
 
 TEST(TimeSubsystem, TimeChanges)
@@ -47,14 +72,12 @@ TEST(TimeSubsystem, TimeChanges)
 
 	gam.new_subsystem<test_subsystem>();
 	auto ent_ptr = std::unique_ptr<entity>(new test_ent);
-	auto& test_ent_ref = static_cast<test_ent&>(*ent_ptr);
 
 	gam.add_entity(std::move(ent_ptr));
 
 	for (size_t i = 0; i < 50; ++i)
 	{
 		gam.tick();
-		test_ent_ref.read_time_from_entity();
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
 }

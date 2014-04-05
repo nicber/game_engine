@@ -35,8 +35,8 @@ namespace game_engine
 				/** \brief Updates the internal clock. */
 				void after_start_tick() override;
 
-				/** \brief Rejects all entities. */
-				bool accepts(entity& ent) final override;
+				/** \brief Rejects all components. */
+				bool accepts(component& comp) final override;
 
 				/** \brief Does nothing. */
 				void update_all() final override;

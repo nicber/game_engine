@@ -80,6 +80,8 @@ namespace game_engine
 			case type::sec:
 				res /= (1000 * 1000);
 				break;
+			case type::platform:
+				; //Fix warning.
 			}
 
 			return res;

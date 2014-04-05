@@ -10,11 +10,11 @@ namespace game_engine
 			{
 				void ai_subsystem::update_all()
 				{
-					for (auto& ent_vector : reg_entities)
+					for (auto& comp_vector : reg_components)
 					{
-						for (auto ent_ptr : ent_vector.second)
+						for (auto comp_ptr : comp_vector.second)
 						{
-							auto& ent = static_cast<ai_entity&>(*ent_ptr);
+							auto& ent = static_cast<ai_component&>(*comp_ptr);
 							ent.ai_update();
 						}
 					}

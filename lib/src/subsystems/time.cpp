@@ -24,7 +24,7 @@ namespace game_engine
 				return current_time;
 			}
 
-			bool time_subsystem::accepts(entity&)
+			bool time_subsystem::accepts(component&)
 			{
 				return false;
 			}

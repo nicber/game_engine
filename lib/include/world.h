@@ -1,6 +1,7 @@
 #pragma once
 
 #include "compiler_util.h"
+#include "entity.h"
 
 #include <list>
 #include <unordered_map>
@@ -15,6 +16,7 @@ namespace game_engine
 	namespace logic
 	{
 		class entity;
+		class component;
 		class subsystem;
 
 		/** \brief Class responsible for running a game.
@@ -24,21 +26,38 @@ namespace game_engine
 		{
 			std::list<std::unique_ptr<subsystem>> subsystems;
 			
-			typedef std::unordered_map<std::type_index, std::vector<std::unique_ptr<entity>>> entity_cont;
+			typedef std::unordered_map<std::type_index, std::vector<std::unique_ptr<entity>>> entities_cont;
 			typedef std::unordered_map<std::type_index, size_t> sort_map;
 
-			/** \brief A map that stores entities in vectors according to their type. */
-			entity_cont entities;
+			/** \brief Stores whether the destructor of game has been called.
+			 * It's useful to know that because then we might be called by
+			 * entities or other things that were part of the game and
+			 * now are being destroyed. These objects can call member
+			 * functions for informing that they are no longer part of the game.
+			 * For making sure we don't store dangling pointers we remove them,
+			 * but this implies modifing already destroyed objects (eg. entities).
+			 */
+			bool being_destroyed = false;
 
-			/** \brief A map that stores how many unsorted entities there are
+			/** \brief A map that stores entities in vectors according to their type. */
+			entities_cont entities;
+
+			/** \brief A map that stores how many unsorted components there are
 			 * at the end of each vector.
 			 */
 			sort_map unsorted_number;
 
-			/** \brief Indicates a maximum percentage of entities that can be
+			/** \brief Indicates a maximum percentage of components that can be
 			 * unsorted in a vector.
 			 */
 			static const float max_unsorted_percentage;
+
+			friend class entity;
+			/** \brief Adds a component to the game.
+			* It is added to the first subsystem that accepts it.
+			* Returns false if it wasn't accepted by any and true otherwise.
+			*/
+			bool add_component(component& comp);
 		public:
 			friend void swap(game& lhs, game& rhs) no_except;
 
@@ -50,6 +69,8 @@ namespace game_engine
 			
 			/** \brief Move assignment operator */
 			game& operator=(game&& rhs) no_except;
+
+			~game();
 
 			/** \brief Adds a new subsystem to the engine.
 			 * \param subsys A std::unique_ptr pointing to the subsystem to add.
@@ -87,10 +108,15 @@ namespace game_engine
 				no_subsystem_found(std::string message);
 			};
 
-			/** \brief Tries to add an entity to all subsystems. 
-			 * \return True it it has been added to at least one.
+			/** \brief Adds an entity to the game.
+			 * Adds all its components to all subsystems.
 			 */
-			bool add_entity(std::unique_ptr<entity> ent);
+			void add_entity(std::unique_ptr<entity> ent);
+
+			/** \brief Removes entity from the game.
+			 * \throw std::invalid_argument if it wasn't registered.
+			 */
+			void remove_entity(entity& ent);
 		};
 	}
 }
