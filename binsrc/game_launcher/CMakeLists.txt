@@ -6,7 +6,7 @@ endif()
 
 if(UNIX)
 	set(PLATFORM_SOURCE posix.cpp)
-	set(PLATFORM_LIBRARY dl)
+	set(PLATFORM_LIBRARY ${CMAKE_DL_LIBS})
 endif()
 
 add_executable(game_launcher main.cpp load_library.cpp ${PLATFORM_SOURCE})
