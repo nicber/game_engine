@@ -21,7 +21,7 @@ namespace game_engine
 		{
 			if (!try_remove_component<T>())
 			{
-				throw component_not_found<T>("Component not found.");
+				throw component_not_found<T>("Component not found");
 			}
 		}
 
@@ -40,7 +40,7 @@ namespace game_engine
 			{
 				return *ptr;
 			} else {
-				throw component_not_found<T>("Component not found.");
+				throw component_not_found<T>("Component not found");
 			}
 		}
 
