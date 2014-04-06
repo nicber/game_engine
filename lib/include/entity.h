@@ -23,7 +23,7 @@ namespace game_engine
 
 			/** \brief Stores a pointer to the game that owns this entity. */
 			game* parent_game = nullptr;
-		protected:
+		public:
 			/** \brief Adds a new component to the entity. */
 			template <typename T, typename... Args>
 			void new_component(Args&&... args);
@@ -59,7 +59,7 @@ namespace game_engine
 
 			/** \brief Returns the game that owns the this entity. */
 			game& get_parent_game() const;
-		public:
+
 			virtual ~entity();
 			
 			template <typename T>
