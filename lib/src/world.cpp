@@ -98,6 +98,7 @@ namespace game_engine
 			{
 				if (subsys_ptr->add_component(comp))
 				{
+					comp.subsys = subsys_ptr.get();
 					return true;
 				}
 			}

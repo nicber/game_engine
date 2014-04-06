@@ -84,6 +84,18 @@ namespace game_engine
 			template <typename T, typename... Args>
 			void new_subsystem(Args&&... args);
 
+			/** \brief Removes the subsystem of type T in this game.
+			 * If there isn't any then it throws no_subsystem_found<T>.
+			 */
+			template <typename T>
+			void remove_subsystem();
+
+			/** \brief Tries to remove the subsystem of type T, if it existed
+			 * it returns true, false otherwise.
+			 */
+			template <typename T>
+			bool try_remove_subsystem();
+
 			/** \brief Updates every subsystem in the game.
 			 * If a subsystem that measures time has been added other
 			 * subsystems can call ms_since_last_tick() to get the delta time

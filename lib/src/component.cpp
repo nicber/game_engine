@@ -7,6 +7,15 @@ namespace game_engine
 {
 	namespace logic
 	{
+		std::type_index component::tid() const
+		{
+			if (typ == typeid(component))
+			{
+				typ = typeid(*this);
+			}
+			return typ;
+		}
+
 		entity& component::get_parent_ent() const
 		{
 			if (parent_ent)

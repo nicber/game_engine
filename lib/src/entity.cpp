@@ -26,7 +26,7 @@ namespace game_engine
 
 			if (parent_game)
 			{
-				parent_game->add_component(*comp);
+				parent_game->add_component(*ptr);
 			}
 		}
 

@@ -97,7 +97,7 @@ namespace game_engine
 			/** \brief Needed for correct destruction of subclasses because they will be
 			 * deleted from a subsystem*.
 			 */
-			virtual ~subsystem() {};
+			virtual ~subsystem();
 		};
 	}
 }

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <typeindex>
+
 namespace game_engine
 {
 	namespace logic
@@ -14,11 +16,22 @@ namespace game_engine
 		class component
 		{
 			friend class entity;
+			friend class subsystem;
+			friend class game;
 			/** \brief Stores a pointer to the subsystem that accepted this component. */
 			subsystem* subsys = nullptr;
 
 			/** \brief Stores a pointer to the entity that owns this component. */
 			entity* parent_ent = nullptr;
+			
+			/** \brief Stores the type of this component when it's fully
+			 * constructed. This is needed so that when we remove ourselves
+			 * from the subsystem, it will have a way of knowing what type
+			 * this entity was and where it should look for it.
+			 */
+			mutable std::type_index typ = typeid(component);
+
+			std::type_index tid() const;
 		public:
 			/** \brief Returns a reference to the game that owns the entity that owns
 			 * this component. If there isn't one, it throws std::runtime_error.

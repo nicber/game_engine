@@ -11,55 +11,57 @@ namespace game_engine
 	{
 		const float subsystem::sorting_limit = 0.2f;
 
-		bool subsystem::add_component(component& ent)
+		bool subsystem::add_component(component& comp)
 		{
-			if (!accepts(ent))
+			auto tid = comp.tid();
+			if (!accepts(comp))
 			{
 				return false;
 			}
 
-			reg_components[typeid(ent)].push_back(&ent);
-			++not_sorted_map[typeid(ent)];
-			detail::sort_if_necessary(reg_components, not_sorted_map, typeid(ent), sorting_limit);
+			reg_components[tid].push_back(&comp);
+			++not_sorted_map[tid];
+			detail::sort_if_necessary(reg_components, not_sorted_map, tid, sorting_limit);
 
-			after_addition(ent);
+			after_addition(comp);
 			return true;
 		}
 
-		bool subsystem::try_remove_component(component& ent)
+		bool subsystem::try_remove_component(component& comp)
 		{
-			auto& type_vector = reg_components[typeid(ent)];
+			auto tid = comp.tid();
+			auto& type_vector = reg_components[tid];
 			if (type_vector.size() == 0)
 			{
 				return false;
 			}
 
-			detail::sort_if_necessary(reg_components, not_sorted_map, typeid(ent), sorting_limit);
-			auto not_sorted_number = not_sorted_map[typeid(ent)];
+			detail::sort_if_necessary(reg_components, not_sorted_map, tid, sorting_limit);
+			auto not_sorted_number = not_sorted_map[tid];
 
-			auto ent_it = std::lower_bound(type_vector.begin(), type_vector.end() - not_sorted_number, &ent);
+			auto comp_it = std::lower_bound(type_vector.begin(), type_vector.end() - not_sorted_number, &comp);
 
-			if (ent_it == type_vector.end() - not_sorted_number)
+			if (comp_it == type_vector.end() - not_sorted_number)
 			{
-				ent_it = std::find(type_vector.end() - not_sorted_number, type_vector.end(), &ent);
+				comp_it = std::find(type_vector.end() - not_sorted_number, type_vector.end(), &comp);
 			}
 
-			if (ent_it == type_vector.cend())
+			if (comp_it == type_vector.cend())
 			{
 				return false;
 			}
 
-			type_vector.erase(ent_it);
-			after_removal(ent);
-			detail::sort_if_necessary(reg_components, not_sorted_map, typeid(ent), sorting_limit);
+			type_vector.erase(comp_it);
+			after_removal(comp);
+			detail::sort_if_necessary(reg_components, not_sorted_map, tid, sorting_limit);
 			return true;
 		}
 
-		void subsystem::remove_component(component& ent)
+		void subsystem::remove_component(component& comp)
 		{
-			if (!try_remove_component(ent))
+			if (!try_remove_component(comp))
 			{
-				throw std::invalid_argument("Requested to remove an component that wasn't registered in the system");
+				throw std::invalid_argument("Requested to remove a component that wasn't registered in the system");
 			}
 		}
 
@@ -71,6 +73,19 @@ namespace game_engine
 		void subsystem::finish_tick()
 		{
 			after_finish_tick();
+		}
+
+		subsystem::~subsystem()
+		{
+			for (auto& comp_type_and_vector : reg_components)
+			{
+				auto& comp_vector = comp_type_and_vector.second;
+				for (auto& comp : comp_vector)
+				{
+					comp->subsys = nullptr;
+					after_removal(*comp);
+				}
+			}
 		}
 	}
 }
