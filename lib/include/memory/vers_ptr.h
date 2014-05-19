@@ -61,8 +61,7 @@ private:
 };
 
 /** \brief This template implements a smart pointer that provides a clean
- * interface to
- * interact with a vers_data object.
+ * interface to interact with a vers_data object.
  * Everytime it's dereferenced it calls copy_or_get_latest() and returns its
  * result.
  * */
@@ -77,6 +76,7 @@ public:
   const value_type *operator->() const;
   value_type *operator->();
 
+  /** \brief Returns a pointer to the data. */
   const value_type *get() const;
   value_type *get();
 
@@ -92,6 +92,7 @@ public:
   const value_type &operator*() const;
   const value_type *operator->() const;
 
+  /** Returns a pointer to the data. */
   const value_type *get() const;
 
 private:
