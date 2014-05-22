@@ -5,6 +5,7 @@ if(WIN32)
 endif()
 
 if(UNIX)
+	message("unix")
 	set(PLATFORM_SOURCE posix.cpp)
 	set(PLATFORM_LIBRARY ${CMAKE_DL_LIBS})
 endif()

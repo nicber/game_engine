@@ -4,7 +4,7 @@
 #include "win32.h"
 #endif
 
-#ifdef __unix
+#ifdef __unix__
 #include "posix.h"
 #endif
 

@@ -6,7 +6,7 @@
 #include "platform/time/win32.h"
 #endif
 
-#ifdef __unix
+#ifdef __unix__
 #include "platform/time/unix.h"
 #endif
 
