@@ -36,6 +36,7 @@ public:
   friend void swap(coroutine &lhs, coroutine &rhs);
 
 private:
+  coroutine();
   coroutine(coroutine_type cor_typ);
   friend class worker_thread;
 

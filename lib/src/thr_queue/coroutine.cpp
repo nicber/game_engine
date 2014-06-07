@@ -45,10 +45,12 @@ void coroutine::switch_to() {
   boost::context::jump_fcontext(current_coroutine->ctx, ctx, func_ptr);
 }
 
-coroutine::coroutine(coroutine_type cor_typ)
-    : ctx(new boost::context::fcontext_t())
-    , typ(cor_typ)
-    , creation_tim(std::chrono::high_resolution_clock::now()) {}
+coroutine::coroutine()
+    : creation_tim(std::chrono::high_resolution_clock::now()) {}
+
+coroutine::coroutine(coroutine_type cor_typ) : coroutine() {
+  ctx = new boost::context::fcontext_t();
+}
 
 size_t coroutine::default_stacksize() {
   return 1024 * 1024; // 1 MB
