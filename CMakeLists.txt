@@ -19,13 +19,14 @@ option(GAME_ENGINE_BUILD_TESTS "Build the GameEngine test library" ON)
 option(GAME_ENGINE_BUILD_DOCS "Build the GameEngine documentation" OFF)
 
 add_subdirectory(external)
+# GAME_ENGINE_DEP_LIBS will be set after the previous line.
 
 if(GAME_ENGINE_BUILD_TESTS)
 	enable_testing()
 	function(define_test TEST_NAME)
 		include_directories(${gtest_SOURCE_DIR}/include)
 		add_executable("test${TEST_NAME}" ${ARGN})
-		target_link_libraries("test${TEST_NAME}" game_engine gtest gtest_main)
+		target_link_libraries("test${TEST_NAME}" game_engine gtest gtest_main ${GAME_ENGINE_DEP_LIBS})
 		add_test("${TEST_NAME}" "test${TEST_NAME}")
 		list(APPEND GAME_ENGINE_TESTS ${ARGN})
 		set(GAME_ENGINE_TESTS ${GAME_ENGINE_TESTS} CACHE INTERNAL "Internal variable used for tests" FORCE)

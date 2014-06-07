@@ -1,14 +1,24 @@
 #pragma once
 
+#include "thr_queue/future.h"
+#include "thr_queue/functor.h"
+
 #include <deque>
 #include <functional>
 #include <mutex>
-
-#include "thr_queue/future.h"
+#include <vector>
 
 namespace game_engine {
 namespace thr_queue {
-class thread_pool;
+class coroutine;
+class queue;
+
+/** We have to declare this private function here because we need it to be
+ * static we we friend it inside queue.
+ * Otherwise the compiler will complain about an extern function (declared by
+ * the friend declaration) and the static function we define conflicting.
+ * */
+static std::vector<coroutine> queue_to_vec_cor(queue q);
 
 enum class queue_type {
   serial,
@@ -42,7 +52,8 @@ public:
   ~queue() {};
 
   /** \brief Adds a function to be executed to the queue. */
-  template <typename F> get_future_type<F> submit_work(F func);
+  template <typename F>
+  get_future_type<F> submit_work(F func);
 
   /** \brief Appends a queue to this one.
    * Depending on what type of queue is appended and what type this queue is
@@ -58,7 +69,7 @@ public:
    * queue's work.
    * A serial queue appended to a serial queue: the queues will be merged.
    * */
-  void submit_queue(queue q);
+  void append_queue(queue q);
 
   /** \brief Run one unit of work from this queue.
    * Returns true if we did work.
@@ -71,44 +82,27 @@ public:
    */
   void run_until_empty();
 
-  /** \brief Starts a thread pool of a certain maximum size and runs this queue
-   * there. Blocks or not according to the first parameter.
-   */
-  void run_in_pool(block bl, unsigned int max_pool_size);
-
-  /** \brief Runs this queue in an already existing thread pool.
-   * Blocks or not according to the first parameter.
-   */
-  void run_in_pool(block bl, thread_pool &thr_pool);
-
   queue_type type() const;
 
-  struct base_work {
-    virtual void operator()() = 0;
-    virtual ~base_work() {};
-  };
-
 private:
-  template <typename F> struct work : base_work {
-    F func;
+  template <typename F>
+  struct work : functor {
     get_promise_type<F> prom;
+    F func;
+    work(F f, get_promise_type<F> p);
 
     void operator()() final override;
-
-    work(F f, get_promise_type<F> p);
   };
 
-  friend void run_queue_in_pool_impl(bool add_this_thread_if_block, block bl,
-                                     queue q,
-                                     std::unique_ptr<base_work> last_work,
-                                     thread_pool &pool);
+  friend std::vector<coroutine> queue_to_vec_cor(queue qu);
+
   friend void swap(queue &lhs, queue &rhs);
   std::recursive_mutex queue_mut;
-  std::deque<std::unique_ptr<base_work> > work_queue;
+  std::deque<std::unique_ptr<functor>> work_queue;
   queue_type typ;
 };
 
-void swap(queue &lhs, queue& rhs);
+void swap(queue &lhs, queue &rhs);
 }
 }
 
