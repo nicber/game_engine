@@ -50,6 +50,7 @@ coroutine::coroutine()
 
 coroutine::coroutine(coroutine_type cor_typ) : coroutine() {
   ctx = new boost::context::fcontext_t();
+  typ = cor_typ;
 }
 
 size_t coroutine::default_stacksize() {
