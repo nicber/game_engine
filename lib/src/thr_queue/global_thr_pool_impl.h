@@ -33,16 +33,18 @@ public:
     master_coroutine.make_current_coroutine();
 
     std::unique_lock<std::mutex> lock(mt);
-    running = true;
     do {
       std::unique_lock<std::mutex> lock_data(data.mt, std::defer_lock);
 
       while (lock_data.lock(),
              data.work_queue.size() || data.work_queue_prio.size() ||
                  should_stop) {
-        if (should_stop) {
-          running = false;
+        if (data.waiting_threads.size() &&
+            data.waiting_threads.front() == this) {
+          data.waiting_threads.pop_front();
+        }
 
+        if (should_stop) {
           // we inform another thread that we won't be
           // able to do our assigned
           // work.
@@ -90,7 +92,6 @@ private:
   std::mutex mt;
   std::condition_variable cv;
   work_type_data &data;
-  bool running = false;
   std::atomic<bool> should_stop;
   std::thread thr;
 };
@@ -127,7 +128,7 @@ public:
       should_try_add = true;
       wdata = &io_data;
       threads = &io_threads;
-	  mt = &io_threads_mt;
+      mt = &io_threads_mt;
     } else {
       wdata = &cpu_data;
       threads = nullptr; // we never try to add more cpu threads
