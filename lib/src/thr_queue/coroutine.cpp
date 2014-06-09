@@ -1,10 +1,9 @@
-#include "thr_queue/coroutine.h"
 #include <cassert>
+#include "thr_queue/coroutine.h"
+#include "global_thr_pool_impl.h"
 
 namespace game_engine {
 namespace thr_queue {
-
-thread_local coroutine *current_coroutine = nullptr;
 
 coroutine::coroutine(coroutine &&other) : coroutine(coroutine_type::master) {
   swap(*this, other);
@@ -40,9 +39,9 @@ coroutine::creation_time() const {
 
 coroutine_type coroutine::type() const { return typ; }
 
-void coroutine::switch_to() {
+void coroutine::switch_to_from(coroutine &other) {
   auto func_ptr = reinterpret_cast<intptr_t>(function.get());
-  boost::context::jump_fcontext(current_coroutine->ctx, ctx, func_ptr);
+  boost::context::jump_fcontext(other.ctx, ctx, func_ptr);
 }
 
 coroutine::coroutine()
@@ -54,17 +53,10 @@ coroutine::coroutine(coroutine_type cor_typ) : coroutine() {
 }
 
 size_t coroutine::default_stacksize() {
-  return 1024 * 1024; // 1 MB
+  return 4096; // 4 KB
 }
 
-void coroutine::make_current_coroutine() {
-  if (typ != coroutine_type::master) {
-    throw std::logic_error(
-        "non-master coroutines can't be made current explicitly");
-  }
-
-  current_coroutine = this;
-}
+void coroutine::finish_coroutine() { global_thr_pool.yield(); }
 
 void swap(coroutine &lhs, coroutine &rhs) {
   using std::swap;

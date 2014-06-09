@@ -4,6 +4,9 @@
 namespace game_engine {
 namespace thr_queue {
 
+thread_local std::function<void()> after_yield;
+thread_local std::unique_ptr<coroutine> master_coroutine;
+thread_local coroutine *running_coroutine_or_yielded_from = nullptr;
 global_thread_pool global_thr_pool;
 
 static std::vector<coroutine> queue_to_vec_cor(queue q) {
@@ -15,6 +18,7 @@ static std::vector<coroutine> queue_to_vec_cor(queue q) {
     };
     cors.emplace_back(std::move(func));
   } else {
+    cors.reserve(q.work_queue.size());
     for (auto &work : q.work_queue) {
       auto func = [work = std::move(work)]() mutable {
         (*work)();

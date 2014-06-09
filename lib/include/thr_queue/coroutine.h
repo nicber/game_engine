@@ -29,7 +29,7 @@ public:
 
   coroutine_type type() const;
 
-  void switch_to();
+  void switch_to_from(coroutine& from);
 
   void make_current_coroutine();
 
@@ -40,8 +40,9 @@ private:
   coroutine(coroutine_type cor_typ);
   friend class worker_thread;
 
-private:
   static size_t default_stacksize();
+  static void finish_coroutine();
+private:
 
   boost::context::fcontext_t *ctx;
   std::unique_ptr<char[]> stack;

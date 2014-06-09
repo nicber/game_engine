@@ -9,7 +9,7 @@
 namespace game_engine {
 namespace thr_queue {
 void swap(queue &lhs, queue &rhs) {
-  std::lock(rhs.queue_mut, rhs.queue_mut);
+  std::lock(lhs.queue_mut, rhs.queue_mut);
   std::lock_guard<std::recursive_mutex> lock_lhs(lhs.queue_mut,
                                                  std::adopt_lock);
   std::lock_guard<std::recursive_mutex> lock_rhs(rhs.queue_mut,

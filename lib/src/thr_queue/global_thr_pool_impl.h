@@ -15,6 +15,9 @@ namespace game_engine {
 namespace thr_queue {
 
 class worker_thread;
+extern thread_local std::function<void()> after_yield;
+extern thread_local std::unique_ptr<coroutine> master_coroutine;
+extern thread_local coroutine *running_coroutine_or_yielded_from;
 
 struct work_type_data {
   std::mutex mt;
@@ -29,8 +32,8 @@ public:
       : data(dat), should_stop(false), thr(&worker_thread::loop, this) {}
 
   void loop() {
-    coroutine master_coroutine(coroutine_type::master);
-    master_coroutine.make_current_coroutine();
+    master_coroutine =
+        std::unique_ptr<coroutine>(new coroutine(coroutine_type::master));
 
     std::unique_lock<std::mutex> lock(mt);
     do {
@@ -68,7 +71,13 @@ public:
         lock_data.unlock();
 
         try {
-          cor.switch_to();
+          running_coroutine_or_yielded_from = &cor;
+          cor.switch_to_from(*master_coroutine);
+          if (after_yield) {
+            after_yield();
+            after_yield = std::function<void()>();
+          }
+          running_coroutine_or_yielded_from = master_coroutine.get();
         }
         catch (...) {
           // TODO log something
@@ -78,9 +87,13 @@ public:
 
       data.waiting_threads.push_front(this);
     } while (cv.wait(lock), true);
+    assert(should_stop);
   }
 
-  void notify_work_available() { cv.notify_all(); }
+  void notify_work_available() {
+    std::lock_guard<std::mutex> lock(mt);
+    cv.notify_all();
+  }
 
   ~worker_thread() {
     should_stop = true;
@@ -122,24 +135,27 @@ public:
     bool should_try_add = false;
     work_type_data *wdata = nullptr;
     std::list<worker_thread> *threads = nullptr;
-    std::mutex *mt = nullptr;
+    std::mutex *thr_mt = nullptr;
 
     if (cor.type() == coroutine_type::io) {
       should_try_add = true;
       wdata = &io_data;
       threads = &io_threads;
-      mt = &io_threads_mt;
+      thr_mt = &io_threads_mt;
     } else {
       wdata = &cpu_data;
       threads = nullptr; // we never try to add more cpu threads
     }
 
-    std::unique_lock<std::mutex> lock_mt;
-    if (mt) {
-      std::lock(*mt, wdata->mt);
-      lock_mt = std::unique_lock<std::mutex>(*mt, std::adopt_lock);
+    std::unique_lock<std::mutex> lock_thr_mt;
+    std::unique_lock<std::mutex> lock_wdata;
+    if (thr_mt) {
+      std::lock(*thr_mt, wdata->mt);
+      lock_thr_mt = std::unique_lock<std::mutex>(*thr_mt, std::adopt_lock);
+      lock_wdata = std::unique_lock<std::mutex>(wdata->mt, std::adopt_lock);
+    } else {
+      lock_wdata = std::unique_lock<std::mutex>(wdata->mt);
     }
-    std::lock_guard<std::mutex> lock_wdata(wdata->mt, std::adopt_lock);
 
     if (!first) {
       auto it =
@@ -154,16 +170,30 @@ public:
       wdata->work_queue_prio.emplace_back(std::move(cor));
     }
 
-    if (should_try_add && threads->size() == 0 &&
+    if (should_try_add && wdata->waiting_threads.size() == 0 &&
         threads->size() < max_io_threads) {
       threads->emplace_back(io_data);
     }
 
     if (wdata->waiting_threads.size()) {
-      wdata->waiting_threads.front()->notify_work_available();
+      auto *thr_notif = wdata->waiting_threads.front();
+      lock_wdata.unlock(); // avoid a deadlock.
+      thr_notif->notify_work_available();
     }
 
     return;
+  }
+
+  void yield() {
+    assert(running_coroutine_or_yielded_from != master_coroutine.get() &&
+           "we can't yield from the master_coroutine");
+    master_coroutine->switch_to_from(*running_coroutine_or_yielded_from);
+  }
+
+  template <typename F>
+  void yield(F func) {
+    after_yield = std::function<void()>(std::move(func));
+    yield();
   }
 
 private:
@@ -177,5 +207,7 @@ private:
   work_type_data io_data;
   work_type_data cpu_data;
 };
+
+extern global_thread_pool global_thr_pool;
 }
 }
