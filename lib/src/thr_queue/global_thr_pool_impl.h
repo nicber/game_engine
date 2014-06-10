@@ -25,6 +25,7 @@ class worker_thread {
 public:
   worker_thread(work_type_data &dat);
   void loop();
+  void tell_stop();
   bool try_notify_work_available();
   ~worker_thread();
 
@@ -39,6 +40,8 @@ private:
 class global_thread_pool {
 public:
   global_thread_pool();
+  ~global_thread_pool();
+
   void notify_one_thread(std::unique_lock<std::mutex> &lock_data,
                          std::deque<worker_thread *> &waiting_threads);
   void schedule(coroutine cor, bool first);
@@ -48,15 +51,15 @@ public:
   void yield(F func);
 
 private:
+  work_type_data io_data;
+  work_type_data cpu_data;
+
   std::mutex cpu_threads_mt;
   std::list<worker_thread> cpu_threads;
 
   std::mutex io_threads_mt;
   std::list<worker_thread> io_threads;
   const unsigned int max_io_threads = 2;
-
-  work_type_data io_data;
-  work_type_data cpu_data;
 };
 
 extern global_thread_pool global_thr_pool;

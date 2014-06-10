@@ -78,10 +78,14 @@ bool worker_thread::try_notify_work_available() {
   return lock.owns_lock();
 }
 
-worker_thread::~worker_thread() {
+void worker_thread::tell_stop() {
   std::lock_guard<std::mutex> lock(mt);
   should_stop = true;
   cv.notify_all();
+}
+
+worker_thread::~worker_thread() {
+  assert(should_stop);
   thr.join();
 }
 
@@ -118,6 +122,15 @@ void global_thread_pool::notify_one_thread(
   }
 }
 
+global_thread_pool::~global_thread_pool() {
+  for (auto &thr : cpu_threads) {
+    thr.tell_stop();
+  }
+  for (auto &thr : io_threads) {
+    thr.tell_stop();
+  }
+}
+
 void global_thread_pool::schedule(coroutine cor, bool first) {
   bool should_try_add = false;
   work_type_data *wdata = nullptr;
@@ -135,13 +148,9 @@ void global_thread_pool::schedule(coroutine cor, bool first) {
   }
 
   std::unique_lock<std::mutex> lock_thr_mt;
-  std::unique_lock<std::mutex> lock_wdata;
+  std::unique_lock<std::mutex> lock_wdata(wdata->mt);
   if (thr_mt) {
-    std::lock(*thr_mt, wdata->mt);
-    lock_thr_mt = std::unique_lock<std::mutex>(*thr_mt, std::adopt_lock);
-    lock_wdata = std::unique_lock<std::mutex>(wdata->mt, std::adopt_lock);
-  } else {
-    lock_wdata = std::unique_lock<std::mutex>(wdata->mt);
+    lock_thr_mt = std::unique_lock<std::mutex>(*thr_mt);
   }
 
   if (!first) {
