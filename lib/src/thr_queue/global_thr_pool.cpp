@@ -1,13 +1,9 @@
-#include "thr_queue/coroutine.h"
 #include "global_thr_pool_impl.h"
+#include <thr_queue/queue.h>
+#include <vector>
 
 namespace game_engine {
 namespace thr_queue {
-
-thread_local std::function<void()> after_yield;
-thread_local std::unique_ptr<coroutine> master_coroutine;
-thread_local coroutine *running_coroutine_or_yielded_from = nullptr;
-global_thread_pool global_thr_pool;
 
 static std::vector<coroutine> queue_to_vec_cor(queue q) {
   std::vector<coroutine> cors;

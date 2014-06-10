@@ -1,5 +1,6 @@
 list(APPEND GAME_ENGINE_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/queue.cpp)
 list(APPEND GAME_ENGINE_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/global_thr_pool.cpp)
+list(APPEND GAME_ENGINE_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/global_thr_pool_impl.cpp)
 list(APPEND GAME_ENGINE_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/coroutine.cpp)
 
 add_subdirectory(event)

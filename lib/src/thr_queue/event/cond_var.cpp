@@ -29,38 +29,24 @@ static void cond_var_cb(uv_async_t *, int) {
 
 namespace event {
 void condition_variable::wait() {
-  std::unique_lock<std::mutex> global_lock(cond_var_global_mt);
-
-  if (!cond_var_async) {
-    cond_var_async = new uv_async_t;
-    uv_thr_init(cond_var_async, cond_var_cb);
-  }
-
   global_thr_pool.yield([&] {
     // even though this code will be run by another coroutine, it'll still
     // be run by the same thread as this coroutine, so no problems should
     // arise when unlocking the mutex.
     // also, running_coroutine_or_yielded from still points to this coroutine.
-
-    {
-      std::lock_guard<std::mutex> cond_var_lock(mt);
-      waiting_cors.emplace_back(std::move(*running_coroutine_or_yielded_from));
-    }
-
-    global_lock.unlock();
-    uv_async_send(cond_var_async);
+    std::lock_guard<std::mutex> cond_var_lock(mt);
+    waiting_cors.emplace_back(std::move(*running_coroutine_or_yielded_from));
   });
 }
 
 void condition_variable::notify() {
-  std::lock(mt, cond_var_global_mt);
-  std::lock_guard<std::mutex> mt_lock(mt, std::adopt_lock);
-  std::lock_guard<std::mutex> global_lock(cond_var_global_mt, std::adopt_lock);
+  std::unique_lock<std::mutex> mt_lock(mt);
+  auto wc = std::move(waiting_cors);
+  mt_lock.unlock();
 
-  std::move(
-      waiting_cors.begin(), waiting_cors.end(), std::back_inserter(cor_queue));
-
-  uv_async_send(cond_var_async);
+  for (auto &cor : wc) {
+    global_thr_pool.schedule(std::move(cor), true);
+  }
 }
 }
 }

@@ -27,36 +27,20 @@ TEST(ThrQueue, ExecutesCode) {
 TEST(ThrQueue, ParallelQinSerial) {
   using namespace game_engine::thr_queue;
   queue q_ser(queue_type::serial);
-  std::mutex mt;
-  std::unique_lock<std::mutex> lock(mt);
-  std::condition_variable cv;
-  std::vector<int> counts;
+  queue q_par(queue_type::parallel);
   std::atomic<int> count(0);
 
-  for (size_t i = 0; i < 100000; ++i) {
-    queue q_par(queue_type::parallel);
-    for (size_t i = 0; i < 10; ++i) {
-      q_par.submit_work([&] { count++; });
-    }
-
-    q_ser.append_queue(std::move(q_par));
-    q_ser.submit_work([&] {
-      std::lock_guard<std::mutex> lock(mt);
-      counts.push_back(count);
-      count = 0;
-    });
+  for (size_t i = 0; i < 10; ++i) {
+    q_par.submit_work([&] { count++; });
   }
 
-  q_ser.submit_work([&] {
-    std::lock_guard<std::mutex> lock(mt);
-    cv.notify_one();
-  });
+  q_ser.append_queue(std::move(q_par));
+
+  auto fut = q_ser.submit_work([] {});
 
   schedule_queue(std::move(q_ser));
 
-  cv.wait(lock);
+  fut.wait();
 
-  for (auto i : counts) {
-    EXPECT_EQ(1, i);
-  }
+  EXPECT_EQ(10, count);
 }

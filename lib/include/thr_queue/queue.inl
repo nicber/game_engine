@@ -24,13 +24,13 @@ get_future_type<F> queue::submit_work(F func) {
     throw std::runtime_error("invalid function passed");
   }
 
-  get_promise_type<F> prom;
-  auto future = prom.get_future();
-
   std::lock_guard<std::recursive_mutex> guard(queue_mut);
-  work_queue.emplace_back(new work<F>(std::move(func), std::move(prom)));
 
-  return future;
+  auto work = new queue::work<F>(std::move(func), get_promise_type<F>());
+  auto fut = work->prom.get_future();
+  work_queue.emplace_back(work);
+
+  return fut;
 }
 
 // workaround for the lack of partial function specialization.
