@@ -13,20 +13,6 @@ static std::mutex cond_var_global_mt;
 static uv_async_t *cond_var_async;
 static std::deque<coroutine> cor_queue;
 
-static void cond_var_cb(uv_async_t *, int) {
-  std::deque<coroutine> queue;
-  std::unique_lock<std::mutex> lock(cond_var_global_mt, std::defer_lock);
-
-  while (lock.lock(), cor_queue.size()) {
-    queue = std::move(cor_queue);
-    lock.unlock();
-
-    for (auto &cor : queue) {
-      global_thr_pool.schedule(std::move(cor), false);
-    }
-  }
-}
-
 namespace event {
 void condition_variable::wait() {
   global_thr_pool.yield([&] {

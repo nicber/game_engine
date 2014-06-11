@@ -1,3 +1,5 @@
+#pragma once
+
 #include "thr_queue/coroutine.h"
 #include <condition_variable>
 #include <deque>

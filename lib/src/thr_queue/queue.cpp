@@ -45,7 +45,10 @@ void queue::append_queue(queue q) {
     work_queue.emplace_back(new spec_functor<decltype(func)>(std::move(func)));
   } else if (typ == queue_type::serial && q.typ == queue_type::parallel) {
     auto func = [q = std::move(q)]() mutable {
-      schedule_queue_first(std::move(q));
+      event::condition_variable cv;
+      auto size = q.work_queue.size();
+      schedule_queue_first(std::move(q), cv, size);
+      cv.wait();
     };
     work_queue.emplace_back(new spec_functor<decltype(func)>(std::move(func)));
   }
