@@ -35,8 +35,8 @@ void queue::append_queue(queue q) {
   std::lock_guard<std::recursive_mutex> q_lock(q.queue_mut, std::adopt_lock);
 
   if (typ == q.typ) {
-    std::copy(std::make_move_iterator(q.work_queue.begin()),
-              std::make_move_iterator(q.work_queue.end()),
+    std::move(q.work_queue.begin(),
+              q.work_queue.end(),
               std::back_inserter(work_queue));
   } else if (typ == queue_type::parallel && q.typ == queue_type::serial) {
     auto func = [q = std::move(q)]() mutable {

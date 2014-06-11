@@ -147,8 +147,8 @@ void global_thread_pool::schedule(coroutine cor, bool first) {
     threads = nullptr; // we never try to add more cpu threads
   }
 
-  std::unique_lock<std::mutex> lock_thr_mt;
   std::unique_lock<std::mutex> lock_wdata(wdata->mt);
+  std::unique_lock<std::mutex> lock_thr_mt;
   if (thr_mt) {
     lock_thr_mt = std::unique_lock<std::mutex>(*thr_mt);
   }
