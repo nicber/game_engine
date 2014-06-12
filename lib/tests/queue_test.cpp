@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "gtest/gtest.h"
 #include "thr_queue/event/cond_var.h"
 #include "thr_queue/queue.h"
@@ -43,4 +44,55 @@ TEST(ThrQueue, ParallelQinSerial) {
   fut.wait();
 
   EXPECT_EQ(10, count);
+}
+
+TEST(ThrQueue, SerialQinParallel) {
+  using namespace game_engine::thr_queue;
+  queue q_par(queue_type::parallel);
+  std::mutex mt;
+  std::condition_variable cv;
+  std::atomic<int> count[100];
+  std::vector<int> counts[100];
+  std::atomic<int> done(0);
+
+  std::generate(std::begin(count), std::end(count), [] { return 0; });
+
+  for (size_t i = 0; i < 100; ++i) {
+    queue q_ser(queue_type::serial);
+
+    for (size_t j = 0; j < 100; ++j) {
+      q_ser.submit_work([&, i] {
+        auto val = ++count[i];
+        counts[i].push_back(val);
+      });
+    }
+
+    q_ser.submit_work([&] {
+      ++done;
+      std::lock_guard<std::mutex> lock(mt);
+      cv.notify_one();
+    });
+
+    q_par.append_queue(std::move(q_ser));
+  }
+
+  std::unique_lock<std::mutex> lock(mt);
+
+  schedule_queue(std::move(q_par));
+
+  while (done < 100) {
+    cv.wait(lock);
+  }
+
+  for (int val : count) {
+    EXPECT_EQ(100, val);
+  }
+
+  for (auto &vec : counts) {
+    int prev_step = 0;
+    for (int step : vec) {
+      EXPECT_EQ(prev_step + 1, step);
+      prev_step = step;
+    }
+  }
 }
