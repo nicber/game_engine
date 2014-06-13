@@ -28,7 +28,7 @@ get_future_type<F> queue::submit_work(F func) {
 
   auto work = new queue::work<F>(std::move(func), get_promise_type<F>());
   auto fut = work->prom.get_future();
-  work_queue.emplace_back(work);
+  append_work(std::unique_ptr<functor>(work));
 
   return fut;
 }

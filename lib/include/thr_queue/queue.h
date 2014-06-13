@@ -50,6 +50,11 @@ public:
   /** \brief Constructs a queue of a certain type. */
   queue(queue_type ty);
 
+  /** \brief Constructs a queue of a certain type with a callback that will be
+   * called when work is added.
+   */
+  queue(queue_type ty, std::function<void()> cb);
+
   queue &operator=(queue &&rhs);
   queue(queue &&rhs);
 
@@ -89,6 +94,9 @@ public:
   queue_type type() const;
 
 private:
+  void append_work(std::unique_ptr<functor> func);
+
+private:
   template <typename F>
   struct work : functor {
     get_promise_type<F> prom;
@@ -105,6 +113,7 @@ private:
   std::recursive_mutex queue_mut;
   std::deque<std::unique_ptr<functor>> work_queue;
   queue_type typ;
+  std::function<void()> cb_added;
 };
 
 void swap(queue &lhs, queue &rhs);

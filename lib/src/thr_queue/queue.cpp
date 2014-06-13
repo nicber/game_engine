@@ -18,17 +18,24 @@ void swap(queue &lhs, queue &rhs) {
   using std::swap;
   swap(lhs.work_queue, rhs.work_queue);
   swap(lhs.typ, rhs.typ);
+  swap(lhs.cb_added, rhs.cb_added);
 }
 
 queue::queue(queue &&rhs) : typ(queue_type::parallel) { swap(*this, rhs); }
 
 queue &queue::operator=(queue &&rhs) {
-  this->~queue();
-  new (this) queue(std::move(rhs));
+  queue temp(queue_type::parallel);
+  using std::swap;
+  swap(temp, rhs);
+  swap(*this, temp);
   return *this;
 }
 
 queue::queue(queue_type ty) : typ(ty) {}
+
+queue::queue(queue_type ty, std::function<void()> cb)
+    : typ(ty), cb_added(std::move(cb)) {}
+
 void queue::append_queue(queue q) {
   std::lock(queue_mut, q.queue_mut);
   std::lock_guard<std::recursive_mutex> my_lock(queue_mut, std::adopt_lock);
@@ -42,7 +49,8 @@ void queue::append_queue(queue q) {
     auto func = [q = std::move(q)]() mutable {
       q.run_until_empty();
     };
-    work_queue.emplace_back(new spec_functor<decltype(func)>(std::move(func)));
+    append_work(std::unique_ptr<functor>(
+        new spec_functor<decltype(func)>(std::move(func))));
   } else if (typ == queue_type::serial && q.typ == queue_type::parallel) {
     auto func = [q = std::move(q)]() mutable {
       event::condition_variable cv;
@@ -50,7 +58,8 @@ void queue::append_queue(queue q) {
       schedule_queue_first(std::move(q), cv, size);
       cv.wait();
     };
-    work_queue.emplace_back(new spec_functor<decltype(func)>(std::move(func)));
+    append_work(std::unique_ptr<functor>(
+        new spec_functor<decltype(func)>(std::move(func))));
   }
 }
 
@@ -83,5 +92,12 @@ void queue::run_until_empty() {
 }
 
 queue_type queue::type() const { return typ; }
+
+void queue::append_work(std::unique_ptr<functor> func) {
+  work_queue.emplace_back(std::move(func));
+  if (cb_added) {
+    cb_added();
+  }
+}
 }
 }
