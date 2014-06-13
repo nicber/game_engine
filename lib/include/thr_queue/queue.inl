@@ -26,9 +26,10 @@ get_future_type<F> queue::submit_work(F func) {
 
   std::lock_guard<std::recursive_mutex> guard(queue_mut);
 
-  auto work = new queue::work<F>(std::move(func), get_promise_type<F>());
+  auto work = std::unique_ptr<queue::work<F>>(
+      new queue::work<F>(std::move(func), get_promise_type<F>()));
   auto fut = work->prom.get_future();
-  append_work(std::unique_ptr<functor>(work));
+  append_work(std::unique_ptr<functor>(work.release()));
 
   return fut;
 }
