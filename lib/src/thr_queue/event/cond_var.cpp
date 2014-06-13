@@ -1,16 +1,11 @@
-#include <algorithm>
 #include "../global_thr_pool_impl.h"
-#include <iterator>
 #include "thr_queue/coroutine.h"
 #include "thr_queue/event/cond_var.h"
-#include <uv.h>
-#include "uv_thread.h"
 
 namespace game_engine {
 namespace thr_queue {
 
 static std::mutex cond_var_global_mt;
-static uv_async_t *cond_var_async;
 static std::deque<coroutine> cor_queue;
 
 namespace event {
