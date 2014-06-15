@@ -29,7 +29,10 @@ get_future_type<F> queue::submit_work(F func) {
   auto work = std::unique_ptr<queue::work<F>>(
       new queue::work<F>(std::move(func), get_promise_type<F>()));
   auto fut = work->prom.get_future();
-  append_work(std::unique_ptr<functor>(work.release()));
+  work_queue.emplace_back(work.release());
+  if (cb_added) {
+    cb_added(*this);
+  }
 
   return fut;
 }

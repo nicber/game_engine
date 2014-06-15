@@ -52,25 +52,25 @@ queue_to_vec_cor(queue q, event::condition_variable *cv, size_t min) {
 }
 
 static void
-do_schedule(queue q, event::condition_variable *cv, size_t min, bool first) {
+do_schedule(queue &q, event::condition_variable *cv, size_t min, bool first) {
   auto cors = queue_to_vec_cor(std::move(q), cv, min);
   for (auto &cor : cors) {
     global_thr_pool.schedule(std::move(cor), first);
   }
 }
 
-void schedule_queue(queue q) { do_schedule(std::move(q), nullptr, 0, false); }
+void schedule_queue(queue q) { do_schedule(q, nullptr, 0, false); }
 
 void schedule_queue_first(queue q) {
-  do_schedule(std::move(q), nullptr, 0, true);
+  do_schedule(q, nullptr, 0, true);
 }
 
 void schedule_queue(queue q, event::condition_variable &cv, size_t min) {
-  do_schedule(std::move(q), &cv, min, false);
+  do_schedule(q, &cv, min, false);
 }
 
 void schedule_queue_first(queue q, event::condition_variable &cv, size_t min) {
-  do_schedule(std::move(q), &cv, min, true);
+  do_schedule(q, &cv, min, true);
 }
 }
 }

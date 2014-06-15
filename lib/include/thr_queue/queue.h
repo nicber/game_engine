@@ -34,6 +34,10 @@ enum class block {
   no
 };
 
+/** \brief Tag struct for the work-stealing constructor of queue. */
+struct steal_work_t {};
+const steal_work_t steal_work;
+
 /** \brief A queue for organizing work.
  * There are two types of queues, parallel and serial.
  * Each works differently:
@@ -47,13 +51,18 @@ enum class block {
  */
 class queue {
 public:
+  using callback_t = std::function<void(queue &)>;
+
+public:
   /** \brief Constructs a queue of a certain type. */
   queue(queue_type ty);
 
   /** \brief Constructs a queue of a certain type with a callback that will be
    * called when work is added.
    */
-  queue(queue_type ty, std::function<void()> cb);
+  queue(queue_type ty, callback_t cb);
+
+  queue(steal_work_t, queue &other);
 
   queue &operator=(queue &&rhs);
   queue(queue &&rhs);
@@ -94,9 +103,6 @@ public:
   queue_type type() const;
 
 private:
-  void append_work(std::unique_ptr<functor> func);
-
-private:
   template <typename F>
   struct work : functor {
     get_promise_type<F> prom;
@@ -113,7 +119,7 @@ private:
   std::recursive_mutex queue_mut;
   std::deque<std::unique_ptr<functor>> work_queue;
   queue_type typ;
-  std::function<void()> cb_added;
+  callback_t cb_added;
 };
 
 void swap(queue &lhs, queue &rhs);
