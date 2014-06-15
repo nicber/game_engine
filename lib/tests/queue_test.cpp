@@ -1,8 +1,9 @@
 #include <algorithm>
 #include "gtest/gtest.h"
 #include "thr_queue/event/cond_var.h"
-#include "thr_queue/queue.h"
 #include "thr_queue/global_thr_pool.h"
+#include "thr_queue/queue.h"
+#include "thr_queue/util_queue.h"
 
 #include <chrono>
 #include <thread>
@@ -95,4 +96,47 @@ TEST(ThrQueue, SerialQinParallel) {
       prev_step = step;
     }
   }
+}
+
+TEST(ThrQueue, DefaultParQueue) {
+  std::atomic<int> count(0);
+  std::atomic<bool> done(false);
+  std::mutex mt;
+  std::condition_variable cv;
+  std::unique_lock<std::mutex> lock(mt);
+
+  for (size_t i = 0; i < 10000; ++i) {
+    game_engine::thr_queue::default_par_queue().submit_work([&] {
+      if (++count == 10000) {
+        done = true;
+        std::lock_guard<std::mutex> lock(mt);
+        cv.notify_one();
+      }
+    });
+  }
+
+  while (!done) {
+    cv.wait(lock);
+  }
+
+  EXPECT_EQ(10000, count);
+}
+
+TEST(ThrQueue, SerQueue) {
+  auto q_ser = game_engine::thr_queue::ser_queue();
+  // we use atomics to be sure that a possible bug in the implementation isn't
+  // "hiding" itself by means of a race condition.
+  std::atomic<int> last_exec(-1);
+  std::atomic<bool> correct_order(true);
+
+  for (int i = 0; i < 10000; ++i) {
+    q_ser.submit_work([&, i] {
+      if (last_exec.exchange(i) != i - 1) {
+        correct_order = false;
+      }
+    });
+  }
+
+  EXPECT_EQ(9999, last_exec);
+  EXPECT_EQ(true, correct_order);
 }
