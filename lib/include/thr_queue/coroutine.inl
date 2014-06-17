@@ -24,7 +24,7 @@ coroutine::coroutine(F func, coroutine_type cor_typ)
                                       [](intptr_t ptr) {
     auto *reint_ptr = reinterpret_cast<functor *>(ptr);
     (*reint_ptr)();
-	finish_coroutine();
+    finish_coroutine();
   });
 }
 }

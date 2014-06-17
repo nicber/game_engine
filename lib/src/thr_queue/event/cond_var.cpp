@@ -1,4 +1,5 @@
 #include "../global_thr_pool_impl.h"
+#include "lock_unlocker.h"
 #include "thr_queue/coroutine.h"
 #include "thr_queue/event/cond_var.h"
 
@@ -9,15 +10,18 @@ static std::mutex cond_var_global_mt;
 static std::deque<coroutine> cor_queue;
 
 namespace event {
-void condition_variable::wait() {
+void condition_variable::wait(std::unique_lock<mutex> &lock) {
+  assert(lock.owns_lock());
+  std::unique_lock<std::mutex> lock_std(mt);
   global_thr_pool.yield([&] {
-    // even though this code will be run by another coroutine, it'll still
-    // be run by the same thread as this coroutine, so no problems should
-    // arise when unlocking the mutex.
-    // also, running_coroutine_or_yielded from still points to this coroutine.
-    std::lock_guard<std::mutex> cond_var_lock(mt);
+    // running_coroutine_or_yielded from still points to this coroutine even
+    // after having yielded.
+    lock_unlocker<mutex> l_unlock_co_mt(lock);
+    lock_unlocker<std::mutex> l_unlock_std_mt(lock_std);
+
     waiting_cors.emplace_back(std::move(*running_coroutine_or_yielded_from));
   });
+  lock.lock();
 }
 
 void condition_variable::notify() {
@@ -28,6 +32,11 @@ void condition_variable::notify() {
   for (auto &cor : wc) {
     global_thr_pool.schedule(std::move(cor), true);
   }
+}
+
+condition_variable::~condition_variable() {
+  assert(waiting_cors.size() == 0 &&
+         "coroutines can't be destroyed by the condition variable.");
 }
 }
 }

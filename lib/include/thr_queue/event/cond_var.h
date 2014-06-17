@@ -1,9 +1,9 @@
 #pragma once
 
-#include "thr_queue/coroutine.h"
 #include <condition_variable>
 #include <deque>
-#include <mutex>
+#include "thr_queue/coroutine.h"
+#include "thr_queue/event/mutex.h"
 
 namespace game_engine {
 namespace thr_queue {
@@ -11,7 +11,9 @@ namespace event {
 class condition_variable {
 public:
   void notify();
-  void wait();
+  void wait(std::unique_lock<mutex> &lock);
+
+  ~condition_variable();
 
 private:
   std::mutex mt;

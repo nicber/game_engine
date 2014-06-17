@@ -6,15 +6,22 @@
 
 namespace game_engine {
 namespace thr_queue {
-static std::vector<coroutine>
-queue_to_vec_cor(queue q, event::condition_variable *cv, size_t min) {
+static std::vector<coroutine> queue_to_vec_cor(queue q,
+                                               event::condition_variable *cv,
+                                               event::mutex *mt,
+                                               size_t min) {
+  if (cv) {
+    assert(mt);
+  }
+
   std::vector<coroutine> cors;
 
   if (q.type() == queue_type::serial) {
     assert(min == 0);
     if (cv) {
-      auto func = [ q = std::move(q), cv ]() mutable {
+      auto func = [ q = std::move(q), cv, mt ]() mutable {
         q.run_until_empty();
+        std::lock_guard<event::mutex> lock(*mt);
         cv->notify();
       };
       cors.emplace_back(std::move(func));
@@ -29,10 +36,11 @@ queue_to_vec_cor(queue q, event::condition_variable *cv, size_t min) {
     if (cv) {
       auto atomic = std::make_shared<std::atomic<size_t>>(0);
       for (auto &work : q.work_queue) {
-        auto func = [ work = std::move(work), atomic, cv, min ]() mutable {
+        auto func = [ work = std::move(work), atomic, cv, mt, min ]() mutable {
           (*work)();
           size_t atom_val = ++(*atomic);
           if (atom_val >= min) {
+            std::lock_guard<event::mutex> lock(*mt);
             cv->notify();
           }
         };
@@ -51,26 +59,35 @@ queue_to_vec_cor(queue q, event::condition_variable *cv, size_t min) {
   return cors;
 }
 
-static void
-do_schedule(queue &q, event::condition_variable *cv, size_t min, bool first) {
-  auto cors = queue_to_vec_cor(std::move(q), cv, min);
+static void do_schedule(queue &q,
+                        event::condition_variable *cv,
+                        event::mutex *mt,
+                        size_t min,
+                        bool first) {
+  auto cors = queue_to_vec_cor(std::move(q), cv, mt, min);
   for (auto &cor : cors) {
     global_thr_pool.schedule(std::move(cor), first);
   }
 }
 
-void schedule_queue(queue q) { do_schedule(q, nullptr, 0, false); }
+void schedule_queue(queue q) { do_schedule(q, nullptr, nullptr, 0, false); }
 
 void schedule_queue_first(queue q) {
-  do_schedule(q, nullptr, 0, true);
+  do_schedule(q, nullptr, nullptr, 0, true);
 }
 
-void schedule_queue(queue q, event::condition_variable &cv, size_t min) {
-  do_schedule(q, &cv, min, false);
+void schedule_queue(queue q,
+                    event::condition_variable &cv,
+                    event::mutex &mt,
+                    size_t min) {
+  do_schedule(q, &cv, &mt, min, false);
 }
 
-void schedule_queue_first(queue q, event::condition_variable &cv, size_t min) {
-  do_schedule(q, &cv, min, true);
+void schedule_queue_first(queue q,
+                          event::condition_variable &cv,
+                          event::mutex &mt,
+                          size_t min) {
+  do_schedule(q, &cv, &mt, min, true);
 }
 }
 }
