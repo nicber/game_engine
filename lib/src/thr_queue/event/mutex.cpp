@@ -1,9 +1,23 @@
 #include "../global_thr_pool_impl.h"
-#include "thr_queue/event/lock.h"
+#include "thr_queue/event/mutex.h"
 
 namespace game_engine {
 namespace thr_queue {
 namespace event {
+
+class lock_unlocker {
+public:
+  lock_unlocker(std::unique_lock<std::mutex> &l) : lock(l) {}
+
+  ~lock_unlocker() {
+    assert(lock.owns_lock());
+    lock.unlock();
+  }
+
+private:
+  std::unique_lock<std::mutex> &lock;
+};
+
 void mutex::lock() {
   std::unique_lock<std::mutex> lock(mt, std::defer_lock);
 
@@ -20,9 +34,10 @@ void mutex::lock() {
     }
 
     global_thr_pool.yield([&] {
-      std::unique_lock<std::mutex> lock_lamb(mt, std::adopt_lock);
+      lock_unlocker l_unlock(lock);
       waiting_cors.emplace_back(std::move(*running_coroutine_or_yielded_from));
     });
+    assert(!lock.owns_lock());
   }
 }
 

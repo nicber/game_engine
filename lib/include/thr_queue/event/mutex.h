@@ -14,7 +14,7 @@ public:
 
 private:
   std::mutex mt;
-  coroutine *owning_cor;
+  coroutine *owning_cor = nullptr;
   std::deque<coroutine> waiting_cors;
 };
 }

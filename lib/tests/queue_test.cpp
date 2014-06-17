@@ -1,6 +1,7 @@
 #include <algorithm>
 #include "gtest/gtest.h"
 #include "thr_queue/event/cond_var.h"
+#include "thr_queue/event/mutex.h"
 #include "thr_queue/global_thr_pool.h"
 #include "thr_queue/queue.h"
 #include "thr_queue/util_queue.h"
@@ -108,8 +109,8 @@ TEST(ThrQueue, DefaultParQueue) {
   for (size_t i = 0; i < 10000; ++i) {
     game_engine::thr_queue::default_par_queue().submit_work([&] {
       if (++count == 10000) {
-        done = true;
         std::lock_guard<std::mutex> lock(mt);
+        done = true;
         cv.notify_one();
       }
     });
@@ -139,4 +140,45 @@ TEST(ThrQueue, SerQueue) {
 
   EXPECT_EQ(9999, last_exec);
   EXPECT_EQ(true, correct_order);
+}
+
+TEST(ThrQueue, LockUnlock) {
+  using e_mutex = game_engine::thr_queue::event::mutex;
+  using game_engine::thr_queue::queue;
+  using game_engine::thr_queue::queue_type;
+  queue q_par(queue_type::parallel);
+
+  e_mutex mt;
+  bool done = false;
+  std::mutex cv_mt;
+  std::condition_variable cv;
+  std::unique_lock<std::mutex> lock(cv_mt);
+
+  struct {
+    int a = 0;
+    int b = 0;
+  } test;
+
+  for (size_t i = 0; i < 10000; i++) {
+    q_par.submit_work([&] {
+      std::lock_guard<e_mutex> lock(mt);
+      test.a++;
+      test.b++;
+    });
+  }
+
+  queue q_ser(queue_type::serial);
+  q_ser.append_queue(std::move(q_par));
+  q_ser.submit_work([&] {
+    std::lock_guard<std::mutex> lock_lamb(cv_mt);
+    done = true;
+    cv.notify_one();
+  });
+
+  schedule_queue(std::move(q_ser));
+
+  cv.wait(lock, [&] { return done; });
+
+  EXPECT_EQ(10000, test.a);
+  EXPECT_EQ(10000, test.b);
 }

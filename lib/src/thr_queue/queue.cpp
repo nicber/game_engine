@@ -95,8 +95,6 @@ bool queue::run_once() {
 }
 
 void queue::run_until_empty() {
-  std::lock_guard<std::recursive_mutex> lock(queue_mut);
-
   while (work_queue.size() > 0) {
     auto work = std::move(work_queue.front());
     work_queue.pop_front();
@@ -105,6 +103,5 @@ void queue::run_until_empty() {
 }
 
 queue_type queue::type() const { return typ; }
-
 }
 }
