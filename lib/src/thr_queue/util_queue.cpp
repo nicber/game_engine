@@ -1,3 +1,4 @@
+#include <cassert>
 #include "thr_queue/global_thr_pool.h"
 #include "thr_queue/util_queue.h"
 
@@ -8,17 +9,44 @@ static void sch_par_queue(queue &q) {
   schedule_queue(std::move(qw));
 }
 
-static void sch_ser_queue(queue &q) {
-  queue qw(steal_work, q);
-  schedule_queue(std::move(qw));
-}
-
 static queue def_par_queue(queue_type::parallel, sch_par_queue);
-
 queue &default_par_queue() { return def_par_queue; }
 
+struct ser_queue_comm {
+  event::mutex mt_exec;
+  std::mutex mt_qu;
+  queue qu = queue(queue_type::serial);
+  bool cor_sched = false;
+};
+
 queue ser_queue() {
-  queue q(queue_type::serial, sch_ser_queue);
+  auto comm = std::make_shared<ser_queue_comm>();
+
+  queue q(queue_type::serial, [comm = std::move(comm)](queue & q) {
+    std::lock_guard<std::mutex> lock(comm->mt_qu);
+
+    if (comm->cor_sched) {
+      comm->qu.append_queue({steal_work, q});
+      return;
+    }
+
+    comm->cor_sched = true;
+
+    queue q_ser(queue_type::serial);
+
+    q_ser.submit_work([comm]() mutable {
+      std::unique_lock<event::mutex> lock_exec(comm->mt_exec);
+      std::unique_lock<std::mutex> lock(comm->mt_qu);
+      comm->cor_sched = false;
+      auto q_work = std::move(comm->qu);
+      lock.unlock();
+
+      q_work.run_until_empty();
+    });
+
+    schedule_queue(std::move(q_ser));
+  });
+
   return q;
 }
 }

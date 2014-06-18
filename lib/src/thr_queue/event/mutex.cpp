@@ -5,6 +5,10 @@
 namespace game_engine {
 namespace thr_queue {
 namespace event {
+mutex::~mutex() {
+  assert(waiting_cors.size() == 0 &&
+         "coroutines would get stuck trying to lock a non-existing mutex");
+}
 
 void mutex::lock() {
   std::unique_lock<std::mutex> lock(mt, std::defer_lock);

@@ -10,6 +10,7 @@ class coroutine;
 namespace event {
 class mutex {
 public:
+  ~mutex();
   void lock();
   bool try_lock();
   void unlock();

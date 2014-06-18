@@ -125,18 +125,30 @@ TEST(ThrQueue, DefaultParQueue) {
 
 TEST(ThrQueue, SerQueue) {
   auto q_ser = game_engine::thr_queue::ser_queue();
+  std::mutex mt;
+  std::condition_variable cv;
+  std::unique_lock<std::mutex> lock(mt);
   // we use atomics to be sure that a possible bug in the implementation isn't
   // "hiding" itself by means of a race condition.
   std::atomic<int> last_exec(-1);
   std::atomic<bool> correct_order(true);
+  std::atomic<bool> done(false);
 
   for (int i = 0; i < 10000; ++i) {
     q_ser.submit_work([&, i] {
+      auto last_exec_val = last_exec.load();
       if (last_exec.exchange(i) != i - 1) {
         correct_order = false;
       }
+      if (i == 9999) {
+        std::lock_guard<std::mutex> lock(mt);
+        done = true;
+        cv.notify_one();
+      }
     });
   }
+
+  cv.wait(lock, [&]()->bool { return done; });
 
   EXPECT_EQ(9999, last_exec);
   EXPECT_EQ(true, correct_order);
