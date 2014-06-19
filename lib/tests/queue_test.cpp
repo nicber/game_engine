@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <iostream>
 #include "gtest/gtest.h"
 #include "thr_queue/event/cond_var.h"
 #include "thr_queue/event/mutex.h"
@@ -136,13 +137,12 @@ TEST(ThrQueue, SerQueue) {
 
   for (int i = 0; i < 10000; ++i) {
     q_ser.submit_work([&, i] {
-      auto last_exec_val = last_exec.load();
       if (last_exec.exchange(i) != i - 1) {
         correct_order = false;
       }
       if (i == 9999) {
-        std::lock_guard<std::mutex> lock(mt);
         done = true;
+        std::lock_guard<std::mutex> lock(mt);
         cv.notify_one();
       }
     });

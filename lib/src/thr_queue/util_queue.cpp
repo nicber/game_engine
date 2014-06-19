@@ -1,4 +1,5 @@
 #include <cassert>
+#include <iostream>
 #include "thr_queue/global_thr_pool.h"
 #include "thr_queue/util_queue.h"
 
@@ -25,26 +26,27 @@ queue ser_queue() {
   queue q(queue_type::serial, [comm = std::move(comm)](queue & q) {
     std::lock_guard<std::mutex> lock(comm->mt_qu);
 
+    comm->qu.append_queue({steal_work, q});
+
     if (comm->cor_sched) {
-      comm->qu.append_queue({steal_work, q});
       return;
     }
-
-    comm->cor_sched = true;
 
     queue q_ser(queue_type::serial);
 
     q_ser.submit_work([comm]() mutable {
-      std::unique_lock<event::mutex> lock_exec(comm->mt_exec);
+      std::lock_guard<event::mutex> lock_exec(comm->mt_exec);
       std::unique_lock<std::mutex> lock(comm->mt_qu);
       comm->cor_sched = false;
       auto q_work = std::move(comm->qu);
+      comm->qu = queue(queue_type::serial);
       lock.unlock();
 
       q_work.run_until_empty();
     });
 
     schedule_queue(std::move(q_ser));
+    comm->cor_sched = true;
   });
 
   return q;
