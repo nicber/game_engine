@@ -9,7 +9,7 @@ namespace event {
 template <typename L>
 class lock_unlocker {
 public:
-  lock_unlocker(std::unique_lock<L> &l) : lock(l) {}
+  lock_unlocker(L &l) : lock(l) {}
 
   ~lock_unlocker() {
     assert(lock.owns_lock());
@@ -17,7 +17,7 @@ public:
   }
 
 private:
-  std::unique_lock<L> &lock;
+  L &lock;
 };
 }
 }

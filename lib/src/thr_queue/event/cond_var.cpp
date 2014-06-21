@@ -16,8 +16,8 @@ void condition_variable::wait(std::unique_lock<mutex> &lock) {
   global_thr_pool.yield([&] {
     // running_coroutine_or_yielded from still points to this coroutine even
     // after having yielded.
-    lock_unlocker<mutex> l_unlock_co_mt(lock);
-    lock_unlocker<std::mutex> l_unlock_std_mt(lock_std);
+    lock_unlocker<std::unique_lock<mutex>> l_unlock_co_mt(lock);
+    lock_unlocker<std::unique_lock<std::mutex>> l_unlock_std_mt(lock_std);
 
     waiting_cors.emplace_back(std::move(*running_coroutine_or_yielded_from));
   });
@@ -35,6 +35,7 @@ void condition_variable::notify() {
 }
 
 condition_variable::~condition_variable() {
+  std::lock_guard<std::mutex> lock(mt);
   assert(waiting_cors.size() == 0 &&
          "coroutines can't be destroyed by the condition variable.");
 }
