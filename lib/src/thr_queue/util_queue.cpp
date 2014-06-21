@@ -1,4 +1,6 @@
 #include <cassert>
+#include "thr_queue/global_thr_pool.h"
+#include "global_thr_pool_impl.h"
 #include <iostream>
 #include "thr_queue/global_thr_pool.h"
 #include "thr_queue/util_queue.h"
@@ -37,6 +39,9 @@ queue ser_queue() {
     q_ser.submit_work([comm]() mutable {
       std::lock_guard<event::mutex> lock_exec(comm->mt_exec);
       std::unique_lock<std::mutex> lock(comm->mt_qu);
+
+      assert(comm->cor_sched);
+
       comm->cor_sched = false;
       auto q_work = std::move(comm->qu);
       comm->qu = queue(queue_type::serial);
