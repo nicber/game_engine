@@ -18,8 +18,10 @@ void worker_thread::loop() {
     while (lock_data.lock(),
            data.work_queue.size() || data.work_queue_prio.size() ||
                should_stop) {
-      if (data.waiting_threads.size() && data.waiting_threads.front() == this) {
-        data.waiting_threads.pop_front();
+      auto w_it = std::find(
+          data.waiting_threads.begin(), data.waiting_threads.end(), this);
+      if (w_it != data.waiting_threads.end()) {
+        data.waiting_threads.erase(w_it);
       }
 
       if (should_stop) {
