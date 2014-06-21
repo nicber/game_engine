@@ -125,6 +125,7 @@ TEST(ThrQueue, DefaultParQueue) {
 }
 
 TEST(ThrQueue, SerQueue) {
+  const int n_tasks = 1000000;
   auto q_ser = game_engine::thr_queue::ser_queue();
   std::mutex mt;
   std::condition_variable cv;
@@ -135,14 +136,14 @@ TEST(ThrQueue, SerQueue) {
   std::atomic<bool> correct_order(true);
   std::atomic<bool> done(false);
 
-  for (int i = 0; i < 10000; ++i) {
+  for (int i = 0; i < n_tasks; ++i) {
     q_ser.submit_work([&, i] {
       if (last_exec.exchange(i) != i - 1) {
         correct_order = false;
       }
-      if (i == 9999) {
-        done = true;
+      if (i == n_tasks - 1) {
         std::lock_guard<std::mutex> lock(mt);
+        done = true;
         cv.notify_one();
       }
     });
@@ -150,7 +151,7 @@ TEST(ThrQueue, SerQueue) {
 
   cv.wait(lock, [&]()->bool { return done; });
 
-  EXPECT_EQ(9999, last_exec);
+  EXPECT_EQ(n_tasks - 1, last_exec);
   EXPECT_EQ(true, correct_order);
 }
 
