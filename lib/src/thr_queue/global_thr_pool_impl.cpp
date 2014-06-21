@@ -48,18 +48,13 @@ void worker_thread::loop() {
       work_queue->pop_front();
       lock_data.unlock();
 
-      try {
-        running_coroutine_or_yielded_from = &cor;
-        cor.switch_to_from(*master_coroutine);
-        if (after_yield) {
-          after_yield();
-          after_yield = std::function<void()>();
-        }
-        running_coroutine_or_yielded_from = master_coroutine.get();
+      running_coroutine_or_yielded_from = &cor;
+      cor.switch_to_from(*master_coroutine);
+      if (after_yield) {
+        after_yield();
+        after_yield = std::function<void()>();
       }
-      catch (...) {
-        // TODO log something
-      }
+      running_coroutine_or_yielded_from = master_coroutine.get();
     }
     // lock_data is guaranteed to be locked now.
 
