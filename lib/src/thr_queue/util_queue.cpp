@@ -1,8 +1,6 @@
 #include <cassert>
 #include "thr_queue/global_thr_pool.h"
 #include "global_thr_pool_impl.h"
-#include <iostream>
-#include "thr_queue/global_thr_pool.h"
 #include "thr_queue/util_queue.h"
 
 namespace game_engine {

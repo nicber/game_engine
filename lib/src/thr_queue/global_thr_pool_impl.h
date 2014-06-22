@@ -30,7 +30,7 @@ public:
   ~worker_thread();
 
 private:
-  std::mutex mt;
+  friend class global_thread_pool;
   std::condition_variable cv;
   work_type_data &data;
   std::atomic<bool> should_stop;

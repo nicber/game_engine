@@ -11,13 +11,17 @@ void worker_thread::loop() {
   master_coroutine =
       std::unique_ptr<coroutine>(new coroutine(coroutine_type::master));
 
-  std::unique_lock<std::mutex> lock(mt);
-  do {
-    std::unique_lock<std::mutex> lock_data(data.mt, std::defer_lock);
+  std::unique_lock<std::mutex> lock_data(data.mt);
+  auto while_cond = [&] {
+    if (!lock_data.owns_lock()) {
+      lock_data.lock();
+    }
 
-    while (lock_data.lock(),
-           data.work_queue.size() || data.work_queue_prio.size() ||
-               should_stop) {
+    return data.work_queue.size() || data.work_queue_prio.size() || should_stop;
+  };
+
+  do {
+    while (while_cond()) {
       auto w_it = std::find(
           data.waiting_threads.begin(), data.waiting_threads.end(), this);
       if (w_it != data.waiting_threads.end()) {
@@ -25,12 +29,11 @@ void worker_thread::loop() {
       }
 
       if (should_stop) {
-        lock.unlock();
         // we inform another thread that we won't be
         // able to do our assigned
         // work.
         if (data.waiting_threads.size()) {
-          global_thr_pool.notify_one_thread(lock_data, data.waiting_threads);
+          data.waiting_threads[0]->cv.notify_one();
         }
 
         return;
@@ -58,27 +61,17 @@ void worker_thread::loop() {
     }
     // lock_data is guaranteed to be locked now.
 
+    assert(data.work_queue.size() == 0);
+    assert(data.work_queue_prio.size() == 0);
+
     data.waiting_threads.push_front(this);
-  } while (cv.wait(lock), true);
+  } while (cv.wait(lock_data), true);
   assert(should_stop);
 }
 
-bool worker_thread::try_notify_work_available() {
-  if (should_stop) {
-    return false;
-  }
-
-  std::unique_lock<std::mutex> lock(mt, std::try_to_lock);
-  if (lock) {
-    cv.notify_all();
-  }
-  return lock.owns_lock();
-}
-
 void worker_thread::tell_stop() {
-  std::lock_guard<std::mutex> lock(mt);
   should_stop = true;
-  cv.notify_all();
+  cv.notify_one();
 }
 
 worker_thread::~worker_thread() {
@@ -106,20 +99,18 @@ global_thread_pool::global_thread_pool() {
   }
 }
 
-void global_thread_pool::notify_one_thread(
-    std::unique_lock<std::mutex> &lock_data,
-    std::deque<worker_thread *> &waiting_threads) {
-  auto thrs_notif = waiting_threads;
-  lock_data.unlock(); // avoid a deadlock.
-
-  for (auto thr : thrs_notif) {
-    if (thr->try_notify_work_available()) {
-      break;
-    }
-  }
-}
-
 global_thread_pool::~global_thread_pool() {
+  std::lock_guard<std::mutex> cpu_lock(cpu_data.mt);
+  std::lock_guard<std::mutex> io_lock(io_data.mt);
+
+  cpu_data.waiting_threads.clear();
+  cpu_data.work_queue.clear();
+  cpu_data.work_queue_prio.clear();
+
+  io_data.waiting_threads.clear();
+  io_data.work_queue.clear();
+  io_data.work_queue_prio.clear();
+
   for (auto &thr : cpu_threads) {
     thr.tell_stop();
   }
@@ -168,7 +159,7 @@ void global_thread_pool::schedule(coroutine cor, bool first) {
   }
 
   if (wdata->waiting_threads.size()) {
-    notify_one_thread(lock_wdata, wdata->waiting_threads);
+    wdata->waiting_threads[0]->cv.notify_one();
   }
 
   return;
