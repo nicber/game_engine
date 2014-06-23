@@ -6,7 +6,7 @@ namespace game_engine {
 namespace thr_queue {
 template <typename F>
 coroutine::coroutine(F func, coroutine_type cor_typ)
-    : coroutine() {
+    : typ(cor_typ) {
   typ = cor_typ;
 
   using wrapped_functor =

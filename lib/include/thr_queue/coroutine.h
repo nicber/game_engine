@@ -25,31 +25,27 @@ public:
 
   ~coroutine();
 
-  std::chrono::high_resolution_clock::time_point creation_time() const;
-
   coroutine_type type() const;
 
-  void switch_to_from(coroutine& from);
+  void switch_to_from(coroutine &from);
 
   void make_current_coroutine();
 
   friend void swap(coroutine &lhs, coroutine &rhs);
 
 private:
-  coroutine();
   coroutine(coroutine_type cor_typ);
   friend class worker_thread;
 
   static size_t default_stacksize();
   static void finish_coroutine();
-private:
 
+private:
   boost::context::fcontext_t *ctx;
   std::unique_ptr<char[]> stack;
   std::unique_ptr<functor> function;
 
   coroutine_type typ;
-  std::chrono::high_resolution_clock::time_point creation_tim;
 };
 
 void set_cor_type(coroutine_type cor_typ);

@@ -32,11 +32,6 @@ coroutine::~coroutine() {
   }
 }
 
-std::chrono::high_resolution_clock::time_point
-coroutine::creation_time() const {
-  return creation_tim;
-}
-
 coroutine_type coroutine::type() const { return typ; }
 
 void coroutine::switch_to_from(coroutine &other) {
@@ -44,10 +39,8 @@ void coroutine::switch_to_from(coroutine &other) {
   boost::context::jump_fcontext(other.ctx, ctx, func_ptr);
 }
 
-coroutine::coroutine()
-    : creation_tim(std::chrono::high_resolution_clock::now()) {}
-
-coroutine::coroutine(coroutine_type cor_typ) : coroutine() {
+coroutine::coroutine(coroutine_type cor_typ) {
+  assert(cor_typ == coroutine_type::master);
   ctx = new boost::context::fcontext_t();
   typ = cor_typ;
 }
@@ -64,7 +57,6 @@ void swap(coroutine &lhs, coroutine &rhs) {
   swap(lhs.stack, rhs.stack);
   swap(lhs.function, rhs.function);
   swap(lhs.typ, rhs.typ);
-  swap(lhs.creation_tim, rhs.creation_tim);
 }
 }
 }

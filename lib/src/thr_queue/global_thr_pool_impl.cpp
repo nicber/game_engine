@@ -142,13 +142,7 @@ void global_thread_pool::schedule(coroutine cor, bool first) {
   }
 
   if (!first) {
-    auto it = std::lower_bound(wdata->work_queue.begin(),
-                               wdata->work_queue.end(),
-                               cor,
-                               [](const coroutine &lhs, const coroutine &rhs) {
-      return lhs.creation_time() < rhs.creation_time();
-    });
-    wdata->work_queue.insert(it, std::move(cor));
+    wdata->work_queue.emplace_back(std::move(cor));
   } else {
     wdata->work_queue_prio.emplace_back(std::move(cor));
   }
