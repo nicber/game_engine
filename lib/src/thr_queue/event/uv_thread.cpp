@@ -34,7 +34,7 @@ public:
 
 static uv_thread thr;
 
-void uv_thr_init(uv_async_t *async, uv_async_cb *f_ptr) {
+void uv_thr_init(uv_async_t *async, uv_async_cb f_ptr) {
   assert(thr.global_async);
 
   std::mutex mt;
@@ -59,7 +59,7 @@ void uv_thr_init(uv_async_t *async, uv_async_cb *f_ptr) {
   cv.wait(mt_lock);
 }
 
-void process_init_start_requests_or_stop(uv_async_t *, int) {
+void process_init_start_requests_or_stop(uv_async_t *) {
   if (thr.should_stop) {
     uv_stop(uv_default_loop());
     return;
