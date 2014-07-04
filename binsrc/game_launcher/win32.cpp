@@ -1,6 +1,7 @@
 #include "platform_specific.h"
 
 #include <sstream>
+#include <stdexcept>
 
 namespace game_launcher
 {
@@ -8,7 +9,7 @@ namespace game_launcher
 	{
 		find_lib_error open_library(const std::string& path, handle_t& result)
 		{
-			if (result = LoadLibrary(path.data()))
+			if ((result = LoadLibrary(path.data())))
 			{
 				return no_find_func_error;
 			}

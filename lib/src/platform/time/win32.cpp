@@ -20,12 +20,12 @@ namespace game_engine
 				return res;
 			}();
 
-			time_type from_us(long long us)
+			time_type from_us(long long us) no_except
 			{
 				return (us / 1000) * (frequency.QuadPart / 1000);
 			}
 
-			long long to_us(time_type tt)
+			long long to_us(time_type tt) no_except
 			{
 				return tt * (1000 * 1000 / frequency.QuadPart);
 			}
