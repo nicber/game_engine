@@ -8,8 +8,8 @@ worker_thread::worker_thread(work_type_data &dat)
     : data(dat), should_stop(false), thr(&worker_thread::loop, this) {}
 
 void worker_thread::loop() {
-  master_coroutine =
-      std::unique_ptr<coroutine>(new coroutine(coroutine_type::master));
+  coroutine master_cor(coroutine_type::master);
+  master_coroutine = &master_cor;
 
   std::unique_lock<std::mutex> lock_data(data.mt);
   auto while_cond = [&] {
@@ -36,7 +36,7 @@ void worker_thread::loop() {
           data.waiting_threads[0]->cv.notify_one();
         }
 
-        return;
+        goto finish;
       }
 
       std::deque<coroutine> *work_queue = nullptr;
@@ -57,7 +57,7 @@ void worker_thread::loop() {
         after_yield();
         after_yield = std::function<void()>();
       }
-      running_coroutine_or_yielded_from = master_coroutine.get();
+      running_coroutine_or_yielded_from = master_coroutine;
     }
     // lock_data is guaranteed to be locked now.
 
@@ -66,6 +66,7 @@ void worker_thread::loop() {
 
     data.waiting_threads.push_front(this);
   } while (cv.wait(lock_data), true);
+  finish:
   assert(should_stop);
 }
 
@@ -160,13 +161,13 @@ void global_thread_pool::schedule(coroutine cor, bool first) {
 }
 
 void global_thread_pool::yield() {
-  assert(running_coroutine_or_yielded_from != master_coroutine.get() &&
+  assert(running_coroutine_or_yielded_from != master_coroutine &&
          "we can't yield from the master_coroutine");
   master_coroutine->switch_to_from(*running_coroutine_or_yielded_from);
 }
 
 thread_local std::function<void()> after_yield;
-thread_local std::unique_ptr<coroutine> master_coroutine;
+thread_local coroutine* master_coroutine;
 thread_local coroutine *running_coroutine_or_yielded_from = nullptr;
 global_thread_pool global_thr_pool;
 }
