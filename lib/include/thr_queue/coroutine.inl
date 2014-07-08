@@ -19,7 +19,7 @@ coroutine::coroutine(F func, coroutine_type cor_typ)
 
   stack = std::unique_ptr<char[]>(new char[default_stacksize()]);
 
-  ctx = boost::context::make_fcontext(stack.get() + default_stacksize() - 1,
+  ctx = boost::context::make_fcontext(stack.get() + default_stacksize(),
                                       default_stacksize(),
                                       [](intptr_t ptr) {
     auto *reint_ptr = reinterpret_cast<functor *>(ptr);
