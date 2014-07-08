@@ -46,7 +46,8 @@ coroutine::coroutine(coroutine_type cor_typ) {
 }
 
 size_t coroutine::default_stacksize() {
-  return 4096; // 4 KB
+  return 4096 // 4 KB
+       * 16;  // 64 KB in total.
 }
 
 void coroutine::finish_coroutine() { global_thr_pool.yield(); }
