@@ -64,8 +64,8 @@ private:
 
 extern global_thread_pool global_thr_pool;
 
-extern thread_local std::function<void()> after_yield;
-extern thread_local coroutine* master_coroutine;
+extern thread_local std::function<void()> *after_yield;
+extern thread_local coroutine *master_coroutine;
 extern thread_local coroutine *running_coroutine_or_yielded_from;
 }
 }

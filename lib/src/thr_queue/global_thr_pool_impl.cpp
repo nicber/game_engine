@@ -9,7 +9,9 @@ worker_thread::worker_thread(work_type_data &dat)
 
 void worker_thread::loop() {
   coroutine master_cor(coroutine_type::master);
+  std::function<void()> after_yield_f;
   master_coroutine = &master_cor;
+  after_yield = &after_yield_f;
 
   std::unique_lock<std::mutex> lock_data(data.mt);
   auto while_cond = [&] {
@@ -53,9 +55,9 @@ void worker_thread::loop() {
 
       running_coroutine_or_yielded_from = &cor;
       cor.switch_to_from(*master_coroutine);
-      if (after_yield) {
-        after_yield();
-        after_yield = std::function<void()>();
+      if (*after_yield) {
+        (*after_yield)();
+        *after_yield = std::function<void()>();
       }
       running_coroutine_or_yielded_from = master_coroutine;
     }
@@ -166,8 +168,8 @@ void global_thread_pool::yield() {
   master_coroutine->switch_to_from(*running_coroutine_or_yielded_from);
 }
 
-thread_local std::function<void()> after_yield;
-thread_local coroutine* master_coroutine;
+thread_local std::function<void()> *after_yield = nullptr;
+thread_local coroutine *master_coroutine = nullptr;
 thread_local coroutine *running_coroutine_or_yielded_from = nullptr;
 global_thread_pool global_thr_pool;
 }
