@@ -1,6 +1,7 @@
 #include "global_thr_pool_impl.h"
 
 #include <algorithm>
+#include <iterator>
 
 namespace game_engine {
 namespace thr_queue {
@@ -49,17 +50,24 @@ void worker_thread::loop() {
       }
 
       assert(work_queue->size());
-      auto cor = std::move(work_queue->front());
-      work_queue->pop_front();
+	  std::deque<coroutine> work_to_do;
+	  auto number_jobs_take = work_queue->size() / 10;
+	  number_jobs_take = std::max(decltype(number_jobs_take)(1), number_jobs_take);
+	  printf("stole %d coroutines\n", number_jobs_take);
+	  auto end_iter = work_queue->begin() + number_jobs_take;
+      std::move(work_queue->begin(), end_iter, std::back_inserter(work_to_do));
+	  work_queue->erase(work_queue->begin(), end_iter);
       lock_data.unlock();
 
-      running_coroutine_or_yielded_from = &cor;
-      cor.switch_to_from(*master_coroutine);
-      if (*after_yield) {
-        (*after_yield)();
-        *after_yield = std::function<void()>();
-      }
-      running_coroutine_or_yielded_from = master_coroutine;
+	  for (auto& cor : work_to_do) {
+		running_coroutine_or_yielded_from = &cor;
+		cor.switch_to_from(*master_coroutine);
+		if (*after_yield) {
+		  (*after_yield)();
+		  *after_yield = std::function<void()>();
+		}
+		running_coroutine_or_yielded_from = master_coroutine;
+	  }
     }
     // lock_data is guaranteed to be locked now.
 
