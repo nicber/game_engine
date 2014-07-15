@@ -53,7 +53,7 @@ void worker_thread::loop() {
 	  std::deque<coroutine> work_to_do;
 	  auto number_jobs_take = work_queue->size() / 10;
 	  number_jobs_take = std::max(decltype(number_jobs_take)(1), number_jobs_take);
-	  printf("stole %d coroutines\n", number_jobs_take);
+	  //printf("stole %d coroutines\n", number_jobs_take);
 	  auto end_iter = work_queue->begin() + number_jobs_take;
       std::move(work_queue->begin(), end_iter, std::back_inserter(work_to_do));
 	  work_queue->erase(work_queue->begin(), end_iter);
@@ -131,43 +131,7 @@ global_thread_pool::~global_thread_pool() {
 }
 
 void global_thread_pool::schedule(coroutine cor, bool first) {
-  bool should_try_add = false;
-  work_type_data *wdata = nullptr;
-  std::list<worker_thread> *threads = nullptr;
-  std::mutex *thr_mt = nullptr;
-
-  if (cor.type() == coroutine_type::io) {
-    should_try_add = true;
-    wdata = &io_data;
-    threads = &io_threads;
-    thr_mt = &io_threads_mt;
-  } else {
-    wdata = &cpu_data;
-    threads = nullptr; // we never try to add more cpu threads
-  }
-
-  std::unique_lock<std::mutex> lock_wdata(wdata->mt);
-  std::unique_lock<std::mutex> lock_thr_mt;
-  if (thr_mt) {
-    lock_thr_mt = std::unique_lock<std::mutex>(*thr_mt);
-  }
-
-  if (!first) {
-    wdata->work_queue.emplace_back(std::move(cor));
-  } else {
-    wdata->work_queue_prio.emplace_back(std::move(cor));
-  }
-
-  if (should_try_add && wdata->waiting_threads.size() == 0 &&
-      threads->size() < max_io_threads) {
-    threads->emplace_back(io_data);
-  }
-
-  if (wdata->waiting_threads.size()) {
-    wdata->waiting_threads[0]->cv.notify_one();
-  }
-
-  return;
+  schedule(&cor, &cor + 1, first);
 }
 
 void global_thread_pool::yield() {

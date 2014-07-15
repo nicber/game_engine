@@ -45,6 +45,10 @@ public:
   void notify_one_thread(std::unique_lock<std::mutex> &lock_data,
                          std::deque<worker_thread *> &waiting_threads);
   void schedule(coroutine cor, bool first);
+  
+  template <typename InputIt>
+  void schedule(InputIt begin, InputIt end, bool first);
+  
   void yield();
 
   template <typename F>
