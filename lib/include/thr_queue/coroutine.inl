@@ -7,8 +7,8 @@ namespace thr_queue {
 template <typename F>
 coroutine::coroutine(F func, coroutine_type cor_typ)
     : typ(cor_typ) {
-  typ = cor_typ;
-
+  // If F is a subclass of queue::functor then we avoid wrapping it in a
+  // spec_functor that will only call it. Instead, we just move it to the heap.
   using wrapped_functor =
       typename std::conditional<std::is_base_of<functor, F>::value,
                                 F,

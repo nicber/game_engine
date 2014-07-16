@@ -9,7 +9,7 @@ worker_thread::worker_thread(work_type_data &dat)
     : data(dat), should_stop(false), thr(&worker_thread::loop, this) {}
 
 void worker_thread::loop() {
-  coroutine master_cor(coroutine_type::master);
+  coroutine master_cor;
   std::function<void()> after_yield_f;
   master_coroutine = &master_cor;
   after_yield = &after_yield_f;

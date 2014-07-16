@@ -5,14 +5,13 @@
 namespace game_engine {
 namespace thr_queue {
 
-coroutine::coroutine(coroutine &&other) : coroutine(coroutine_type::master) {
+coroutine::coroutine(coroutine &&other) : coroutine() {
   swap(*this, other);
 }
 
 coroutine &coroutine::operator=(coroutine &&rhs) {
   using std::swap;
-  coroutine temp(
-      coroutine_type::master); // make sure we don't allocate a stack.
+  coroutine temp; // make sure we don't allocate a stack.
 
   swap(temp, rhs);
   swap(temp, *this);
@@ -39,11 +38,10 @@ void coroutine::switch_to_from(coroutine &other) {
   boost::context::jump_fcontext(other.ctx, ctx, func_ptr);
 }
 
-coroutine::coroutine(coroutine_type cor_typ) {
-  assert(cor_typ == coroutine_type::master);
-  ctx = new boost::context::fcontext_t();
-  typ = cor_typ;
-}
+coroutine::coroutine() :
+  ctx(new boost::context::fcontext_t()),
+  typ(coroutine_type::master)
+{}
 
 size_t coroutine::default_stacksize() {
   return 4096 // 4 KB
@@ -58,6 +56,13 @@ void swap(coroutine &lhs, coroutine &rhs) {
   swap(lhs.stack, rhs.stack);
   swap(lhs.function, rhs.function);
   swap(lhs.typ, rhs.typ);
+}
+
+void set_cor_type(coroutine_type cor_typ) {
+	global_thr_pool.yield([ cor_typ ] {
+	  running_coroutine_or_yielded_from->typ = cor_typ;
+	  global_thr_pool.schedule(std::move(*running_coroutine_or_yielded_from), true);
+	});
 }
 }
 }

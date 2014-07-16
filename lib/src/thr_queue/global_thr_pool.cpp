@@ -17,12 +17,14 @@ static std::vector<coroutine> queue_to_vec_cor(queue q,
   std::vector<coroutine> cors;
 
   if (q.type() == queue_type::serial) {
-    assert(min == 0);
     if (cv) {
-      auto func = [ q = std::move(q), cv, mt ]() mutable {
-        q.run_until_empty();
-        std::lock_guard<event::mutex> lock(*mt);
-        cv->notify();
+      auto func = [ q = std::move(q), cv, mt, min ]() mutable {
+	    for(size_t i = 0; q.run_once(); ++i) {
+		    if (i >= min) {
+			  std::lock_guard<event::mutex> lock(*mt);
+			  cv->notify();
+			}
+		}
       };
       cors.emplace_back(std::move(func));
     } else {

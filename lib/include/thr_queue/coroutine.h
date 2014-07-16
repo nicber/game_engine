@@ -15,39 +15,58 @@ enum class coroutine_type {
   master
 };
 
+/** \brief A class that represents a coroutine.
+ * No data transfer is implemented by this class. That is the responsibility
+ * of its user.
+ */
 class coroutine {
 public:
+  /** \brief Constructs a coroutine that executes func when switched to. Its type
+   * will be cor_typ.
+   */
   template <typename F>
   coroutine(F func, coroutine_type cor_typ = coroutine_type::io);
 
   coroutine(coroutine &&other);
   coroutine &operator=(coroutine &&rhs);
-
   ~coroutine();
-
+  
+  /** \brief Returns the coroutine's type.
+   */
   coroutine_type type() const;
-
+  
+  /** \brief Switches from this coroutine to the one passed as an argument.
+   */
   void switch_to_from(coroutine &from);
-
-  void make_current_coroutine();
-
+  
   friend void swap(coroutine &lhs, coroutine &rhs);
 
 private:
-  coroutine(coroutine_type cor_typ);
+  /** \brief Constructs a master coroutine. */
+  coroutine();
   friend class worker_thread;
 
+  /** \brief Changes the coroutine's type to that passed as an argument.
+   * It to the master coroutine, changes the coroutine's type and calls
+   * schedule for it to be scheduled with maximum priority.
+   */
+  friend void set_cor_type(coroutine_type cor_typ);
+  
   static size_t default_stacksize();
   static void finish_coroutine();
 
 private:
+  /** \brief A pointer to the boost context that handles the context switching.
+   * If this is a master coroutine then it's been new'ed and needs to be
+   * deleted by the destructor. Otherwise it's stored in the topmost part of the stack
+   * and just deleting that takes care of the context.
+   */
   boost::context::fcontext_t *ctx;
   std::unique_ptr<char[]> stack;
   std::unique_ptr<functor> function;
 
   coroutine_type typ;
 };
-
 void set_cor_type(coroutine_type cor_typ);
 }
 }
