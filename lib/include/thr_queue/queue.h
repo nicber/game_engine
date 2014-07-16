@@ -32,11 +32,6 @@ enum class queue_type {
   parallel
 };
 
-enum class block {
-  yes,
-  no
-};
-
 /** \brief Tag struct for the work-stealing constructor of queue. */
 struct steal_work_t {};
 const steal_work_t steal_work;
@@ -65,6 +60,10 @@ public:
    */
   queue(queue_type ty, callback_t cb);
 
+  /** \brief Constructs a queue by stealing the work from another one.
+   * It copies the type and moves the work queue, but everything else
+   * is initialized to the default values.
+   */
   queue(steal_work_t, queue &other);
 
   queue &operator=(queue &&rhs);
@@ -106,6 +105,9 @@ public:
   queue_type type() const;
 
 private:
+  /** A subclass of the functor template that also moves the result of the
+   * stored function to the promise type when it's ran.
+   */
   template <typename F>
   struct work : functor {
     get_promise_type<F> prom;
@@ -115,6 +117,9 @@ private:
     void operator()() final override;
   };
 
+  /** \brief A utility function that is only an implementation detail.
+   * It has to be added here as a friend.
+   */
   friend std::vector<coroutine> queue_to_vec_cor(queue q,
                                                  event::condition_variable *cv,
                                                  event::mutex *mt,
