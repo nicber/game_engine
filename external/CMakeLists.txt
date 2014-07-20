@@ -1,5 +1,6 @@
 add_subdirectory(boost)
 add_subdirectory(libuv)
+add_subdirectory(sfml)
 
 if(GAME_ENGINE_BUILD_TESTS)
 	add_subdirectory(gtest)
