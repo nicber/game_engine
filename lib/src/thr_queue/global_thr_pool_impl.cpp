@@ -6,7 +6,7 @@
 namespace game_engine {
 namespace thr_queue {
 worker_thread::worker_thread(work_type_data &dat)
-    : data(dat), should_stop(false), thr(&worker_thread::loop, this) {}
+    : data(dat), should_stop(false), thr([this] { loop(); }) {}
 
 void worker_thread::loop() {
   coroutine master_cor;
