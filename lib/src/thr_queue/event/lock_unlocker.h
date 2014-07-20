@@ -1,6 +1,6 @@
 #pragma once
 
-#include <mutex>
+#include "thr_queue/thread_api.h"
 
 namespace game_engine {
 namespace thr_queue {

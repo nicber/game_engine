@@ -5,7 +5,7 @@
 
 #include <deque>
 #include <functional>
-#include <mutex>
+#include "thr_queue/thread_api.h"
 #include <vector>
 
 namespace game_engine {
@@ -126,7 +126,7 @@ private:
                                                  size_t min);
 
   friend void swap(queue &lhs, queue &rhs);
-  std::recursive_mutex queue_mut;
+  boost::recursive_mutex queue_mut;
   std::deque<std::unique_ptr<functor>> work_queue;
   queue_type typ;
   callback_t cb_added;

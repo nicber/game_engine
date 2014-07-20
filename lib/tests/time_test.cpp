@@ -5,7 +5,7 @@
 #include "world.h"
 #include "gtest/gtest.h"
 
-#include <thread>
+#include "thr_queue/thread_api.h"
 
 using namespace game_engine::logic;
 
@@ -78,6 +78,6 @@ TEST(TimeSubsystem, TimeChanges)
 	for (size_t i = 0; i < 50; ++i)
 	{
 		gam.tick();
-		std::this_thread::sleep_for(std::chrono::milliseconds(1));
+		boost::this_thread::sleep_for(boost::chrono::milliseconds(1));
 	}
 }

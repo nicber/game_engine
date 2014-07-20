@@ -14,7 +14,7 @@ void worker_thread::loop() {
   master_coroutine = &master_cor;
   after_yield = &after_yield_f;
 
-  std::unique_lock<std::mutex> lock_data(data.mt);
+  boost::unique_lock<boost::mutex> lock_data(data.mt);
   auto while_cond = [&] {
     if (!lock_data.owns_lock()) {
       lock_data.lock();
@@ -91,19 +91,19 @@ worker_thread::~worker_thread() {
 }
 
 global_thread_pool::global_thread_pool() {
-  auto hardware_concurrency = std::thread::hardware_concurrency();
+  auto hardware_concurrency = boost::thread::hardware_concurrency();
   auto c_cpu_threads = std::max(1u, hardware_concurrency - 1);
   auto c_io_threads = 1u;
 
   {
-    std::lock_guard<std::mutex> lock(io_threads_mt);
+    boost::lock_guard<boost::mutex> lock(io_threads_mt);
     for (size_t i = 0; i < c_io_threads; ++i) {
       io_threads.emplace_back(io_data);
     }
   }
 
   {
-    std::lock_guard<std::mutex> lock(cpu_threads_mt);
+    boost::lock_guard<boost::mutex> lock(cpu_threads_mt);
     for (size_t i = 0; i < c_cpu_threads; ++i) {
       cpu_threads.emplace_back(cpu_data);
     }
@@ -111,8 +111,8 @@ global_thread_pool::global_thread_pool() {
 }
 
 global_thread_pool::~global_thread_pool() {
-  std::lock_guard<std::mutex> cpu_lock(cpu_data.mt);
-  std::lock_guard<std::mutex> io_lock(io_data.mt);
+  boost::lock_guard<boost::mutex> cpu_lock(cpu_data.mt);
+  boost::lock_guard<boost::mutex> io_lock(io_data.mt);
 
   cpu_data.waiting_threads.clear();
   cpu_data.work_queue.clear();

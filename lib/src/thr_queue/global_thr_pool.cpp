@@ -21,7 +21,7 @@ static std::vector<coroutine> queue_to_vec_cor(queue q,
       auto func = [ q = std::move(q), cv, mt, min ]() mutable {
 	    for(size_t i = 0; q.run_once(); ++i) {
 		    if (i >= min) {
-			  std::lock_guard<event::mutex> lock(*mt);
+			  boost::lock_guard<event::mutex> lock(*mt);
 			  cv->notify();
 			}
 		}
@@ -42,7 +42,7 @@ static std::vector<coroutine> queue_to_vec_cor(queue q,
           (*work)();
           size_t atom_val = ++(*atomic);
           if (atom_val >= min) {
-            std::lock_guard<event::mutex> lock(*mt);
+            boost::lock_guard<event::mutex> lock(*mt);
             cv->notify();
           }
         };

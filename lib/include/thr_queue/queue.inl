@@ -24,7 +24,7 @@ get_future_type<F> queue::submit_work(F func) {
     throw std::runtime_error("invalid function passed");
   }
 
-  std::lock_guard<std::recursive_mutex> guard(queue_mut);
+  boost::lock_guard<boost::recursive_mutex> guard(queue_mut);
 
   auto work = std::unique_ptr<queue::work<F>>(
       new queue::work<F>(std::move(func), get_promise_type<F>()));

@@ -1,10 +1,8 @@
 #include <atomic>
 #include <cassert>
-#include <condition_variable>
 #include <deque>
 #include <memory>
-#include <mutex>
-#include <thread>
+#include "thr_queue/thread_api.h"
 #include "uv_thread.h"
 
 namespace game_engine {
@@ -27,9 +25,9 @@ public:
 
   std::atomic<bool> should_stop;
   std::unique_ptr<uv_async_t> global_async = nullptr;
-  std::thread thr;
+  boost::thread thr;
   std::deque<std::function<void()>> init_start_requests;
-  std::mutex init_start_requests_mt;
+  boost::mutex init_start_requests_mt;
 };
 
 static uv_thread thr;
@@ -37,19 +35,19 @@ static uv_thread thr;
 void uv_thr_init(uv_async_t *async, uv_async_cb f_ptr) {
   assert(thr.global_async);
 
-  std::mutex mt;
-  std::condition_variable cv;
-  std::lock(thr.init_start_requests_mt, mt);
-  std::unique_lock<std::mutex> mt_lock(mt, std::adopt_lock);
+  boost::mutex mt;
+  boost::condition_variable cv;
+  boost::lock(thr.init_start_requests_mt, mt);
+  boost::unique_lock<boost::mutex> mt_lock(mt, boost::adopt_lock);
 
   {
-    std::lock_guard<std::mutex> req_lock(thr.init_start_requests_mt,
-                                         std::adopt_lock);
+    boost::lock_guard<boost::mutex> req_lock(thr.init_start_requests_mt,
+                                         boost::adopt_lock);
 
     thr.init_start_requests.emplace_back([=, &mt, &cv] {
       uv_async_init(uv_default_loop(), async, f_ptr);
       // we make sure that the requesting thread has started waiting.
-      std::unique_lock<std::mutex> mt_lock(mt);
+      boost::unique_lock<boost::mutex> mt_lock(mt);
       cv.notify_all();
     });
   }
@@ -65,8 +63,8 @@ void process_init_start_requests_or_stop(uv_async_t *) {
     return;
   }
 
-  std::unique_lock<std::mutex> lock(thr.init_start_requests_mt,
-                                    std::defer_lock);
+  boost::unique_lock<boost::mutex> lock(thr.init_start_requests_mt,
+                                    boost::defer_lock);
 
   while (lock.lock(), thr.init_start_requests.size()) {
     auto q = std::move(thr.init_start_requests);

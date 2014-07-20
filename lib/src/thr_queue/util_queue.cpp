@@ -15,7 +15,7 @@ queue &default_par_queue() { return def_par_queue; }
 
 struct ser_queue_comm {
   event::mutex mt_exec;
-  std::mutex mt_qu;
+  boost::mutex mt_qu;
   queue qu = queue(queue_type::serial);
   bool cor_sched = false;
 };
@@ -24,7 +24,7 @@ queue ser_queue() {
   auto comm = std::make_shared<ser_queue_comm>();
 
   queue q(queue_type::serial, [comm = std::move(comm)](queue & q) {
-    std::lock_guard<std::mutex> lock(comm->mt_qu);
+    boost::lock_guard<boost::mutex> lock(comm->mt_qu);
 
     comm->qu.append_queue({steal_work, q});
 
@@ -35,8 +35,8 @@ queue ser_queue() {
     queue q_ser(queue_type::serial);
 
     q_ser.submit_work([comm]() mutable {
-      std::lock_guard<event::mutex> lock_exec(comm->mt_exec);
-      std::unique_lock<std::mutex> lock(comm->mt_qu);
+      boost::lock_guard<event::mutex> lock_exec(comm->mt_exec);
+      boost::unique_lock<boost::mutex> lock(comm->mt_qu);
 
       assert(comm->cor_sched);
 

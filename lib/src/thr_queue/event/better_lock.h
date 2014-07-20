@@ -1,13 +1,13 @@
 #pragma once
 
-#include <mutex>
+#include "thr_queue/thread_api.h"
 
 namespace game_engine {
 namespace thr_queue {
 namespace event {
 class better_lock {
 public:
-  better_lock(std::mutex &m, std::defer_lock_t) : mt(m) {}
+  better_lock(boost::mutex &m, boost::defer_lock_t) : mt(m) {}
 
   ~better_lock() {
     if (already_locking) {
@@ -32,7 +32,7 @@ public:
   bool owns_lock() { return already_locking; }
 
 private:
-  std::mutex &mt;
+  boost::mutex &mt;
   bool already_locking = false;
 };
 }

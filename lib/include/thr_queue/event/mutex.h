@@ -1,7 +1,7 @@
 #pragma once
 
 #include <atomic>
-#include <mutex>
+#include "thr_queue/thread_api.h"
 
 namespace game_engine {
 namespace thr_queue {
@@ -16,7 +16,7 @@ public:
   void unlock();
 
 private:
-  std::mutex mt;
+  boost::mutex mt;
   coroutine *owning_cor = nullptr;
   std::deque<coroutine> waiting_cors;
 };

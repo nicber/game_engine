@@ -16,7 +16,7 @@ void global_thread_pool::schedule(InputIt begin, InputIt end, bool first) {
   bool should_try_add = false;
   work_type_data *wdata = nullptr;
   std::list<worker_thread> *threads = nullptr;
-  std::mutex *thr_mt = nullptr;
+  boost::mutex *thr_mt = nullptr;
   
   if(end - begin == 0) {
 	return;
@@ -37,10 +37,10 @@ void global_thread_pool::schedule(InputIt begin, InputIt end, bool first) {
     threads = nullptr; // we never try to add more cpu threads
   }
 
-  std::unique_lock<std::mutex> lock_wdata(wdata->mt);
-  std::unique_lock<std::mutex> lock_thr_mt;
+  boost::unique_lock<boost::mutex> lock_wdata(wdata->mt);
+  boost::unique_lock<boost::mutex> lock_thr_mt;
   if (thr_mt) {
-    lock_thr_mt = std::unique_lock<std::mutex>(*thr_mt);
+    lock_thr_mt = boost::unique_lock<boost::mutex>(*thr_mt);
   }
 
   auto& queue_to_append_to = first ? wdata->work_queue_prio : wdata->work_queue;

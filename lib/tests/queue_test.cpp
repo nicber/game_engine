@@ -1,14 +1,15 @@
 #include <algorithm>
 #include <iostream>
 #include "gtest/gtest.h"
+#include "thr_queue/coroutine.h"
 #include "thr_queue/event/cond_var.h"
 #include "thr_queue/event/mutex.h"
 #include "thr_queue/global_thr_pool.h"
 #include "thr_queue/queue.h"
+
 #include "thr_queue/util_queue.h"
 
-#include <chrono>
-#include <thread>
+#include <boost/chrono.hpp>
 
 TEST(ThrQueue, ExecutesCode) {
   using namespace game_engine::thr_queue;
@@ -22,8 +23,8 @@ TEST(ThrQueue, ExecutesCode) {
   schedule_queue(std::move(q));
 
   // sleep to let the queue be executed.
-  std::chrono::milliseconds dura(50);
-  std::this_thread::sleep_for(dura);
+  boost::chrono::milliseconds dura(50);
+  boost::this_thread::sleep_for(dura);
 
   EXPECT_EQ(10, count);
 }
@@ -52,8 +53,8 @@ TEST(ThrQueue, ParallelQinSerial) {
 TEST(ThrQueue, SerialQinParallel) {
   using namespace game_engine::thr_queue;
   queue q_par(queue_type::parallel);
-  std::mutex mt;
-  std::condition_variable cv;
+  boost::mutex mt;
+  boost::condition_variable cv;
   std::atomic<int> count[100];
   std::vector<int> counts[100];
   std::atomic<int> done(0);
@@ -72,14 +73,14 @@ TEST(ThrQueue, SerialQinParallel) {
 
     q_ser.submit_work([&] {
       ++done;
-      std::lock_guard<std::mutex> lock(mt);
+      boost::lock_guard<boost::mutex> lock(mt);
       cv.notify_one();
     });
 
     q_par.append_queue(std::move(q_ser));
   }
 
-  std::unique_lock<std::mutex> lock(mt);
+  boost::unique_lock<boost::mutex> lock(mt);
 
   schedule_queue(std::move(q_par));
 
@@ -103,14 +104,14 @@ TEST(ThrQueue, SerialQinParallel) {
 TEST(ThrQueue, DefaultParQueue) {
   std::atomic<int> count(0);
   std::atomic<bool> done(false);
-  std::mutex mt;
-  std::condition_variable cv;
-  std::unique_lock<std::mutex> lock(mt);
+  boost::mutex mt;
+  boost::condition_variable cv;
+  boost::unique_lock<boost::mutex> lock(mt);
 
   for (size_t i = 0; i < 10000; ++i) {
     game_engine::thr_queue::default_par_queue().submit_work([&] {
       if (++count == 10000) {
-        std::lock_guard<std::mutex> lock(mt);
+        boost::lock_guard<boost::mutex> lock(mt);
         done = true;
         cv.notify_one();
       }
@@ -125,11 +126,11 @@ TEST(ThrQueue, DefaultParQueue) {
 }
 
 TEST(ThrQueue, SerQueue) {
-  const int n_tasks = 1000;
+  const int n_tasks = 1000000;
   auto q_ser = game_engine::thr_queue::ser_queue();
-  std::mutex mt;
-  std::condition_variable cv;
-  std::unique_lock<std::mutex> lock(mt);
+  boost::mutex mt;
+  boost::condition_variable cv;
+  boost::unique_lock<boost::mutex> lock(mt);
   // we use atomics to be sure that a possible bug in the implementation isn't
   // "hiding" itself by means of a race condition.
   std::atomic<int> last_exec(-1);
@@ -142,7 +143,7 @@ TEST(ThrQueue, SerQueue) {
         correct_order = false;
       }
       if (i == n_tasks - 1) {
-        std::lock_guard<std::mutex> lock(mt);
+        boost::lock_guard<boost::mutex> lock(mt);
         done = true;
         cv.notify_one();
       }
@@ -163,9 +164,9 @@ TEST(ThrQueue, LockUnlock) {
 
   e_mutex mt;
   bool done = false;
-  std::mutex cv_mt;
-  std::condition_variable cv;
-  std::unique_lock<std::mutex> lock(cv_mt);
+  boost::mutex cv_mt;
+  boost::condition_variable cv;
+  boost::unique_lock<boost::mutex> lock(cv_mt);
 
   struct {
     int a = 0;
@@ -174,7 +175,7 @@ TEST(ThrQueue, LockUnlock) {
 
   for (size_t i = 0; i < 10000; i++) {
     q_par.submit_work([&] {
-      std::lock_guard<e_mutex> lock(mt);
+      boost::lock_guard<e_mutex> lock(mt);
       test.a++;
       test.b++;
     });
@@ -183,7 +184,7 @@ TEST(ThrQueue, LockUnlock) {
   queue q_ser(queue_type::serial);
   q_ser.append_queue(std::move(q_par));
   q_ser.submit_work([&] {
-    std::lock_guard<std::mutex> lock_lamb(cv_mt);
+    boost::lock_guard<boost::mutex> lock_lamb(cv_mt);
     done = true;
     cv.notify_one();
   });
@@ -194,4 +195,42 @@ TEST(ThrQueue, LockUnlock) {
 
   EXPECT_EQ(10000, test.a);
   EXPECT_EQ(10000, test.b);
+}
+
+TEST(ThrQueue, ChangeType) {
+  using namespace game_engine::thr_queue;
+  queue q_ser(queue_type::serial);
+  queue q_par(queue_type::parallel);
+  std::atomic<bool> different_threads(true);
+  for(size_t i = 0; i < 1000; ++i) {
+    q_par.submit_work([&]{
+	  for(size_t i = 0; i < 5; ++i) {
+	    auto io_id = boost::this_thread::get_id();
+	    set_cor_type(coroutine_type::cpu);
+	    auto cpu_id = boost::this_thread::get_id();
+	    if(io_id == cpu_id) {
+	      different_threads = false;
+        }
+        set_cor_type(coroutine_type::io);
+	  }
+	});
+  }
+  
+  q_ser.append_queue(std::move(q_par));
+  
+  boost::mutex mt;
+  bool done(false);
+  boost::condition_variable cv;
+  boost::unique_lock<boost::mutex> lock(mt);
+  
+  q_ser.submit_work([&] {
+    boost::lock_guard<boost::mutex> guard(mt);
+	done = true;
+	cv.notify_one();
+  });
+  
+  schedule_queue(std::move(q_ser));
+  
+  cv.wait(lock, [&] { return done; });
+  EXPECT_EQ(true, different_threads);
 }

@@ -8,14 +8,14 @@ namespace thr_queue {
 namespace event {
 
 mutex::~mutex() {
-  std::lock_guard<std::mutex> lock(mt);
+  boost::lock_guard<boost::mutex> lock(mt);
   assert(waiting_cors.size() == 0 &&
          "coroutines would get stuck trying to lock a non-existing mutex");
   assert(owning_cor == nullptr && "can't destroy a locked mutex");
 }
 
 void mutex::lock() {
-  better_lock lock(mt, std::defer_lock);
+  better_lock lock(mt, boost::defer_lock);
 
   // we might have been scheduled by a thread that unlocked the lock, but that
   // doesn't guarantee that another thread didn't lock this lock before we had
@@ -39,7 +39,7 @@ void mutex::lock() {
 }
 
 bool mutex::try_lock() {
-  std::unique_lock<std::mutex> lock(mt);
+  boost::unique_lock<boost::mutex> lock(mt);
 
   if (owning_cor) {
     return false;
@@ -51,7 +51,7 @@ bool mutex::try_lock() {
 }
 
 void mutex::unlock() {
-  std::unique_lock<std::mutex> lock(mt);
+  boost::unique_lock<boost::mutex> lock(mt);
 
   assert(running_coroutine_or_yielded_from == owning_cor);
 
