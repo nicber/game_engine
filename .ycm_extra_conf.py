@@ -51,7 +51,8 @@ flags = [
 # relevant for c++ headers.
 # For a C project, you would set this to 'c' instead of 'c++'.
 '-x',
-'c++'
+'c++',
+'-I /usr/home/nicolas/sfml/include'
 ]
 
 
@@ -61,7 +62,7 @@ flags = [
 #
 # Most projects will NOT need to set this to anything; you can just change the
 # 'flags' list of compilation flags. Notice that YCM itself uses that approach.
-compilation_database_folder = 'build'
+compilation_database_folder = '~/GameEngineBuild'
 
 if os.path.exists( compilation_database_folder ):
   database = ycm_core.CompilationDatabase( compilation_database_folder )

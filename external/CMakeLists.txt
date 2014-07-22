@@ -1,4 +1,5 @@
 add_subdirectory(boost)
+add_subdirectory(glew)
 add_subdirectory(libuv)
 add_subdirectory(sfml)
 
