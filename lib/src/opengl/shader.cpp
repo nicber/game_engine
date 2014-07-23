@@ -13,7 +13,7 @@ shader_error::shader_error(std::string error_log, std::string source,
   std::move(std::begin(deps), std::end(deps), std::back_inserter(sources));
 }
 
-shader::shader(shader_type s_type, const std::string &s_source,
+shader_data::shader_data(shader_type s_type, const std::string &s_source,
                std::initializer_list<std::string> deps):
   type(s_type)
   {
@@ -53,22 +53,22 @@ shader::shader(shader_type s_type, const std::string &s_source,
   }
 }
 
-shader::shader(shader&& other) {
+shader_data::shader_data(shader_data&& other) {
   using std::swap;
   swap(type, other.type);
   swap(shader_id, other.shader_id);
 }
 
-shader& shader::operator=(shader&& other) {
+shader_data& shader_data::operator=(shader_data&& other) {
   using std::swap;
-  shader temp;
+  shader_data temp;
   swap(*this, temp);
   swap(*this, other);
 
   return *this;
 }
 
-shader::~shader() {
+shader_data::~shader_data() {
   glDeleteShader(shader_id);
 }
 }

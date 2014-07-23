@@ -1,5 +1,6 @@
 #pragma once
 
+#include <boost/flyweight.hpp>
 #include <GL/glew.h>
 #include <initializer_list>
 #include <stdexcept>
@@ -25,26 +26,28 @@ enum class shader_type : GLenum {
 };
 
 
-class shader {
+class shader_data {
 public:
-  shader(shader_type s_type, const std::string &source,
+  shader_data(shader_type s_type, const std::string &source,
          std::initializer_list<std::string> deps);
 
-  shader(shader&& other);
-  shader& operator=(shader&& other);
-  ~shader();
+  shader_data(shader_data&& other);
+  shader_data& operator=(shader_data&& other);
+  ~shader_data();
   
 private:
-  shader();
+  shader_data();
 
 private:
   shader_type type;
   GLuint shader_id = 0;
 
-  friend void swap(shader& lhs, shader& rhs);
-  friend class program;
+  friend void swap(shader_data& lhs, shader_data& rhs);
+  friend class program_data;
 };
 
-void swap(shader& lhs, shader& rhs);
+void swap(shader_data& lhs, shader_data& rhs);
+
+using shader = boost::flyweight<shader_data>;
 }
 }
