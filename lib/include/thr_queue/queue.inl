@@ -61,7 +61,7 @@ void queue::work<F>::operator()() {
                                                                      prom);
   }
   catch (...) {
-    prom.set_exception(std::current_exception());
+    prom.set_exception(boost::current_exception());
   }
 }
 
