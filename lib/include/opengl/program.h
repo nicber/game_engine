@@ -32,11 +32,44 @@ public:
                std::initializer_list<attrib_pair> attribs,
                std::initializer_list<frag_data_loc> frag_data);
 
+  program_data(program_data&& other);
+  program_data &operator=(program_data&& other);
+
+  ~program_data();
+
+  bool has_vertex_attr(const std::string &name) const;
+  vertex_attr &get_vertex_attr(const std::string &name) const;
+
+  bool has_uniform(const std::string &name) const;
+  uniform &get_uniform(const std::string &name) const;
+
+  bool has_frag_loc(const std::string &name) const;
+  frag_loc &get_frag_loc(const std::string &name) const;
+  
 private:
-  GLuint program_id; 
-  std::unordered_map<std::string, uniform> uniforms;
-  std::unordered_map<std::string, vertex_attr> vertex_attrs;
-  std::unordered_map<std::string, frag_loc> frag_locs;
+  program_data();
+  
+  template <typename T>
+  using unor_map = std::unordered_map<std::string, T>;
+
+  template <typename T>
+  using unor_map_i = typename unor_map<T>::iterator;
+
+  unor_map_i<uniform> find_uniform(const std::string &name) const;
+  unor_map_i<vertex_attr> find_vertex_attr(const std::string &name) const;
+  unor_map_i<frag_loc> find_frag_loc(const std::string &name) const;
+
+private:
+  GLuint program_id = 0; 
+  mutable unor_map<uniform> uniforms;
+  mutable unor_map<vertex_attr> vertex_attrs;
+  mutable unor_map<frag_loc> frag_locs;
+
+  friend void swap(program_data &lhs, program_data &rhs);
 };
+
+void swap(program_data &lhs, program_data &rhs);
+
+using program = boost::flyweight<program_data>;
 }
 }

@@ -10,7 +10,7 @@ program_data::program_data(const shader &s1,
                            std::initializer_list<shader> shaders,
                            std::initializer_list<attrib_pair> attribs,
                            std::initializer_list<frag_data_loc> frag_data)
-  {/*
+  {
   size_t vertex_count = 0;
   size_t fragment_count = 0;
 
@@ -86,7 +86,93 @@ program_data::program_data(const shader &s1,
   glDetachShader(program_id, s2.get().shader_id);
   for (auto& s : shaders) {
     glDetachShader(program_id, s.get().shader_id);
-  }*/
+  }
+}
+
+program_data::program_data(program_data&& other) {
+  using std::swap;
+  program_data temp;
+  swap(*this, temp);
+  swap(*this, other);
+}
+
+program_data &program_data::operator=(program_data&& other) {
+  using std::swap;
+  program_data temp;
+  swap(*this, temp);
+  swap(*this, other);
+
+  return *this;
+}
+
+program_data::~program_data() {
+  glDeleteProgram(program_id);
+}
+
+program_data::program_data() {
+}
+
+bool program_data::has_vertex_attr(const std::string &name) const {
+  auto it = find_vertex_attr(name);
+  return it == vertex_attrs.end();
+}
+
+vertex_attr &program_data::get_vertex_attr(const std::string &name) const {
+  auto it = find_vertex_attr(name);
+  return it->second;
+}
+
+bool program_data::has_uniform(const std::string &name) const {
+  auto it = find_uniform(name);
+  return it == uniforms.end();
+}
+
+uniform &program_data::get_uniform(const std::string &name) const {
+  auto it = find_uniform(name);
+  return it->second;
+}
+
+bool program_data::has_frag_loc(const std::string &name) const {
+  auto it = find_frag_loc(name);
+  return it == frag_locs.end();
+}
+
+frag_loc &program_data::get_frag_loc(const std::string &name) const {
+  auto it = find_frag_loc(name);
+  return it->second;
+}
+
+template <typename C, typename F>
+typename C::iterator find_generic(GLuint program_id, const std::string &name, C &cont, F func) {
+  auto it = cont.find(name);
+
+  if (it != cont.end()) {
+    return it;
+  } else {
+    auto loc = func(program_id, name.c_str());
+	if (loc == -1) {
+      return cont.end();
+	} else {
+      auto ret = cont.emplace(name, loc);
+	  assert(ret.second && "cont was supposed not to have name as a key");
+	  return ret.first;
+	}
+  }
+}
+
+template <typename T>
+using prg_unor_map_i = typename program_data::unor_map_i<T>;
+
+prg_unor_map_i<uniform> program_data::find_uniform(const std::string &name) const{
+  return find_generic(program_id, name, uniforms, glGetUniformLocation);
+}
+
+prg_unor_map_i<vertex_attr> program_data::find_vertex_attr(const std::string &name) const {
+  return find_generic(program_id, name, vertex_attrs, glGetAttribLocation);
+}
+
+prg_unor_map_i<frag_loc> program_data::find_frag_loc(const std::string &name) const {
+  return find_generic(program_id, name, frag_locs, glGetFragDataLocation);
 }
 }
 }

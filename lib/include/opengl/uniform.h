@@ -6,10 +6,10 @@ namespace game_engine {
 namespace opengl {
 class uniform {
 public:
-  uniform(GLuint loc);
+  uniform(GLint loc);
 
 private:
-  GLuint uniform_loc;
+  GLint uniform_loc;
 };
 }
 }

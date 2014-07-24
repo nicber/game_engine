@@ -6,10 +6,10 @@ namespace game_engine {
 namespace opengl {
 class frag_loc {
 public:
-  frag_loc(GLuint loc);
+  frag_loc(GLint loc);
 
 private:
-  GLuint f_data_loc;
+  GLint f_data_loc;
 };
 }
 }

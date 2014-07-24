@@ -6,10 +6,10 @@ namespace game_engine {
 namespace opengl {
 class vertex_attr {
 public:
-  vertex_attr(GLuint loc);
+  vertex_attr(GLint loc);
 
 private:
-  GLuint attr_bind_loc;
+  GLint attr_bind_loc;
 };
 }
 }
