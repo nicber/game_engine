@@ -75,6 +75,9 @@ namespace game_engine
 			after_finish_tick();
 		}
 
+    subsystem::subsystem()
+    {}
+
 		subsystem::~subsystem()
 		{
 			for (auto& comp_type_and_vector : reg_components)

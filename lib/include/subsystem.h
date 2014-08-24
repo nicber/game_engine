@@ -73,6 +73,16 @@ namespace game_engine
 			 */
 			bool try_remove_component(component& comp);
 		public:
+      /** \brief Default constructor. */
+      subsystem();
+
+      /** \brief Subsystems shouldn't be copyable or movable. */
+      subsystem(subsystem&) = delete;
+      subsystem(subsystem&&) = delete;
+
+      subsystem &operator=(subsystem&) = delete;
+      subsystem &operator=(subsystem&&) = delete;
+
 			/** \brief Adds an component to the subsystem.
 			 * It calls accepts() to see if the component can be added.
 			 * If it was accepted then it calls after_addition().
