@@ -3,5 +3,5 @@
 int main()
 {
 	using namespace game_launcher;
-	library lib("game.dll");
+	library lib("game");
 }

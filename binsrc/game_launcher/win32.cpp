@@ -9,7 +9,7 @@ namespace game_launcher
 	{
 		find_lib_error open_library(const std::string& path, handle_t& result)
 		{
-			if ((result = LoadLibrary(path.data())))
+			if ((result = LoadLibrary((path + ".dll").data())))
 			{
 				return no_find_func_error;
 			}
