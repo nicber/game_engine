@@ -36,7 +36,7 @@ namespace game_launcher
 		{
 			detail::function_handle_t func;
 			detail::get_function(func_name, handle, func);
-			return{ func };
+			return{ reinterpret_cast<Function*>(func) };
 		}
 	};
 }

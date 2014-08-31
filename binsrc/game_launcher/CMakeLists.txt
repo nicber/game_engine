@@ -11,4 +11,4 @@ if(UNIX)
 endif()
 
 add_executable(game_launcher main.cpp load_library.cpp ${PLATFORM_SOURCE})
-target_link_libraries(game_launcher ${PLATFORM_LIBRARY})
+target_link_libraries(game_launcher ${PLATFORM_LIBRARY} ${GAME_ENGINE_DEP_LIBS} game_engine)

@@ -6,15 +6,13 @@ namespace game_engine {
 namespace logic {
 namespace subsystems {
 namespace render {
-render_subsystem::render_subsystem(std::atomic<bool> &exit_flag)
- : window_thr([this, &exit_flag] { window_loop(exit_flag); })
+render_subsystem::render_subsystem()
 {}
 
-render_subsystem::~render_subsystem() {
-  window_thr.join();
-}
+render_subsystem::~render_subsystem()
+{}
 
-void render_subsystem::window_loop(std::atomic<bool> &exit_flag) {
+void render_subsystem::handle_events() {
   sf::Window window(sf::VideoMode(800, 600), "My window");
   glewInit();
 
@@ -22,12 +20,15 @@ void render_subsystem::window_loop(std::atomic<bool> &exit_flag) {
     sf::Event event;
     while (window.pollEvent(event)) {
       if (event.type == sf::Event::Closed) {
-        exit_flag = true;
         window.close();
+				return;
       }
     }
   }
 }
+
+void render_subsystem::update_all()
+{}
 }
 }
 }

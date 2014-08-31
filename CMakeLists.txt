@@ -2,8 +2,6 @@ project(GameEngine)
 
 cmake_minimum_required(VERSION 2.8)
 
-set(GAME_ENGINE_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
-
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
@@ -40,6 +38,9 @@ if(GAME_ENGINE_BUILD_DOCS)
 	add_subdirectory(docs)
 endif()
 
+set(GAME_ENGINE_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
+set(GAME_ENGINE_INCLUDE ${GAME_ENGINE_INCLUDE} "${GAME_ENGINE_ROOT}/lib/include")
+include_directories(${GAME_ENGINE_INCLUDE})
 # Binaries
 
 add_subdirectory(binsrc)

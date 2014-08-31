@@ -20,16 +20,12 @@ namespace game_engine
 				class render_subsystem : public util::specialized_subsystem<render_component>
 				{
 				public:
-          render_subsystem(std::atomic<bool> &exit_flag);
+          render_subsystem();
           ~render_subsystem();
-
+					
+					void handle_events();
+					
 					virtual void update_all() override final;
-
-        private:
-          void window_loop(std::atomic<bool> &exit_flag);
-
-        private:
-          boost::thread window_thr;
 				};
 			}
 		}
