@@ -45,3 +45,4 @@ include_directories(${GAME_ENGINE_INCLUDE})
 
 add_subdirectory(binsrc)
 add_subdirectory(lib)
+add_subdirectory(test_client)

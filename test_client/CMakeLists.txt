@@ -1,0 +1,1 @@
+add_library(game SHARED test.cpp)
