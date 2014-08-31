@@ -10,7 +10,7 @@ namespace game_launcher
 	{
 		find_lib_error open_library(const std::string& path, handle_t& result)
 		{
-			if ((result = dlopen(("lib" + path + ".so").c_str(), RTLD_NOW)))
+			if ((result = dlopen(("./lib" + path + ".so").c_str(), RTLD_LAZY)))
 			{
 				return no_find_func_error;
 			}
@@ -24,7 +24,7 @@ namespace game_launcher
 
 		void release_library(const handle_t& handle)
 		{
-			if (!dlclose(handle))
+			if (dlclose(handle) != 0)
 			{
 				std::stringstream ss;
 				ss << "Unknown error when releasing library: " << dlerror();
