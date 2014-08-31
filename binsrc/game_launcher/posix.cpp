@@ -10,7 +10,7 @@ namespace game_launcher
 	{
 		find_lib_error open_library(const std::string& path, handle_t& result)
 		{
-			if ((result = dlopen((path + ".so").data(), RTLD_NOW)))
+			if ((result = dlopen(("lib" + path + ".so").c_str(), RTLD_NOW)))
 			{
 				return no_find_func_error;
 			}

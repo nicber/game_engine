@@ -18,4 +18,6 @@ int main()
   
   auto &render_subs = gam.get<subsystems::render::render_subsystem>();
   render_subs.handle_events();
+	
+	game_thread.join();
 }
