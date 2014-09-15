@@ -1,7 +1,7 @@
 #pragma once
 
-#include "boost/operators.hpp"
 #include "component.h"
+#include "subsystems/render/drawer.h"
 
 namespace game_engine
 {
@@ -14,11 +14,9 @@ namespace game_engine
 				/** \brief Class that can draw itself. */
 				class render_component
           : public logic::component
-          , public boost::totally_ordered<render_component>
 				{
 				public:
-          bool operator<(render_component &rhs) const;
-          bool operator==(render_component &rhs) const;
+          drawer create_drawer();
 				};
 			}
 		}

@@ -26,6 +26,11 @@ namespace game_engine
 					void handle_events();
 					
 					virtual void update_all() override final;
+          
+        private:
+          std::atomic<bool> update_thread_waiting;
+          boost::mutex mt;
+          boost::condition_variable cv;
 				};
 			}
 		}
