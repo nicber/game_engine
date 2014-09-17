@@ -141,6 +141,8 @@ private:
   void create_buffer(size_t size, GLenum flags);
 
 private:
+  friend class vertex_array_object;
+  
   template <typename U>
   friend void swap(buffer<U> &lhs, buffer<U> &rhs);
 

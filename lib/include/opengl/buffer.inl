@@ -1,4 +1,7 @@
+#pragma once
+
 #include "opengl/buffer.h"
+#include <stdexcept>
 
 namespace game_engine {
 namespace opengl {
