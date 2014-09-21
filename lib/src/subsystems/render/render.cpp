@@ -14,18 +14,17 @@ render_subsystem::render_subsystem()
 render_subsystem::~render_subsystem()
 {}
 
-/** \brief This member function 
+/** \brief This member function
  */
 void render_subsystem::handle_events() {
   const boost::chrono::milliseconds wait_time(5);
-  
+
   sf::Window window(sf::VideoMode(800, 600), "My window");
   glewInit();
-  
+
   time last_update_time = read_absolute_time();
   unsigned long long time_since_last_update = 0;
-  std::vector<drawer> drawers;
-  
+
   while (window.isOpen()) {
     {
       boost::unique_lock<boost::mutex> lock(mt);
@@ -34,7 +33,7 @@ void render_subsystem::handle_events() {
           return (bool) update_thread_waiting;
         });
       }
-      
+
       if (update_drawers_if_nec()) {
         last_update_time = read_absolute_time();
         time_since_last_update = 0;
@@ -42,10 +41,10 @@ void render_subsystem::handle_events() {
         time_since_last_update = read_absolute_time().to(time::type::usec)
                                 - last_update_time.to(time::type::usec);
       }
-      
+
       sf::Event event;
       window.pollEvent(event);
-      
+
       if (event.type == sf::Event::Closed) {
         window.close();
         exited = true;
@@ -54,15 +53,15 @@ void render_subsystem::handle_events() {
         return;
       }
     } // unlock the lock.
-    
+
     for (auto& drawer : drawers) {
-      drawer.draw(time_since_last_update);
+      drawer->draw(time_since_last_update);
     }
   }
 }
 
 bool render_subsystem::has_exited() const {
-  return exited;  
+  return exited;
 }
 
 void render_subsystem::update_all() {
@@ -84,12 +83,12 @@ bool render_subsystem::update_drawers_if_nec() {
       auto& vector_of_components = components_of_a_type.second;
       for (auto comp : vector_of_components) {
         auto drawer = static_cast<render_component*>(comp)->create_drawer();
-        if (!drawers.size() || !drawers.back().try_combine_with(drawer)) {
+        if (!drawers.size() || !drawers.back()->try_combine_with(*drawer)) {
           drawers.emplace_back(std::move(drawer));
         }
       }
     }
-    
+
     update_thread_waiting = false;
     cv.notify_one();
     return true;

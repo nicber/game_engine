@@ -1,6 +1,7 @@
 #pragma once
 
 #include "component.h"
+#include <memory>
 #include "subsystems/render/drawer.h"
 
 namespace game_engine
@@ -16,7 +17,7 @@ namespace game_engine
           : public logic::component
 				{
 				public:
-          drawer create_drawer();
+          virtual std::unique_ptr<drawer> create_drawer() = 0;
 				};
 			}
 		}

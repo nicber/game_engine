@@ -6,8 +6,8 @@ namespace subsystems {
 namespace render {
 class drawer {
 public:
-  void draw(unsigned long long delta);
-  bool try_combine_with(drawer &other);
+  virtual void draw(unsigned long long delta) = 0;
+  virtual bool try_combine_with(drawer &other) = 0;
 };
 }
 }
