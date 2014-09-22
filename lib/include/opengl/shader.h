@@ -26,28 +26,23 @@ enum class shader_type : GLenum {
 };
 
 
-class shader_data {
+class shader {
 public:
-  shader_data(shader_type s_type, const std::string &source,
+  shader(shader_type s_type, const std::string &source,
          std::initializer_list<std::string> deps);
 
-  shader_data(shader_data&& other);
-  shader_data& operator=(shader_data&& other);
-  ~shader_data();
-  
+  shader(shader&& other);
+  shader& operator=(shader&& other);
+  ~shader();
+
 private:
-  shader_data();
+  shader();
 
 private:
   shader_type type;
   GLuint shader_id = 0;
 
-  friend void swap(shader_data& lhs, shader_data& rhs);
-  friend class program_data;
+  friend class program;
 };
-
-void swap(shader_data& lhs, shader_data& rhs);
-
-using shader = boost::flyweight<shader_data>;
 }
 }

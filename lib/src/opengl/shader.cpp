@@ -13,7 +13,7 @@ shader_error::shader_error(std::string error_log, std::string source,
   std::move(std::begin(deps), std::end(deps), std::back_inserter(sources));
 }
 
-shader_data::shader_data(shader_type s_type, const std::string &s_source,
+shader::shader(shader_type s_type, const std::string &s_source,
                std::initializer_list<std::string> deps):
   type(s_type)
   {
@@ -22,18 +22,18 @@ shader_data::shader_data(shader_type s_type, const std::string &s_source,
 
   std::transform(std::begin(deps), std::end(deps), std::back_inserter(starts),
     [] (const std::string& str) { return str.c_str(); } );
-  
+
   starts.emplace_back(s_source.c_str());
 
   shader_id = glCreateShader(static_cast<GLenum>(type));
   if (shader_id == 0) {
-    throw std::runtime_error("error creating shader");      
+    throw std::runtime_error("error creating shader");
   }
 
   glShaderSource(shader_id, 1 + deps.size(),
                  starts.data(),
                  nullptr);
-  
+
   glCompileShader(shader_id);
 
   GLint compilation_res;
@@ -53,22 +53,25 @@ shader_data::shader_data(shader_type s_type, const std::string &s_source,
   }
 }
 
-shader_data::shader_data(shader_data&& other) {
+shader::shader()
+{}
+
+shader::shader(shader&& other) {
   using std::swap;
   swap(type, other.type);
   swap(shader_id, other.shader_id);
 }
 
-shader_data& shader_data::operator=(shader_data&& other) {
+shader& shader::operator=(shader&& other) {
   using std::swap;
-  shader_data temp;
+  shader temp;
   swap(*this, temp);
   swap(*this, other);
 
   return *this;
 }
 
-shader_data::~shader_data() {
+shader::~shader() {
   glDeleteShader(shader_id);
 }
 }

@@ -1,15 +1,10 @@
 #pragma once
 
+#include <boost/strong_typedef.hpp>
 #include <GL/glew.h>
 
 namespace game_engine {
 namespace opengl {
-class frag_loc {
-public:
-  frag_loc(GLint loc);
-
-private:
-  GLint f_data_loc;
-};
+BOOST_STRONG_TYPEDEF(GLint, frag_loc);
 }
 }
