@@ -21,11 +21,12 @@ void render_subsystem::handle_events() {
 
   sf::Window window(sf::VideoMode(800, 600), "My window");
   glewInit();
+  glViewport(0, 0, 800, 600);
 
   time last_update_time = read_absolute_time();
   unsigned long long time_since_last_update = 0;
 
-  while (window.isOpen()) {
+  while (true) {
     {
       boost::unique_lock<boost::mutex> lock(mt);
       if (!update_thread_waiting) {
@@ -51,12 +52,18 @@ void render_subsystem::handle_events() {
         update_thread_waiting = false;
         cv.notify_one();
         return;
+      } else if (event.type == sf::Event::Resized) {
+        glViewport(0, 0, event.size.width, event.size.height);
       }
     } // unlock the lock.
 
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+   
     for (auto& drawer : drawers) {
       drawer->draw(time_since_last_update);
     }
+
+    window.display();
   }
 }
 
