@@ -12,7 +12,7 @@ class vertex_array_object {
   public:
   vertex_array_object();
   ~vertex_array_object();
-  
+
   /** \brief Binds a buffer to an vertex attribute index.
    * \param F C++ type of the elements.
    * \param I number of elements in the vector passed to the program.
@@ -21,9 +21,9 @@ class vertex_array_object {
    */
   template <typename T, typename F, unsigned I>
   void bind_buffer_to_attrib(const buffer<T> &buff, size_t stride, size_t offset, vertex_attr attr);
-  
-  void bind();
-  
+
+  void bind() const;
+
   private:
    GLuint vao_id;
 };

@@ -25,18 +25,18 @@ void vertex_array_object::bind_buffer_to_attrib(const buffer<T> &buff, size_t st
                                  "attributes or 0-sized ones");
   bind();
   glBindBuffer(GL_ARRAY_BUFFER, buff.buffer_id);
-  
+
   auto type_constant = detail::get_constant<F>();
-  
+
   auto real_offset = offset * sizeof(T);
   if (offset != 0) {
     real_offset += stride % offset;
   }
-  
-  glVertexAttribPointer(attr.attr_bind_loc, I, type_constant, false,
-                        stride, real_offset);
-                        
-  glEnableVertexAttribArray(attr.attr_bind_loc);
+
+  glVertexAttribPointer(attr, I, type_constant, false,
+                        stride, reinterpret_cast<GLvoid*>(real_offset));
+
+  glEnableVertexAttribArray(attr);
 }
 }
 }
