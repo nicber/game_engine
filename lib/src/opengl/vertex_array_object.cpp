@@ -2,6 +2,17 @@
 
 namespace game_engine {
 namespace opengl {
+namespace detail {
+#define GET_CONSTANT(type, constant) \
+template <> \
+GLenum get_constant<type>() { \
+  return constant; \
+}
+
+GET_CONSTANT(float, GL_FLOAT);
+
+#undef GET_CONSTANT
+}
 vertex_array_object::vertex_array_object() {
   glGenVertexArrays(1, &vao_id);
 }

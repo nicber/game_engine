@@ -5,11 +5,14 @@
 #include <tuple>
 
 namespace game_engine {
+namespace render {
+class mesh;
+}
 namespace opengl {
 /** \brief Class for working with a vertex array object.
  */
 class vertex_array_object {
-  public:
+public:
   vertex_array_object();
   ~vertex_array_object();
 
@@ -24,8 +27,9 @@ class vertex_array_object {
 
   void bind() const;
 
-  private:
-   GLuint vao_id;
+private:
+  friend class render::mesh;
+  GLuint vao_id;
 };
 }
 }

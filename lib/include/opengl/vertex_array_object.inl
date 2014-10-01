@@ -7,16 +7,6 @@ namespace opengl {
 namespace detail {
 template <typename T>
 GLenum get_constant();
-
-#define GET_CONSTANT(type, constant) \
-template <> \
-GLenum get_constant<type>() { \
-  return constant; \
-}
-
-GET_CONSTANT(float, GL_FLOAT);
-
-#undef GET_CONSTANT
 }
 
 template <typename T, typename F, unsigned I>
