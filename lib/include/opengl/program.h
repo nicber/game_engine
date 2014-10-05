@@ -65,11 +65,11 @@ private:
 
 private:
   friend class render::mesh;
+  friend void swap(program &lhs, program &rhs);
   GLuint program_id = 0;
   mutable unor_map<uniform> uniforms;
   mutable unor_map<vertex_attr> vertex_attrs;
   mutable unor_map<frag_loc> frag_locs;
-
 };
 }
 }
