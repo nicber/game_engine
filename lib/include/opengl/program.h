@@ -10,6 +10,9 @@
 #include <unordered_map>
 
 namespace game_engine {
+namespace render {
+class mesh;
+}
 namespace opengl {
 using attrib_pair = std::tuple<std::string, GLuint>;
 using frag_data_loc = std::tuple<std::string, GLuint>;
@@ -61,11 +64,12 @@ private:
   unor_map_i<frag_loc> find_frag_loc(const std::string &name) const;
 
 private:
+  friend class render::mesh;
+  friend void swap(program &lhs, program &rhs);
   GLuint program_id = 0;
   mutable unor_map<uniform> uniforms;
   mutable unor_map<vertex_attr> vertex_attrs;
   mutable unor_map<frag_loc> frag_locs;
-
 };
 }
 }

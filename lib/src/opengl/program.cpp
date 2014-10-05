@@ -114,6 +114,14 @@ program &program::operator=(program&& other) {
   return *this;
 }
 
+void swap(program &lhs, program &rhs) {
+  using std::swap;
+  swap(lhs.program_id, rhs.program_id);
+  swap(lhs.uniforms, rhs.uniforms);
+  swap(lhs.vertex_attrs, rhs.vertex_attrs);
+  swap(lhs.frag_locs, rhs.frag_locs);
+}
+
 program::~program() {
   glDeleteProgram(program_id);
 }

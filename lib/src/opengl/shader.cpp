@@ -71,6 +71,12 @@ shader& shader::operator=(shader&& other) {
   return *this;
 }
 
+void swap(shader &lhs, shader &rhs) {
+  using std::swap;
+  swap(lhs.type, rhs.type);
+  swap(lhs.shader_id, rhs.shader_id);
+}
+
 shader::~shader() {
   glDeleteShader(shader_id);
 }

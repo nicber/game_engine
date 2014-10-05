@@ -43,6 +43,7 @@ private:
   GLuint shader_id = 0;
 
   friend class program;
+  friend void swap(shader &lhs, shader &rhs);
 };
 }
 }
