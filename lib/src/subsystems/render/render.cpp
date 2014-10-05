@@ -23,6 +23,8 @@ void render_subsystem::handle_events() {
   glewInit();
   glViewport(0, 0, 800, 600);
 
+  std::cout << "GL Info: " << glGetString(GL_VERSION) << std::endl;
+
   time last_update_time = read_absolute_time();
   unsigned long long time_since_last_update = 0;
 
@@ -58,9 +60,14 @@ void render_subsystem::handle_events() {
     } // unlock the lock.
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-   
-    for (auto& drawer : drawers) {
-      drawer->draw(time_since_last_update);
+
+    for(auto m_it = meshes.begin(); m_it != meshes.end();) {
+      if (m_it->unique()) {
+        m_it = meshes.erase(m_it);
+      } else {
+        (*m_it)->draw(time_since_last_update);
+        ++m_it;
+      }
     }
 
     window.display();
@@ -85,13 +92,16 @@ void render_subsystem::update_all() {
 bool render_subsystem::update_drawers_if_nec() {
   // Assumes that the mt mutex is locked by the calling thread.
   if (update_thread_waiting) {
-    drawers.clear();
     for (auto& components_of_a_type : reg_components) {
       auto& vector_of_components = components_of_a_type.second;
       for (auto comp : vector_of_components) {
         auto drawer = static_cast<render_component*>(comp)->create_drawer();
-        if (!drawers.size() || !drawers.back()->try_combine_with(*drawer)) {
-          drawers.emplace_back(std::move(drawer));
+        auto d_meshes_its = drawer->get_meshes();
+        for (auto it = d_meshes_its.first; it != d_meshes_its.second; ++it) {
+          auto lower_bound = meshes.lower_bound(*it);
+          if (*lower_bound != *it) {
+            meshes.emplace_hint(lower_bound, *it);
+          }
         }
       }
     }

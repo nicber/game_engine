@@ -1,13 +1,20 @@
 #pragma once
 
+#include "render/mesh.h"
+
 namespace game_engine {
 namespace logic {
 namespace subsystems {
 namespace render {
 class drawer {
 public:
-  virtual void draw(unsigned long long delta) = 0;
-  virtual bool try_combine_with(drawer &other) = 0;
+  drawer();
+  drawer& operator+=(std::shared_ptr<const game_engine::render::mesh> m);
+
+  using const_it = std::vector<std::shared_ptr<const game_engine::render::mesh>>::const_iterator;
+  std::pair<const_it, const_it> get_meshes() const;
+private:
+  std::vector<std::shared_ptr<const game_engine::render::mesh>> meshes;
 };
 }
 }

@@ -1,7 +1,9 @@
 #pragma once
 
 #include <atomic>
+#include "render/mesh.h"
 #include "spec_subsystem.h"
+#include <set>
 #include "subsystems/render/render_component.h"
 #include "thr_queue/thread_api.h"
 
@@ -52,7 +54,7 @@ namespace game_engine
         private:
           std::atomic<bool> exited {false};
           std::atomic<bool> update_thread_waiting;
-          std::vector<std::unique_ptr<drawer>> drawers;
+          std::multiset<std::shared_ptr<const game_engine::render::mesh>> meshes;
           boost::mutex mt;
           boost::condition_variable cv;
 				};
