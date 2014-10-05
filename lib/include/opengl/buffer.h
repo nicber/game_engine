@@ -25,16 +25,21 @@ enum class buf_kind_access {
   read_gl_write_gl
 };
 
+/** \brief Base class for buffers.
+ */
+class buffer_base {
+};
+
 /** \brief Template that represents a GL buffer that stores data of type T.
  */
 template <typename T>
-class buffer {
+class buffer : public buffer_base {
   public:
     class buffer_accessor;
 
   private:
     class buffer_iterator_base {
-    public:  
+    public:
       buffer_iterator_base(buffer& buf, std::ptrdiff_t offs);
 
       buffer_accessor &dereference() const;
@@ -133,7 +138,7 @@ public:
 private:
   /** \brief Internal constructor for move operations. */
   buffer();
-  
+
   /** \brief Internal constructor for resizing operations. */
   buffer(size_t size, GLenum flags);
 
@@ -142,7 +147,7 @@ private:
 
 private:
   friend class vertex_array_object;
-  
+
   template <typename U>
   friend void swap(buffer<U> &lhs, buffer<U> &rhs);
 
