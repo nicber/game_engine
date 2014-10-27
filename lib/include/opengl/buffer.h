@@ -5,6 +5,8 @@
 
 namespace game_engine {
 namespace opengl {
+class program;
+
 /** \brief Enum for specifying the frequency of modification of the buffer.
  * buf_freq_access::mod_once = set once and then used.
  * buf_freq_access::mod_little = set once and used several times, several times.
@@ -40,7 +42,7 @@ class buffer : public buffer_base {
   private:
     class buffer_iterator_base {
     public:
-      buffer_iterator_base(buffer& buf, std::ptrdiff_t offs);
+      buffer_iterator_base(const buffer& buf, std::ptrdiff_t offs);
 
       buffer_accessor &dereference() const;
 
@@ -66,7 +68,7 @@ public:
    */
   class buffer_accessor {
   public:
-    buffer_accessor(buffer<T>& buf, std::ptrdiff_t offs);
+    buffer_accessor(const buffer<T>& buf, std::ptrdiff_t offs);
 
     buffer_accessor();
 
@@ -76,7 +78,7 @@ public:
   private:
     friend class buffer_iterator_base;
 
-    buffer * const buff = nullptr;
+    const buffer * const buff = nullptr;
     std::ptrdiff_t offset;
   };
 
@@ -120,6 +122,9 @@ public:
   buffer_iterator end();
   const_buffer_iterator end() const;
   const_buffer_iterator cend() const;
+
+  using iterator = buffer_iterator;
+  using const_iterator = const_buffer_iterator;
 
   /** \brief Member function for resizing the buffer.
    * It's argument is the number of Ts that the buffer will contain after

@@ -6,7 +6,7 @@
 namespace game_engine {
 namespace opengl {
 template <typename T>
-buffer<T>::buffer_accessor::buffer_accessor(buffer<T> &buf, std::ptrdiff_t offs)
+buffer<T>::buffer_accessor::buffer_accessor(const buffer<T> &buf, std::ptrdiff_t offs)
   : buff(&buf),
     offset(offs)
 {}
@@ -156,7 +156,7 @@ template <typename T>
 void buffer<T>::resize(std::ptrdiff_t to) {
   if (to == buffer_size) {
     return;
-  } 
+  }
 
   std::ptrdiff_t max_to_copy = std::min(to, buffer_size);
 
@@ -197,7 +197,7 @@ void buffer<T>::create_buffer(size_t size, GLenum flags) {
   glGenBuffers(1, &buffer_id);
 
   glBindBuffer(GL_COPY_WRITE_BUFFER, buffer_id);
-  
+
   glBufferData(GL_COPY_WRITE_BUFFER,
                buffer_size * sizeof(T),
                nullptr,
@@ -205,7 +205,7 @@ void buffer<T>::create_buffer(size_t size, GLenum flags) {
 }
 
 template <typename T>
-buffer<T>::buffer_iterator_base::buffer_iterator_base(buffer& buf,
+buffer<T>::buffer_iterator_base::buffer_iterator_base(const buffer& buf,
                                                       std::ptrdiff_t offs)
   : buff_acc(buf, offs)
 {}
@@ -247,5 +247,6 @@ void swap(buffer<T> &lhs, buffer<T> &rhs) {
   swap(lhs.buffer_size, rhs.buffer_size);
   swap(lhs.creation_flags, rhs.creation_flags);
 }
+
 }
 }
