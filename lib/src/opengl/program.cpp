@@ -145,8 +145,12 @@ bool program::has_uniform(const std::string &name) const {
 }
 
 uniform &program::get_uniform(const std::string &name) const {
-  auto it = find_uniform(name);
+  auto it = uniforms.find(name);
   return it->second;
+}
+
+program::const_uniform_iter program::get_uniforms() const {
+  return {uniforms.cbegin(), uniforms.cend()};
 }
 
 bool program::has_frag_loc(const std::string &name) const {
@@ -187,16 +191,24 @@ typename C::iterator find_generic(GLuint program_id, const std::string &name, C 
 template <typename T>
 using prg_unor_map_i = typename program::unor_map_i<T>;
 
-prg_unor_map_i<uniform> program::find_uniform(const std::string &name) const{
-  return find_generic(program_id, name, uniforms, glGetUniformLocation);
-}
-
 prg_unor_map_i<vertex_attr> program::find_vertex_attr(const std::string &name) const {
   return find_generic(program_id, name, vertex_attrs, glGetAttribLocation);
 }
 
 prg_unor_map_i<frag_loc> program::find_frag_loc(const std::string &name) const {
   return find_generic(program_id, name, frag_locs, glGetFragDataLocation);
+}
+
+prg_unor_map_i<uniform> program::find_uniform(const std::string &name) const {
+  if (!uniforms_already_queried) {
+    uniforms_already_queried = true;
+    auto unis = get_uniforms_of_program(program_id);
+    for (auto &uni : unis) {
+      uniforms.emplace(uni.name, std::move(uni));
+    }
+  }
+
+  return uniforms.find(name);
 }
 }
 }

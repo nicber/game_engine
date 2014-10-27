@@ -46,6 +46,12 @@ public:
   bool has_uniform(const std::string &name) const;
   uniform &get_uniform(const std::string &name) const;
 
+  struct const_uniform_iter {
+    std::unordered_map<std::string, uniform>::const_iterator begin, end;
+  };
+
+  const_uniform_iter get_uniforms() const;
+
   bool has_frag_loc(const std::string &name) const;
   frag_loc &get_frag_loc(const std::string &name) const;
 
@@ -68,6 +74,7 @@ private:
   friend void swap(program &lhs, program &rhs);
   GLuint program_id = 0;
   mutable unor_map<uniform> uniforms;
+  mutable bool uniforms_already_queried = false;
   mutable unor_map<vertex_attr> vertex_attrs;
   mutable unor_map<frag_loc> frag_locs;
 };
