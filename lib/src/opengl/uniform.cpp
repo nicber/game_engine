@@ -103,11 +103,19 @@ const std::string &get_name(const std::shared_ptr<uniform_block_binding> &ptr) {
   return ptr->name;
 }
 
+/*
+ * The uniform block binding manager uses shared_ptrs to keep track of the bindings it
+ * allocates for users. When a binding is no longer being used, its use_count() drops to 1,
+ * which tells us that we are free to reuse it if we need to. If a binding the name passed as
+ * the parameter has already been allocated, then that binding is returned again and, therefore,
+ * its use_count() is raised to n+1, where n was its previous use_count().
+ */
+
 using binding_container = boost::multi_index_container<
                             std::shared_ptr<uniform_block_binding>,
                             boost::multi_index::indexed_by<
                               boost::multi_index::sequenced<>,
-                              boost::multi_index::ordered_unique<
+                              boost::multi_index::ordered_non_unique<
                                 boost::multi_index::global_fun<
                                   const std::shared_ptr<uniform_block_binding>&,
                                   const std::string&,
@@ -117,7 +125,7 @@ using binding_container = boost::multi_index_container<
                             >
                           >;
 
-std::shared_ptr<uniform_block_binding> get_free_uniform_block_binding(std::string name) {
+std::shared_ptr<const uniform_block_binding> get_free_uniform_block_binding(std::string name) {
   static binding_container bindings = [] {
     GLint tmp;
     glGetIntegerv(GL_MAX_UNIFORM_BUFFER_BINDINGS, &tmp);

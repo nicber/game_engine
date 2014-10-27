@@ -28,6 +28,6 @@ struct uniform_block_binding {
   std::string name;
 };
 
-std::shared_ptr<const uniform_block_binding> get_free_block_binding(std::string name);
+std::shared_ptr<const uniform_block_binding> get_free_uniform_block_binding(std::string name);
 }
 }

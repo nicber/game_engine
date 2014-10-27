@@ -20,7 +20,7 @@ TEST(OpenGLTest, BufferStoreRead) {
   for (; it != buff.end(); ++it, ++i) {
     *it = i;
   }
-  
+
   EXPECT_EQ(i, buffer_size);
   i = 0;
 
@@ -45,7 +45,7 @@ TEST(OpenGLTest, BufferResize) {
   for (; it != buff.end(); ++it, ++i) {
     *it = i;
   }
-  
+
   EXPECT_EQ(i, buffer_size);
   i = 0;
 
@@ -89,4 +89,32 @@ TEST(OpenGLTest, BufferMove) {
   }
 
   EXPECT_EQ(i, buffer_size);
+}
+
+TEST(OpenGLTest, UniformBindingBlock) {
+  sf::Context ctx;
+  std::string name = "a";
+  std::vector<std::shared_ptr<const uniform_block_binding>> already_allocated_blocks;
+
+  try {
+    while (true) {
+      already_allocated_blocks.emplace_back(get_free_uniform_block_binding(name));
+      name += "a";
+    }
+  } catch (std::runtime_error &e) {
+  }
+
+  for (auto & ptr : already_allocated_blocks) {
+    EXPECT_NO_THROW(get_free_uniform_block_binding(ptr->name));
+  }
+  name += "a";
+  EXPECT_THROW(get_free_uniform_block_binding(name), std::runtime_error);
+  auto max_allocated = already_allocated_blocks.size();
+  already_allocated_blocks.clear();
+  name = "a";
+  for (size_t i = 0; i < max_allocated; ++i) {
+    EXPECT_NO_THROW({already_allocated_blocks.emplace_back(get_free_uniform_block_binding(name));});
+    name += "a";
+  }
+  EXPECT_THROW(get_free_uniform_block_binding(name), std::runtime_error);
 }
