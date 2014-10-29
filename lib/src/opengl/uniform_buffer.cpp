@@ -29,6 +29,10 @@ buffer<unsigned char>::const_iterator uniform_buffer::begin(const std::string &n
   return buffer<unsigned char>::begin() + it->second.block_offset;
 }
 
+buffer<unsigned char>::const_iterator uniform_buffer::cbegin(const std::string &name) const {
+  return begin(name);
+}
+
 buffer<unsigned char> uniform_buffer::construct_buffer_and_variables(
                                       const program &prog, const std::string &name,
                                       buf_freq_access freq_acc,
@@ -39,7 +43,13 @@ buffer<unsigned char> uniform_buffer::construct_buffer_and_variables(
   auto unif_iter = prog.get_uniforms();
 
   for (auto it = unif_iter.begin; it != unif_iter.end; ++it) {
-    if (it->second.name == name) {
+    if (uniform_block_index != -1 && it->second.block_index == uniform_block_index) {
+      variables.emplace(it->second.name, it->second);
+      assert(block_size == it->second.block_size);
+      continue;
+    }
+
+    if (it->second.block_name == name) {
       uniform_block_index = it->second.block_index;
       block_size = it->second.block_size;
     }
