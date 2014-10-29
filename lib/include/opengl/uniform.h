@@ -5,7 +5,7 @@
 
 namespace game_engine {
 namespace opengl {
-
+/** \brief Class that represents a uniform */
 struct uniform {
   std::string name;
   std::string block_name;
@@ -19,6 +19,8 @@ struct uniform {
   GLenum type;
 };
 
+/** \brief Utility function for querying information about a program's uniforms all at once.
+ */
 std::vector<uniform> get_uniforms_of_program(GLuint prog_id);
 
 struct uniform_block_binding {
@@ -28,6 +30,11 @@ struct uniform_block_binding {
   std::string name;
 };
 
+/** \brief Returns a uniform block binding that's free or the one that has previously been
+ * assigned the name 'name'.
+ * \throws std::runtime_error if there isn't a free binding to return and there isn't a binding
+ * already bound to the name 'name'.
+ */
 std::shared_ptr<const uniform_block_binding> get_free_uniform_block_binding(std::string name);
 }
 }
