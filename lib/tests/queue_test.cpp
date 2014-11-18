@@ -202,35 +202,38 @@ TEST(ThrQueue, ChangeType) {
   queue q_ser(queue_type::serial);
   queue q_par(queue_type::parallel);
   std::atomic<bool> different_threads(true);
+  // we add one indirection step because the optimizer would assume that
+  // io_id == cpu_id always.
+  auto get_thread_id = &boost::this_thread::get_id;
   for(size_t i = 0; i < 1000; ++i) {
     q_par.submit_work([&]{
-	  for(size_t i = 0; i < 5; ++i) {
-	    auto io_id = boost::this_thread::get_id();
-	    set_cor_type(coroutine_type::cpu);
-	    auto cpu_id = boost::this_thread::get_id();
-	    if(io_id == cpu_id) {
-	      different_threads = false;
-        }
-        set_cor_type(coroutine_type::io);
-	  }
-	});
+    for(size_t i = 0; i < 5; ++i) {
+      auto io_id = get_thread_id();
+      set_cor_type(coroutine_type::cpu);
+      auto cpu_id = get_thread_id();
+      if(io_id == cpu_id) {
+        different_threads = false;
+      }
+      std::cout << "io_id: " << io_id << "\ncpu_id: " << cpu_id << std::endl;
+      set_cor_type(coroutine_type::io);
+    } });
   }
-  
+
   q_ser.append_queue(std::move(q_par));
-  
+
   boost::mutex mt;
   bool done(false);
   boost::condition_variable cv;
   boost::unique_lock<boost::mutex> lock(mt);
-  
+
   q_ser.submit_work([&] {
     boost::lock_guard<boost::mutex> guard(mt);
 	done = true;
 	cv.notify_one();
   });
-  
+
   schedule_queue(std::move(q_ser));
-  
+
   cv.wait(lock, [&] { return done; });
   EXPECT_EQ(true, different_threads);
 }
