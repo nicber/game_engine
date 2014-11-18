@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cassert>
 #include <opengl/program.h>
 #include <sstream>
@@ -14,12 +15,30 @@ program_construction_error::program_construction_error(std::string error,
  : std::runtime_error(std::move(error))
 {}
 
+program_uniform_block_binding_manager::program_uniform_block_binding_manager(program *ptr)
+ : prog_ptr(ptr)
+{}
+
+void program_uniform_block_binding_manager::add_binding(const std::string &block_name,
+                                                        const std::string &binding_name) {
+  prog_ptr->bind();
+  auto uni_iters = prog_ptr->get_uniforms();
+  auto it = std::find_if(uni_iters.begin, uni_iters.end, [&] (decltype(*uni_iters.begin) &uni_pair) {
+    return uni_pair.second.block_name == block_name;
+  });
+  if (it == uni_iters.end) {
+    throw std::runtime_error(std::string("no uniform block named ") + block_name);
+  }
+  auto binding = get_free_uniform_block_binding(binding_name);
+  glUniformBlockBinding(prog_ptr->program_id, it->second.block_index, binding->id);
+  handles.emplace_back(std::move(binding));
+}
+
 program::program(const shader &s1,
                            const shader &s2,
                            std::initializer_list<shader> shaders,
                            std::initializer_list<attrib_pair> attribs,
-                           std::initializer_list<frag_data_loc> frag_data)
-  {
+                           std::initializer_list<frag_data_loc> frag_data) {
   size_t vertex_count = 0;
   size_t fragment_count = 0;
 
@@ -118,8 +137,12 @@ void swap(program &lhs, program &rhs) {
   using std::swap;
   swap(lhs.program_id, rhs.program_id);
   swap(lhs.uniforms, rhs.uniforms);
+  swap(lhs.uniforms_already_queried, rhs.uniforms_already_queried);
   swap(lhs.vertex_attrs, rhs.vertex_attrs);
   swap(lhs.frag_locs, rhs.frag_locs);
+  swap(lhs.bind_manager, rhs.bind_manager);
+  lhs.bind_manager.prog_ptr = &lhs;
+  rhs.bind_manager.prog_ptr = &rhs;
 }
 
 program::~program() {
@@ -209,6 +232,16 @@ prg_unor_map_i<uniform> program::find_uniform(const std::string &name) const {
   }
 
   return uniforms.find(name);
+}
+
+program_uniform_block_binding_manager &program::ubb_manager() {
+  assert (bind_manager.prog_ptr == this);
+  return bind_manager;
+}
+
+const program_uniform_block_binding_manager &program::ubb_manager() const {
+  assert (bind_manager.prog_ptr == this);
+  return bind_manager;
 }
 }
 }

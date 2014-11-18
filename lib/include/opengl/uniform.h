@@ -30,11 +30,13 @@ struct uniform_block_binding {
   std::string name;
 };
 
+using uniform_block_binding_handle = std::shared_ptr<const uniform_block_binding>;
+
 /** \brief Returns a uniform block binding that's free or the one that has previously been
  * assigned the name 'name'.
  * \throws std::runtime_error if there isn't a free binding to return and there isn't a binding
  * already bound to the name 'name'.
  */
-std::shared_ptr<const uniform_block_binding> get_free_uniform_block_binding(std::string name);
+uniform_block_binding_handle get_free_uniform_block_binding(std::string name);
 }
 }

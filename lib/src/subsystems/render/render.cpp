@@ -14,8 +14,6 @@ render_subsystem::render_subsystem()
 render_subsystem::~render_subsystem()
 {}
 
-/** \brief This member function
- */
 void render_subsystem::handle_events() {
   const boost::chrono::milliseconds wait_time(5);
 
