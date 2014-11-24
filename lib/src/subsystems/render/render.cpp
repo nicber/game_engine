@@ -18,7 +18,12 @@ void render_subsystem::handle_events() {
   const boost::chrono::milliseconds wait_time(5);
 
   sf::Window window(sf::VideoMode(800, 600), "My window");
-  glewInit();
+  auto err = glewInit();
+  if (err != GLEW_OK) {
+    std::string error("error initialing glew");
+    throw std::runtime_error(error /*+ std::string(glewGetErrorString(err))*/);
+  }
+  
   glViewport(0, 0, 800, 600);
 
   std::cout << "GL Info: " << glGetString(GL_VERSION) << std::endl;

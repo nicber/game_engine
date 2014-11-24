@@ -1,14 +1,3 @@
 include_directories(${GAME_ENGINE_ROOT}/include)
 
-if(WIN32)
-	set(PLATFORM_SOURCE win32.cpp)
-endif()
-
-if(UNIX)
-	message("unix")
-	set(PLATFORM_SOURCE posix.cpp)
-	set(PLATFORM_LIBRARY ${CMAKE_DL_LIBS})
-endif()
-
-add_executable(game_launcher main.cpp load_library.cpp ${PLATFORM_SOURCE})
-target_link_libraries(game_launcher ${PLATFORM_LIBRARY} ${GAME_ENGINE_DEP_LIBS} game_engine)
+add_library(game_launcher main.cpp)

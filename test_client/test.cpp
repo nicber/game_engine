@@ -74,7 +74,8 @@ private:
   std::shared_ptr<drawer> drawer_ptr;
 };
 
-void GAME_EXECUTION_FUNCTION (game_engine::logic::game *gam) {
+extern "C" {
+void start_game(game_engine::logic::game *gam) {
   render_subsystem *rend_sub = nullptr;
 
   try {
@@ -93,4 +94,5 @@ void GAME_EXECUTION_FUNCTION (game_engine::logic::game *gam) {
   while(!rend_sub || !rend_sub->has_exited()) {
     gam->tick();
   }
+}
 }
