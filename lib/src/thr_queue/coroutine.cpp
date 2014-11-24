@@ -24,7 +24,6 @@ coroutine::~coroutine() {
     assert(!stack &&
            "master coroutines don't have allocated stacks since the OS "
            "takes care of that");
-    delete ctx;
   } else {
     assert(stack &&
            "if this is not a master_coroutine then it should have a stack");
@@ -35,11 +34,10 @@ coroutine_type coroutine::type() const { return typ; }
 
 void coroutine::switch_to_from(coroutine &other) {
   auto func_ptr = reinterpret_cast<intptr_t>(function.get());
-  boost::context::jump_fcontext(other.ctx, ctx, func_ptr);
+  boost::context::jump_fcontext(&other.ctx, ctx, func_ptr);
 }
 
 coroutine::coroutine() :
-  ctx(new boost::context::fcontext_t()),
   typ(coroutine_type::master)
 {}
 

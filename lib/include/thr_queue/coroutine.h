@@ -61,7 +61,7 @@ private:
    * deleted by the destructor. Otherwise it's stored in the topmost part of the stack
    * and just deleting that takes care of the context.
    */
-  boost::context::fcontext_t *ctx;
+  boost::context::fcontext_t ctx;
   std::unique_ptr<char[]> stack;
   std::unique_ptr<functor> function;
 
