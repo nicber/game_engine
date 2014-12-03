@@ -82,8 +82,8 @@ void start_game(game_engine::logic::game *gam) {
     rend_sub = &gam->get<render_subsystem>();
   } catch (game::no_subsystem_found<render_subsystem> &) {
     std::cerr << "No rendering subsystem found.\n"
-      "WARNING: There's no way to know that the game should stop,\n so it will"
-      "         run indefinitely.";
+      "WARNING: There's no way to know that the game should stop,\n"
+      "         so it will run indefinitely.";
   }
 
   std::unique_ptr<entity> temp = std::unique_ptr<entity>(new entity);
