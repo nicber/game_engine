@@ -1,6 +1,6 @@
 #include <algorithm>
 #include <cassert>
-#include <opengl/program.h>
+#include "opengl/program.h"
 #include <sstream>
 #include <unordered_set>
 
@@ -19,19 +19,53 @@ program_uniform_block_binding_manager::program_uniform_block_binding_manager(pro
  : prog_ptr(ptr)
 {}
 
-void program_uniform_block_binding_manager::add_binding(const std::string &block_name,
-                                                        const std::string &binding_name) {
-  prog_ptr->bind();
-  auto uni_iters = prog_ptr->get_uniforms();
+static auto find_block_by_name(const program &prog, const std::string &name) {
+  prog.bind();
+  auto uni_iters = prog.get_uniforms();
   auto it = std::find_if(uni_iters.begin, uni_iters.end, [&] (decltype(*uni_iters.begin) &uni_pair) {
-    return uni_pair.second.block_name == block_name;
+    return uni_pair.second.block_name == name;
   });
   if (it == uni_iters.end) {
-    throw std::runtime_error(std::string("no uniform block named ") + block_name);
+    throw std::runtime_error(std::string("no uniform block named ") + name);
   }
+  return it;
+}
+
+static auto find_binding_by_name(const program_uniform_block_binding_manager::handles_vector &hv,
+                                 const std::string &binding_name) {
+  auto it = std::find_if(handles.begin(), handles.end(),
+      [&binding_name](decltype(hv[0])& handle) {
+        return handle.second->name == binding_name;
+      });
+
+  if (it == handles.end()) {
+    throw std::runtime_error("no uniform block binding named " + binding_name);
+  }
+  return it;
+}
+
+void program_uniform_block_binding_manager::add_binding(const std::string &block_name,
+                                                        const std::string &binding_name) {
+  auto it = find_block_by_name(*prog_ptr, block_name);
   auto binding = get_free_uniform_block_binding(binding_name);
   glUniformBlockBinding(prog_ptr->program_id, it->second.block_index, binding->id);
-  handles.emplace_back(std::move(binding));
+  handles.emplace_back(block_name, std::move(binding));
+}
+
+void program_uniform_block_binding_manager::remove_binding_by_binding_name(const std::string &binding_name) {
+  auto it = find_binding_by_name(handles, binding_name);
+  handles.erase(it);
+}
+
+bool program_uniform_block_binding_manager::check_compatibility() const {
+  for (auto& handle : handles) {
+    if (!check_compatibility_binding(handle.second->name)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 }
 
 program::program(const shader &s1,

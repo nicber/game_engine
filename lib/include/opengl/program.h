@@ -21,7 +21,6 @@ class program;
 class program_uniform_block_binding_manager {
 public:
   void add_binding(const std::string &block_name, const std::string &binding_name);
-  void remove_binding_by_block_name(const std::string &block_name);
   void remove_binding_by_binding_name(const std::string &binding_name);
 
   /** \brief Checks if the buffer bound to every uniform block binding is
@@ -36,14 +35,16 @@ public:
    */
   bool check_compatibility_binding(const std::string &binding_name) const;
 private:
-    /** \brief Useless constructor that needs to be here so that program can
-     * construct a program_uniform_block_binding_manager during its construction.
-     */
-    program_uniform_block_binding_manager(program *ptr);
-    friend class program;
+  using handles_vector = std::vector<std::pair<std::string,uniform_block_binding_handle>>;
+  /** \brief Useless constructor that needs to be here so that program can
+   * construct a program_uniform_block_binding_manager during its construction.
+   */
+  program_uniform_block_binding_manager(program *ptr);
+  friend class program;
+
 private:
   friend void swap(program&, program&);
-  std::vector<uniform_block_binding_handle> handles;
+  handles_vector handles;
   program *prog_ptr = nullptr;
 };
 
