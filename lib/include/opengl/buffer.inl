@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include "opengl/buffer.h"
 #include <stdexcept>
 

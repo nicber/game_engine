@@ -60,8 +60,9 @@ class buffer : public buffer_base {
     };
 
 public:
-  static_assert(std::has_trivial_copy_constructor<T>::value,
-      "T can't have custom copy or move operations");
+  static_assert(std::is_trivial<T>::value,
+      "T must be trivial since we copy data byte by byte and"
+      "we don't call destructors");
 
   /** \brief Proxy class that is returned from the dereference operation
    * of iterators. Abstracts uploading and downloading data from the GPU.
