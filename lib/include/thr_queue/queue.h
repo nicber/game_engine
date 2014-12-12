@@ -33,8 +33,10 @@ enum class queue_type {
 };
 
 /** \brief Tag struct for the work-stealing constructor of queue. */
-struct steal_work_t {};
-const steal_work_t steal_work;
+struct steal_work_t {
+  constexpr steal_work_t(){};
+};
+constexpr steal_work_t steal_work;
 
 /** \brief A queue for organizing work.
  * There are two types of queues, parallel and serial.
