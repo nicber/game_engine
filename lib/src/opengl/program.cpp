@@ -33,12 +33,12 @@ static auto find_block_by_name(const program &prog, const std::string &name) {
 
 static auto find_binding_by_name(const program_uniform_block_binding_manager::handles_vector &hv,
                                  const std::string &binding_name) {
-  auto it = std::find_if(handles.begin(), handles.end(),
+  auto it = std::find_if(hv.begin(), hv.end(),
       [&binding_name](decltype(hv[0])& handle) {
-        return handle.second->name == binding_name;
+        return handle.second->get_name() == binding_name;
       });
 
-  if (it == handles.end()) {
+  if (it == hv.end()) {
     throw std::runtime_error("no uniform block binding named " + binding_name);
   }
   return it;
@@ -48,7 +48,7 @@ void program_uniform_block_binding_manager::add_binding(const std::string &block
                                                         const std::string &binding_name) {
   auto it = find_block_by_name(*prog_ptr, block_name);
   auto binding = get_free_uniform_block_binding(binding_name);
-  glUniformBlockBinding(prog_ptr->program_id, it->second.block_index, binding->id);
+  glUniformBlockBinding(prog_ptr->program_id, it->second.block_index, binding->get_id());
   handles.emplace_back(block_name, std::move(binding));
 }
 
@@ -59,7 +59,7 @@ void program_uniform_block_binding_manager::remove_binding_by_binding_name(const
 
 bool program_uniform_block_binding_manager::check_compatibility() const {
   for (auto& handle : handles) {
-    if (!check_compatibility_binding(handle.second->name)) {
+    if (!check_compatibility_binding(handle.second->get_name())) {
       return false;
     }
   }

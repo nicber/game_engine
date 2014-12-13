@@ -105,7 +105,7 @@ TEST(OpenGLTest, UniformBindingBlock) {
   }
 
   for (auto & ptr : already_allocated_blocks) {
-    EXPECT_NO_THROW(get_free_uniform_block_binding(ptr->name));
+    EXPECT_NO_THROW(get_free_uniform_block_binding(ptr->get_name()));
   }
   name += "a";
   EXPECT_THROW(get_free_uniform_block_binding(name), std::runtime_error);

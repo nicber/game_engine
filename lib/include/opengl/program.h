@@ -34,8 +34,9 @@ public:
    * that uniform block binding.
    */
   bool check_compatibility_binding(const std::string &binding_name) const;
-private:
+
   using handles_vector = std::vector<std::pair<std::string,uniform_block_binding_handle>>;
+private:
   /** \brief Useless constructor that needs to be here so that program can
    * construct a program_uniform_block_binding_manager during its construction.
    */

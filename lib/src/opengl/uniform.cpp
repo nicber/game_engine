@@ -99,8 +99,16 @@ uniform_block_binding::uniform_block_binding(GLint id_, std::string name_):
   name(std::move(name_))
 {}
 
+const std::string &uniform_block_binding::get_name() const {
+  return name;
+}
+
+GLint uniform_block_binding::get_id() const {
+  return id;
+}
+
 const std::string &get_name(const std::shared_ptr<uniform_block_binding> &ptr) {
-  return ptr->name;
+  return ptr->get_name();
 }
 
 /*
@@ -125,7 +133,7 @@ using binding_container = boost::multi_index_container<
                             >
                           >;
 
-std::shared_ptr<const uniform_block_binding> get_free_uniform_block_binding(std::string name) {
+uniform_block_binding_handle get_free_uniform_block_binding(std::string name) {
   static binding_container bindings = [] {
     GLint tmp;
     glGetIntegerv(GL_MAX_UNIFORM_BUFFER_BINDINGS, &tmp);
