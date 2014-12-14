@@ -188,7 +188,7 @@ program::program() {
 
 bool program::has_vertex_attr(const std::string &name) const {
   auto it = find_vertex_attr(name);
-  return it == vertex_attrs.end();
+  return it != vertex_attrs.end();
 }
 
 vertex_attr &program::get_vertex_attr(const std::string &name) const {
@@ -198,7 +198,7 @@ vertex_attr &program::get_vertex_attr(const std::string &name) const {
 
 bool program::has_uniform(const std::string &name) const {
   auto it = find_uniform(name);
-  return it == uniforms.end();
+  return it != uniforms.end();
 }
 
 uniform &program::get_uniform(const std::string &name) const {
@@ -212,7 +212,7 @@ program::const_uniform_iter program::get_uniforms() const {
 
 bool program::has_frag_loc(const std::string &name) const {
   auto it = find_frag_loc(name);
-  return it == frag_locs.end();
+  return it != frag_locs.end();
 }
 
 frag_loc &program::get_frag_loc(const std::string &name) const {
