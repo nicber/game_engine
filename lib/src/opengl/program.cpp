@@ -207,6 +207,7 @@ uniform &program::get_uniform(const std::string &name) const {
 }
 
 program::const_uniform_iter program::get_uniforms() const {
+  setup_uniforms_if_nec();
   return {uniforms.cbegin(), uniforms.cend()};
 }
 
@@ -257,6 +258,11 @@ prg_unor_map_i<frag_loc> program::find_frag_loc(const std::string &name) const {
 }
 
 prg_unor_map_i<uniform> program::find_uniform(const std::string &name) const {
+  setup_uniforms_if_nec();
+  return uniforms.find(name);
+}
+
+void program::setup_uniforms_if_nec() const {
   if (!uniforms_already_queried) {
     uniforms_already_queried = true;
     auto unis = get_uniforms_of_program(program_id);
@@ -264,8 +270,6 @@ prg_unor_map_i<uniform> program::find_uniform(const std::string &name) const {
       uniforms.emplace(uni.name, std::move(uni));
     }
   }
-
-  return uniforms.find(name);
 }
 
 program_uniform_block_binding_manager &program::ubb_manager() {

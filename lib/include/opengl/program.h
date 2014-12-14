@@ -106,6 +106,8 @@ private:
    */
   program_uniform_block_binding_manager& ubb_manager();
   const program_uniform_block_binding_manager& ubb_manager() const;
+
+  void setup_uniforms_if_nec() const;
 private:
   friend class render::mesh;
   friend class program_uniform_block_binding_manager;
