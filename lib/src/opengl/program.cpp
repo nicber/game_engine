@@ -262,16 +262,6 @@ prg_unor_map_i<uniform> program::find_uniform(const std::string &name) const {
   return uniforms.find(name);
 }
 
-void program::setup_uniforms_if_nec() const {
-  if (!uniforms_already_queried) {
-    uniforms_already_queried = true;
-    auto unis = get_uniforms_of_program(program_id);
-    for (auto &uni : unis) {
-      uniforms.emplace(uni.name, std::move(uni));
-    }
-  }
-}
-
 program_uniform_block_binding_manager &program::ubb_manager() {
   assert (bind_manager.prog_ptr == this);
   return bind_manager;
@@ -280,6 +270,16 @@ program_uniform_block_binding_manager &program::ubb_manager() {
 const program_uniform_block_binding_manager &program::ubb_manager() const {
   assert (bind_manager.prog_ptr == this);
   return bind_manager;
+}
+
+void program::setup_uniforms_if_nec() const {
+  if (!uniforms_already_queried) {
+    uniforms_already_queried = true;
+    auto unis = get_uniforms_of_program(program_id);
+    for (auto &uni : unis) {
+      uniforms.emplace(uni.name, std::move(uni));
+    }
+  }
 }
 }
 }
