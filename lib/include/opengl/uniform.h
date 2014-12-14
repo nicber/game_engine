@@ -25,6 +25,9 @@ struct uniform {
  */
 std::vector<uniform> get_uniforms_of_program(GLuint prog_id);
 
+struct uniform_buffer_data;
+class uniform_buffer;
+
 struct uniform_block_binding;
 using uniform_block_binding_handle = std::shared_ptr<uniform_block_binding>;
 
@@ -35,10 +38,14 @@ struct uniform_block_binding {
   GLint get_id() const;
 
 private:
+  // friendship needed to allow uniform_buffer::bind_to to set bound_buffer_data.
+  friend class uniform_buffer;
+
   // friendship needed to set and reset name.
   friend uniform_block_binding_handle get_free_uniform_block_binding(std::string name);
   GLint id;
   std::string name;
+  std::weak_ptr<uniform_buffer_data> bound_buffer_data;
 };
 
 

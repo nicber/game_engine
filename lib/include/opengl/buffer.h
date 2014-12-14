@@ -141,6 +141,10 @@ public:
    */
   std::ptrdiff_t size() const;
 
+protected:
+  /** \brief Returns the id of this buffer object. */
+  GLuint get_buffer_id() const;
+
 private:
   /** \brief Internal constructor for move operations. */
   buffer();

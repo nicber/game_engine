@@ -7,13 +7,14 @@ namespace opengl {
 uniform_buffer::uniform_buffer(const program &prog, std::string block_name,
                                buf_freq_access freq_acc, buf_kind_access kind_acc):
   buffer<unsigned char>(construct_buffer_and_variables(prog, block_name, freq_acc, kind_acc)),
-  uniform_block_name(std::move(block_name))
+  data(std::make_shared<uniform_buffer_data>())
 {
+  data->uniform_block_name = std::move(block_name);
 }
 
 buffer<unsigned char>::iterator uniform_buffer::begin(const std::string &name) {
-  auto it = variables.find(name);
-  if (it == variables.end()) {
+  auto it = data->variables.find(name);
+  if (it == data->variables.end()) {
     throw std::runtime_error("no variable named " + name + " in this block");
   }
 
@@ -21,8 +22,8 @@ buffer<unsigned char>::iterator uniform_buffer::begin(const std::string &name) {
 }
 
 buffer<unsigned char>::const_iterator uniform_buffer::begin(const std::string &name) const {
-  auto it = variables.find(name);
-  if (it == variables.end()) {
+  auto it = data->variables.find(name);
+  if (it == data->variables.end()) {
     throw std::runtime_error("no variable named " + name + " in this block");
   }
 
@@ -31,6 +32,11 @@ buffer<unsigned char>::const_iterator uniform_buffer::begin(const std::string &n
 
 buffer<unsigned char>::const_iterator uniform_buffer::cbegin(const std::string &name) const {
   return begin(name);
+}
+
+void uniform_buffer::bind_to(uniform_block_binding_handle handle) {
+  handle->bound_buffer_data = data;
+  glBindBufferBase(GL_UNIFORM_BUFFER, handle->id, get_buffer_id());
 }
 
 buffer<unsigned char> uniform_buffer::construct_buffer_and_variables(
@@ -44,7 +50,7 @@ buffer<unsigned char> uniform_buffer::construct_buffer_and_variables(
 
   for (auto it = unif_iter.begin; it != unif_iter.end; ++it) {
     if (uniform_block_index != -1 && it->second.block_index == uniform_block_index) {
-      variables.emplace(it->second.name, it->second);
+      data->variables.emplace(it->second.name, it->second);
       assert(block_size == it->second.block_size);
       continue;
     }

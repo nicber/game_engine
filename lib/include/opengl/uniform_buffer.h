@@ -7,6 +7,11 @@
 
 namespace game_engine {
 namespace opengl {
+struct uniform_buffer_data {
+  std::string uniform_block_name;
+  std::unordered_map<std::string, const uniform> variables;
+};
+
 /** \brief Subclass of buffer<unsigned char> that implements a uniform buffer.
  * It implements utility functions for setting a specific variable of the
  * uniform block stored by this function.
@@ -26,14 +31,14 @@ public:
   const_iterator begin(const std::string &name) const;
   const_iterator cbegin(const std::string &name) const;
 
+  void bind_to(uniform_block_binding_handle handle);
 private:
   /** \brief Utility member function for constructing the buffer base class. */
   buffer<unsigned char> construct_buffer_and_variables(const program &prog, const std::string &block_name,
                                          buf_freq_access freq_acc, buf_kind_access kind_acc);
 
 private:
-  std::string uniform_block_name;
-  std::unordered_map<std::string, const uniform> variables;
+  std::shared_ptr<uniform_buffer_data> data;
 };
 
 }

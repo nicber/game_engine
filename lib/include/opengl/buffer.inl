@@ -182,6 +182,11 @@ std::ptrdiff_t buffer<T>::size() const {
 }
 
 template <typename T>
+GLuint buffer<T>::get_buffer_id() const {
+  return buffer_id;
+}
+
+template <typename T>
 buffer<T>::buffer() {
 }
 
