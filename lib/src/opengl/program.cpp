@@ -19,13 +19,11 @@ program_uniform_block_binding_manager::program_uniform_block_binding_manager(pro
  : prog_ptr(ptr)
 {}
 
-static auto find_block_by_name(const program &prog, const std::string &name) {
+static program::uniform_cont::nth_index<0>::type::const_iterator find_block_by_name(const program &prog, const std::string &name) {
   prog.bind();
-  auto uni_iters = prog.get_uniforms();
-  auto it = std::find_if(uni_iters.begin, uni_iters.end, [&] (decltype(*uni_iters.begin) &uni_pair) {
-    return uni_pair.second.block_name == name;
-  });
-  if (it == uni_iters.end) {
+  const auto &unifs = prog.get_uniforms();
+  auto it = unifs.get<0>().lower_bound(name);
+  if (it == unifs.get<0>().cend()) {
     throw std::runtime_error(std::string("no uniform block named ") + name);
   }
   return it;
@@ -48,7 +46,7 @@ void program_uniform_block_binding_manager::add_binding(const std::string &block
                                                         const std::string &binding_name) {
   auto it = find_block_by_name(*prog_ptr, block_name);
   auto binding = get_free_uniform_block_binding(binding_name);
-  glUniformBlockBinding(prog_ptr->program_id, it->second.block_index, binding->get_id());
+  glUniformBlockBinding(prog_ptr->program_id, it->block_index, binding->get_id());
   handles.emplace_back(block_name, std::move(binding));
 }
 
@@ -198,17 +196,17 @@ const vertex_attr &program::get_vertex_attr(const std::string &name) const {
 
 bool program::has_uniform(const std::string &name) const {
   auto it = find_uniform(name);
-  return it != uniforms.end();
+  return it != uniforms.get<1>().end();
 }
 
-  auto it = uniforms.find(name);
-  return it->second;
 const  uniform &program::get_uniform(const std::string &name) const {
+  auto it = uniforms.get<1>().find(name);
+  return *it;
 }
 
-program::const_uniform_iter program::get_uniforms() const {
+const program::uniform_cont &program::get_uniforms() const {
   setup_uniforms_if_nec();
-  return {uniforms.cbegin(), uniforms.cend()};
+  return uniforms;
 }
 
 bool program::has_frag_loc(const std::string &name) const {
@@ -257,9 +255,9 @@ prg_unor_map_i<frag_loc> program::find_frag_loc(const std::string &name) const {
   return find_generic(program_id, name, frag_locs, glGetFragDataLocation);
 }
 
-prg_unor_map_i<uniform> program::find_uniform(const std::string &name) const {
+program::uniform_cont::nth_index<1>::type::const_iterator program::find_uniform(const std::string &name) const {
   setup_uniforms_if_nec();
-  return uniforms.find(name);
+  return uniforms.get<1>().find(name);
 }
 
 program_uniform_block_binding_manager &program::ubb_manager() {
@@ -277,7 +275,7 @@ void program::setup_uniforms_if_nec() const {
     uniforms_already_queried = true;
     auto unis = get_uniforms_of_program(program_id);
     for (auto &uni : unis) {
-      uniforms.emplace(uni.name, std::move(uni));
+      uniforms.insert(std::move(uni));
     }
   }
 }

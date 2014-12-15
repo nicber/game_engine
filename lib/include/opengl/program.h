@@ -88,15 +88,15 @@ public:
   ~program();
 
   bool has_vertex_attr(const std::string &name) const;
-  vertex_attr &get_vertex_attr(const std::string &name) const;
+  const vertex_attr &get_vertex_attr(const std::string &name) const;
 
   bool has_uniform(const std::string &name) const;
-  uniform &get_uniform(const std::string &name) const;
+  const uniform &get_uniform(const std::string &name) const;
 
   const uniform_cont &get_uniforms() const;
 
   bool has_frag_loc(const std::string &name) const;
-  frag_loc &get_frag_loc(const std::string &name) const;
+  const frag_loc &get_frag_loc(const std::string &name) const;
 
   void bind() const;
 private:
