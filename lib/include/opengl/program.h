@@ -1,5 +1,8 @@
 #pragma once
 
+#include <boost/multi_index_container.hpp>
+#include <boost/multi_index/ordered_index.hpp>
+#include <boost/multi_index/member.hpp>
 #include <initializer_list>
 #include "opengl/frag_loc.h"
 #include "opengl/shader.h"
@@ -61,6 +64,18 @@ public:
 
 class program {
 public:
+  using uniform_cont = boost::multi_index_container<
+                         uniform,
+                         boost::multi_index::indexed_by<
+                           boost::multi_index::ordered_non_unique<
+                             boost::multi_index::member<uniform, std::string, &uniform::block_name>
+                           >,
+                           boost::multi_index::ordered_non_unique<  
+                             boost::multi_index::member<uniform, std::string, &uniform::name>
+                           >
+                         >
+                       >;
+
   program(const shader &s1,
                const shader &s2,
                std::initializer_list<shader> shaders,
@@ -78,11 +93,7 @@ public:
   bool has_uniform(const std::string &name) const;
   uniform &get_uniform(const std::string &name) const;
 
-  struct const_uniform_iter {
-    std::unordered_map<std::string, uniform>::const_iterator begin, end;
-  };
-
-  const_uniform_iter get_uniforms() const;
+  const uniform_cont &get_uniforms() const;
 
   bool has_frag_loc(const std::string &name) const;
   frag_loc &get_frag_loc(const std::string &name) const;
@@ -97,7 +108,7 @@ private:
   template <typename T>
   using unor_map_i = typename unor_map<T>::iterator;
 
-  unor_map_i<uniform> find_uniform(const std::string &name) const;
+  uniform_cont::nth_index<1>::type::const_iterator find_uniform(const std::string &name) const;
   unor_map_i<vertex_attr> find_vertex_attr(const std::string &name) const;
   unor_map_i<frag_loc> find_frag_loc(const std::string &name) const;
 
@@ -113,7 +124,7 @@ private:
   friend class program_uniform_block_binding_manager;
   friend void swap(program &lhs, program &rhs);
   GLuint program_id = 0;
-  mutable unor_map<uniform> uniforms;
+  mutable uniform_cont uniforms;
   mutable bool uniforms_already_queried = false;
   mutable unor_map<vertex_attr> vertex_attrs;
   mutable unor_map<frag_loc> frag_locs;
