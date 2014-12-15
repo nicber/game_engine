@@ -3,13 +3,13 @@ project(GameEngine)
 cmake_minimum_required(VERSION 2.8)
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1y -Wall -Wextra")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1y -Wall -Wextra")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 	# It's the default.
 else()
-	message(SEND_ERROR "Your compiler hasn't been recognized and it hasn't been set to C++11 mode.'")
+	message(SEND_ERROR "Your compiler hasn't been recognized and it hasn't been set to C++14 mode.'")
 endif()
 
 # Options
