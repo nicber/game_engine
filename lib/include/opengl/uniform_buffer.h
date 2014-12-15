@@ -3,14 +3,18 @@
 #include <boost/strong_typedef.hpp>
 #include "buffer.h"
 #include "uniform.h"
-#include <unordered_map>
 
 namespace game_engine {
 namespace opengl {
 struct uniform_buffer_data {
-  std::string uniform_block_name;
-  std::unordered_map<std::string, const uniform> variables;
+  std::vector<uniform> variables;
 };
+
+/** \brief Compares uniforms by their name field only. */
+bool uniform_buff_variable_sort_func(const uniform &lhs, const uniform &rhs);
+
+/** \brief Compares a uniform and a string that stores a uniform name. */
+bool uniform_buff_variable_sort_with_name_func(const uniform &lhs, const std::string &rhs);
 
 /** \brief Subclass of buffer<unsigned char> that implements a uniform buffer.
  * It implements utility functions for setting a specific variable of the
