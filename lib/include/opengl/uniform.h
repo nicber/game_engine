@@ -21,6 +21,9 @@ struct uniform {
   GLenum type;
 };
 
+bool operator==(const uniform &lhs, const uniform &rhs);
+bool operator!=(const uniform &lhs, const uniform &rhs);
+
 /** \brief Utility function for querying information about a program's uniforms all at once.
  */
 std::vector<uniform> get_uniforms_of_program(GLuint prog_id);
@@ -36,6 +39,7 @@ struct uniform_block_binding {
 
   const std::string &get_name() const;
   GLint get_id() const;
+  std::shared_ptr<uniform_buffer_data> get_bound_buffer_data() const;
 
 private:
   // friendship needed to allow uniform_buffer::bind_to to set bound_buffer_data.

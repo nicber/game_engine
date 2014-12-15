@@ -10,6 +10,25 @@
 
 namespace game_engine {
 namespace opengl {
+bool operator==(const uniform &lhs, const uniform &rhs) {
+#define COMP(x) (lhs.x == rhs.x)
+  return COMP(name) &&
+         COMP(block_name) &&
+         COMP(block_index) &&
+         COMP(block_size) &&
+         COMP(block_offset) &&
+         COMP(array_size) &&
+         COMP(block_array_stride) &&
+         COMP(block_matrix_stride) &&
+         COMP(matrix_row_major) &&
+         COMP(type);
+#undef COMP
+}
+
+bool operator!=(const uniform &lhs, const uniform &rhs) {
+  return !(lhs == rhs);
+}
+
 std::vector<uniform> get_uniforms_of_program(GLuint prog_id) {
   GLint number_uniforms;
   glGetProgramiv(prog_id, GL_ACTIVE_UNIFORMS, &number_uniforms);
@@ -105,6 +124,10 @@ const std::string &uniform_block_binding::get_name() const {
 
 GLint uniform_block_binding::get_id() const {
   return id;
+}
+
+std::shared_ptr<uniform_buffer_data> uniform_block_binding::get_bound_buffer_data() const {
+  return bound_buffer_data.lock();
 }
 
 const std::string &get_name(const std::shared_ptr<uniform_block_binding> &ptr) {
