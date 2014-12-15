@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <cassert>
 #include "opengl/program.h"
+#include "opengl/uniform_buffer.h"
 #include <sstream>
 #include <unordered_set>
 
@@ -64,6 +65,44 @@ bool program_uniform_block_binding_manager::check_compatibility() const {
   return true;
 }
 
+bool program_uniform_block_binding_manager::check_compatibility_binding (const std::string &binding_name) const {
+  handles_vector::const_iterator bind_it;
+  program::uniform_cont::nth_index<0>::type::const_iterator block_it;
+
+  try {
+    bind_it = find_binding_by_name(handles, binding_name);
+    block_it = find_block_by_name(*prog_ptr, bind_it->first);
+  } catch (std::runtime_error &e) {
+    return false;
+  }
+
+  auto bound_buffer_info = bind_it->second->get_bound_buffer_data();
+  if (!bound_buffer_info) {
+    return false;
+  }
+
+  const auto &buffer_variables = bound_buffer_info->variables;
+
+  // the name the block the binding block is bound to should be
+  // the same as the block name the buffer is based on.
+  if (bind_it->first != buffer_variables[0].block_name) {
+    return false;
+  }
+
+  do {
+    auto same_name_it = std::lower_bound(buffer_variables.cbegin(),
+                                         buffer_variables.cend(),
+                                         *block_it,
+                                         uniform_buff_variable_sort_func);
+    if (same_name_it == buffer_variables.cend()) {
+      return false;
+    }
+    // lets compare the rest of the variable, size, type, etc.
+    if (*same_name_it != *block_it) {
+      return false;
+    }
+  } while ((++block_it)->block_name == bind_it->first);
+  return true;
 }
 
 program::program(const shader &s1,
