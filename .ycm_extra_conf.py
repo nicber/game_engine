@@ -38,21 +38,32 @@ flags = [
 '-Wall',
 '-Wextra',
 '-Werror',
-'-Wno-variadic-macros',
 # THIS IS IMPORTANT! Without a "-std=<something>" flag, clang won't know which
 # language to use when compiling headers. So it will guess. Badly. So C++
 # headers will be compiled as C headers. You don't want that so ALWAYS specify
 # a "-std=<something>".
 # For a C project, you would set this to something like 'c99' instead of
 # 'c++11'.
-'-std=c++11',
+'-std=c++1y',
 # ...and the same thing goes for the magic -x option which specifies the
 # language that the files to be compiled are written in. This is mostly
 # relevant for c++ headers.
 # For a C project, you would set this to 'c' instead of 'c++'.
 '-x',
 'c++',
-'-I /usr/home/nicolas/sfml/include'
+# include paths, copied from compilation_commands.json
+'-I',
+'/mnt/940AA1EF0AA1CF14/boost_1_57_0',
+'-I',
+'/usr/include/GL',
+'-I',
+'/usr/include/libdrm',
+'-I',
+'/mnt/940AA1EF0AA1CF14/libuv/include',
+'-I',
+'/mnt/940AA1EF0AA1CF14/GameEngine/lib/include',
+'-I',
+'/mnt/940AA1EF0AA1CF14/GameEngine/external/gtest/gtest-1.7.0/include'
 ]
 
 
@@ -60,9 +71,13 @@ flags = [
 # compile_commands.json file to use that instead of 'flags'. See here for
 # more details: http://clang.llvm.org/docs/JSONCompilationDatabase.html
 #
+# You can get CMake to generate this file for you by adding:
+#   set( CMAKE_EXPORT_COMPILE_COMMANDS 1 )
+# to your CMakeLists.txt file.
+#
 # Most projects will NOT need to set this to anything; you can just change the
 # 'flags' list of compilation flags. Notice that YCM itself uses that approach.
-compilation_database_folder = '~/GameEngineBuild'
+compilation_database_folder = ''
 
 if os.path.exists( compilation_database_folder ):
   database = ycm_core.CompilationDatabase( compilation_database_folder )
@@ -128,19 +143,18 @@ def GetCompilationInfoForFile( filename ):
 
 
 def FlagsForFile( filename, **kwargs ):
-  final_flags = None
   if database:
     # Bear in mind that compilation_info.compiler_flags_ does NOT return a
     # python list, but a "list-like" StringVec object
     compilation_info = GetCompilationInfoForFile( filename )
     if not compilation_info:
-      final_flags = None
+      return None
 
     final_flags = MakeRelativePathsInFlagsAbsolute(
       compilation_info.compiler_flags_,
       compilation_info.compiler_working_dir_ )
 
-  if not final_flags:
+  else:
     relative_to = DirectoryOfThisScript()
     final_flags = MakeRelativePathsInFlagsAbsolute( flags, relative_to )
 
@@ -148,3 +162,4 @@ def FlagsForFile( filename, **kwargs ):
     'flags': final_flags,
     'do_cache': True
   }
+
