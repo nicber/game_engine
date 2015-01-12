@@ -42,8 +42,8 @@ public:
   const_iterator begin(const std::string &name) const;
   const_iterator cbegin(const std::string &name) const;
 
-  void bind_to(uniform_block_binding_handle handle);
   /** \brief Utility member function for constructing the buffer base class. */
+  void bind_to(const std::string &binding_name);
 };
 
 }

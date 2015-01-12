@@ -70,10 +70,10 @@ buffer<unsigned char>::const_iterator uniform_buffer::cbegin(const std::string &
   return begin(name);
 }
 
-void uniform_buffer::bind_to(uniform_block_binding_handle handle) {
+void uniform_buffer::bind_to(const std::string &binding_name) {
+  auto handle = get_free_uniform_block_binding(binding_name);
   handle->bound_buffer_data = data;
   glBindBufferBase(GL_UNIFORM_BUFFER, handle->id, get_buffer_id());
-}
 }
 }
 
