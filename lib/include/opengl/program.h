@@ -99,6 +99,13 @@ public:
   const frag_loc &get_frag_loc(const std::string &name) const;
 
   void bind() const;
+
+  /** \brief Returns the object that manages this program's uniform block
+   * bindings.
+   */
+  program_uniform_block_binding_manager& ubb_manager();
+  const program_uniform_block_binding_manager& ubb_manager() const;
+
 private:
   program();
 
@@ -111,12 +118,6 @@ private:
   uniform_cont::nth_index<1>::type::const_iterator find_uniform(const std::string &name) const;
   unor_map_i<vertex_attr> find_vertex_attr(const std::string &name) const;
   unor_map_i<frag_loc> find_frag_loc(const std::string &name) const;
-
-  /** \brief Returns the object that manages this program's uniform block
-   * bindings.
-   */
-  program_uniform_block_binding_manager& ubb_manager();
-  const program_uniform_block_binding_manager& ubb_manager() const;
 
   void setup_uniforms_if_nec() const;
 private:
