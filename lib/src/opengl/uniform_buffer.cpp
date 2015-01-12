@@ -76,4 +76,5 @@ void uniform_buffer::bind_to(const std::string &binding_name) {
   glBindBufferBase(GL_UNIFORM_BUFFER, handle->id, get_buffer_id());
 }
 }
+}
 
