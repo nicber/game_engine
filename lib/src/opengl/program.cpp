@@ -101,7 +101,8 @@ bool program_uniform_block_binding_manager::check_compatibility_binding (const s
     if (*same_name_it != *block_it) {
       return false;
     }
-  } while ((++block_it)->block_name == bind_it->first);
+  } while (++block_it != prog_ptr->uniforms.get<0>().cend() &&
+           block_it->block_name == bind_it->first);
   return true;
 }
 
