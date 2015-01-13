@@ -45,6 +45,12 @@ public:
   /** \brief Utility member function for constructing the buffer base class. */
   void bind_to(const std::string &binding_name);
 
+  /** \brief Rebinds the buffer to the block binding if another buffer has been
+   * bound to it.
+   */
+  void rebind() const;
+
+  /** \brief Unbinds the buffer from the block binding it's bound to. */
   void unbind();
 
 private:
