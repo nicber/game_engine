@@ -93,6 +93,7 @@ TEST(OpenGLTest, BufferMove) {
 
 TEST(OpenGLTest, UniformBindingBlock) {
   sf::Context ctx;
+  glewInit();
   std::string name = "a";
   std::vector<std::shared_ptr<const uniform_block_binding>> already_allocated_blocks;
 
