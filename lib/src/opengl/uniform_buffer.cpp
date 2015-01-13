@@ -71,9 +71,13 @@ buffer<unsigned char>::const_iterator uniform_buffer::cbegin(const std::string &
 }
 
 void uniform_buffer::bind_to(const std::string &binding_name) {
-  auto handle = get_free_uniform_block_binding(binding_name);
-  handle->bound_buffer_data = data;
-  glBindBufferBase(GL_UNIFORM_BUFFER, handle->id, get_buffer_id());
+  binding_handle = get_free_uniform_block_binding(binding_name);
+  binding_handle->bound_buffer_data = data;
+  glBindBufferBase(GL_UNIFORM_BUFFER, binding_handle->id, get_buffer_id());
+}
+
+void uniform_buffer::unbind() {
+  binding_handle.reset();
 }
 }
 }

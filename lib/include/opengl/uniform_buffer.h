@@ -44,6 +44,11 @@ public:
 
   /** \brief Utility member function for constructing the buffer base class. */
   void bind_to(const std::string &binding_name);
+
+  void unbind();
+
+private:
+  uniform_block_binding_handle binding_handle;
 };
 
 }
