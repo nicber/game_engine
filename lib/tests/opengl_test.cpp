@@ -2,6 +2,7 @@
 #include "opengl/buffer.h"
 #include "opengl/program.h"
 #include "opengl/shader.h"
+#include "opengl/uniform_buffer.h"
 #include <SFML/Window/Context.hpp>
 
 using namespace game_engine::opengl;
@@ -118,4 +119,57 @@ TEST(OpenGLTest, UniformBindingBlock) {
     name += "a";
   }
   EXPECT_THROW(get_free_uniform_block_binding(name), std::runtime_error);
+}
+
+TEST(OpenGLTest, UniformBufferCompat) {
+  sf::Context ctx;
+  glewInit();
+
+  shader vert1(shader_type::vertex,
+               "#version 140\n"
+               "uniform Mat { mat4 matr; };"
+               "void main() { gl_Position = matr * vec4(1,1,1,0); }", {});
+  shader vert2(shader_type::vertex,
+               "#version 140\n"
+               "uniform Mat { mat3 matr; };"
+               "void main() { gl_Position = vec4(matr * vec3(1,1,1), 0); }", {});
+  shader vert3(shader_type::vertex,
+               "#version 140\n"
+               "uniform Mat { mat4 matr; vec4 vector; };"
+               "void main() { gl_Position = matr * vec4(1,1,1,0) + vector; }", {});
+
+  shader frag(shader_type::fragment,
+              "void main() { gl_FragColor = vec4(1,1,1,1); }", {});
+
+  program prog1(vert1, frag, {}, {}, {});
+  program prog2(vert2, frag, {}, {}, {});
+  program prog3(vert3, frag, {}, {}, {});
+
+  uniform_buffer buffer1(prog1, "Mat", buf_freq_access::mod_little, buf_kind_access::read_gl_write_gl);
+  uniform_buffer buffer2(prog2, "Mat", buf_freq_access::mod_little, buf_kind_access::read_gl_write_gl);
+  uniform_buffer buffer3(prog3, "Mat", buf_freq_access::mod_little, buf_kind_access::read_gl_write_gl);
+
+  prog1.ubb_manager().add_binding("Mat", "Mat_binding");
+  buffer1.bind_to("Mat_binding");
+  EXPECT_TRUE(prog1.ubb_manager().check_compatibility());
+  buffer2.bind_to("Mat_binding");
+  EXPECT_FALSE(prog1.ubb_manager().check_compatibility());
+  buffer3.bind_to("Mat_binding");
+  EXPECT_FALSE(prog1.ubb_manager().check_compatibility());
+
+  prog2.ubb_manager().add_binding("Mat", "Mat_binding");
+  buffer1.bind_to("Mat_binding");
+  EXPECT_FALSE(prog2.ubb_manager().check_compatibility());
+  buffer2.bind_to("Mat_binding");
+  EXPECT_TRUE(prog2.ubb_manager().check_compatibility());
+  buffer3.bind_to("Mat_binding");
+  EXPECT_FALSE(prog2.ubb_manager().check_compatibility());
+
+  prog3.ubb_manager().add_binding("Mat", "Mat_binding");
+  buffer1.bind_to("Mat_binding");
+  EXPECT_FALSE(prog3.ubb_manager().check_compatibility());
+  buffer2.bind_to("Mat_binding");
+  EXPECT_FALSE(prog3.ubb_manager().check_compatibility());
+  buffer3.bind_to("Mat_binding");
+  EXPECT_TRUE(prog3.ubb_manager().check_compatibility());
 }
