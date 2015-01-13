@@ -173,3 +173,35 @@ TEST(OpenGLTest, UniformBufferCompat) {
   buffer3.bind_to("Mat_binding");
   EXPECT_TRUE(prog3.ubb_manager().check_compatibility());
 }
+
+TEST(OpenGLTest, UniformBufferProgramBinding) {
+  sf::Context ctx;
+  glewInit();
+
+  shader vert(shader_type::vertex,
+               "#version 140\n"
+               "uniform Mat { mat4 matr; };"
+               "void main() { gl_Position = matr * vec4(1,1,1,0); }", {});
+  shader frag(shader_type::fragment,
+              "void main() { gl_FragColor = vec4(1,1,1,1); }", {});
+  program prog(vert, frag, {}, {}, {});
+  uniform_buffer buffer(prog, "Mat", buf_freq_access::mod_little, buf_kind_access::read_gl_write_gl);
+  
+  {
+    std::vector<uniform_block_binding_handle> tmp_handles;
+    std::string tmp_str("tmp");
+    tmp_handles.emplace_back(get_free_uniform_block_binding(tmp_str + std::to_string(0)));
+    buffer.bind_to("Mat_binding");
+    try {
+      for (size_t i = 1;; ++i) {
+        auto handle = get_free_uniform_block_binding(tmp_str + std::to_string(i));
+        tmp_handles.emplace_back(std::move(handle));
+      }
+    } catch (std::runtime_error &e) {
+    }
+  }
+
+  prog.ubb_manager().add_binding("Mat", "Mat_binding");
+
+  EXPECT_TRUE(prog.ubb_manager().check_compatibility());
+}
