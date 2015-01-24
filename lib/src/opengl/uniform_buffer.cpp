@@ -76,7 +76,7 @@ void uniform_buffer::bind_to(const std::string &binding_name) {
   glBindBufferBase(GL_UNIFORM_BUFFER, binding_handle->id, get_buffer_id());
 }
 
-void uniform_buffer::rebind() {
+void uniform_buffer::rebind() const {
   if (binding_handle) {
     glBindBufferBase(GL_UNIFORM_BUFFER, binding_handle->id, get_buffer_id());
   }
