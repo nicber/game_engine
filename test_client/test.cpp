@@ -62,6 +62,7 @@ private:
 
       auto mesh_ptr = std::make_shared<game_engine::render::mesh>(std::move(ogl_program),
                                                              std::move(vao),
+                                                             game_engine::render::mesh::uni_buff_vector(),
                                                              3,
                                                              0,
                                                              0,
