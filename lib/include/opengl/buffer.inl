@@ -24,6 +24,8 @@ typename buffer<T>::buffer_accessor &buffer<T>::buffer_accessor::operator=(const
                   sizeof(T),
                   &data);
 
+  buff->change_signal();
+
   return *this;
 }
 
@@ -154,6 +156,11 @@ typename buffer<T>::const_buffer_iterator buffer<T>::end() const {
 
 
 template <typename T>
+boost::signals2::scoped_connection buffer<T>::on_change_connect(on_change_slot slot) const {
+  return change_signal.connect(std::move(slot));
+}
+
+template <typename T>
 void buffer<T>::resize(std::ptrdiff_t to) {
   if (to == buffer_size) {
     return;
@@ -249,6 +256,7 @@ std::ptrdiff_t buffer<T>::buffer_iterator_base::distance_to(const buffer_iterato
 template <typename T>
 void swap(buffer<T> &lhs, buffer<T> &rhs) {
   using std::swap;
+  swap(lhs.change_signal, rhs.change_signal);
   swap(lhs.buffer_id, rhs.buffer_id);
   swap(lhs.buffer_size, rhs.buffer_size);
   swap(lhs.creation_flags, rhs.creation_flags);

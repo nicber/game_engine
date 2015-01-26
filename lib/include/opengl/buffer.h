@@ -1,5 +1,6 @@
 #pragma once
 #include <boost/iterator/iterator_facade.hpp>
+#include <boost/signals2.hpp>
 #include <GL/glew.h>
 #include <type_traits>
 
@@ -127,6 +128,15 @@ public:
   using iterator = buffer_iterator;
   using const_iterator = const_buffer_iterator;
 
+  using on_change_signal = boost::signals2::signal_type<void(void),
+                                                        boost::signals2::keywords::mutex_type<
+                                                          boost::signals2::dummy_mutex
+                                                        >
+                                                       >::type;
+  using on_change_slot = on_change_signal::slot_type;
+
+  boost::signals2::scoped_connection on_change_connect(on_change_slot slot) const;
+
   /** \brief Member function for resizing the buffer.
    * It's argument is the number of Ts that the buffer will contain after
    * the resing operation. If it's lower than the current number, the last
@@ -160,6 +170,8 @@ private:
 
   template <typename U>
   friend void swap(buffer<U> &lhs, buffer<U> &rhs);
+
+  mutable on_change_signal change_signal;
 
   GLuint buffer_id = 0;
   std::ptrdiff_t buffer_size = 0;
