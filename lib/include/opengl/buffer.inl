@@ -121,12 +121,12 @@ buffer<T>::~buffer() {
 
 template <typename T>
 const typename buffer<T>::buffer_accessor buffer<T>::operator[](std::ptrdiff_t index) const {
-  return {this, index};
+  return {*this, index};
 }
 
 template <typename T>
 typename buffer<T>::buffer_accessor buffer<T>::operator[](std::ptrdiff_t index) {
-  return {this, index};
+  return {*this, index};
 }
 
 template <typename T>
