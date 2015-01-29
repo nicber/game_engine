@@ -2,10 +2,8 @@
 
 namespace game_engine {
 namespace render {
-
 mesh::mesh(std::shared_ptr<const opengl::program> prog_,
            std::shared_ptr<const opengl::vertex_array_object> vao_,
-           const mesh::uni_buff_vector &uni_buffs_,
            size_t count_,
            size_t base_index_,
            size_t base_vertex_,
@@ -18,6 +16,9 @@ mesh::mesh(std::shared_ptr<const opengl::program> prog_,
   base_vertex(base_vertex_),
   instance_count(instance_count_),
   base_instance(base_instance_)
+{}
+
+void mesh::init(const mesh::uni_buff_vector &uni_buffs_)
 {
   uni_buffs_with_conn.reserve(uni_buffs_.size());
   for (auto &u_buff_dep : uni_buffs_) {
@@ -66,6 +67,39 @@ void mesh::draw(unsigned long long delta_time) const {
                                                 instance_count,
                                                 base_vertex,
                                                 base_instance);
+}
+
+struct mesh_constructor : public mesh {
+  mesh_constructor(std::shared_ptr<const opengl::program> prog_,
+                   std::shared_ptr<const opengl::vertex_array_object> vao_,
+                   size_t count_,
+                   size_t base_index_,
+                   size_t base_vertex_,
+                   size_t instance_count_,
+                   size_t base_instance_)
+ :mesh(std::move(prog_), std::move(vao_), count_,
+       base_index_, base_vertex_, instance_count_,
+       base_instance_)
+  {}
+
+  void init(const uni_buff_vector &uni_buffs_) {
+    mesh::init(uni_buffs_);
+  }
+};
+
+std::shared_ptr<mesh> create_mesh(std::shared_ptr<const opengl::program> prog_,
+                                  std::shared_ptr<const opengl::vertex_array_object> vao_,
+                                  const mesh::uni_buff_vector &uni_buffs_,
+                                  size_t count_,
+                                  size_t base_index_,
+                                  size_t base_vertex_,
+                                  size_t instance_count_,
+                                  size_t base_instance_) {
+  auto ptr = std::make_shared<mesh_constructor>(std::move(prog_), std::move(vao_), count_,
+                                                base_index_, base_vertex_, instance_count_,
+                                                base_instance_);
+  ptr->init(uni_buffs_);
+  return ptr;
 }
 }
 }
