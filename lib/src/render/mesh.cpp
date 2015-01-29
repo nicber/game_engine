@@ -2,9 +2,10 @@
 
 namespace game_engine {
 namespace render {
+
 mesh::mesh(std::shared_ptr<const opengl::program> prog_,
            std::shared_ptr<const opengl::vertex_array_object> vao_,
-           std::vector<std::shared_ptr<const opengl::uniform_buffer>> uni_buffs_,
+           const mesh::uni_buff_vector &uni_buffs_,
            size_t count_,
            size_t base_index_,
            size_t base_vertex_,
@@ -12,13 +13,28 @@ mesh::mesh(std::shared_ptr<const opengl::program> prog_,
            size_t base_instance_)
  :prog(std::move(prog_)),
   vao(std::move(vao_)),
-  uni_buffs(std::move(uni_buffs_)),
   count(count_),
   base_index(base_index_),
   base_vertex(base_vertex_),
   instance_count(instance_count_),
   base_instance(base_instance_)
-{}
+{
+  uni_buffs_with_conn.reserve(uni_buffs_.size());
+  for (auto &u_buff_dep : uni_buffs_) {
+    boost::signals2::scoped_connection scoped_conn;
+    if (u_buff_dep.should_reset_delta) {
+      auto shared_this_ptr = shared_from_this();
+      scoped_conn = u_buff_dep.buffer_ptr->on_change_connect(opengl::uniform_buffer::on_change_slot(
+                      [ mesh_wptr = std::weak_ptr<mesh>(shared_this_ptr) ] () {
+                        auto mesh_ptr = mesh_wptr.lock();
+                        assert(mesh_ptr && "it should not have been called by the signal if it is expired");
+                        mesh_ptr->absolute_time_last_update = 0; // by setting it to 0 we make the drawer thread start counting
+                                                                 // delta time since the next update that occurs.
+                      }).track_foreign(std::move(shared_this_ptr)));
+    }
+    uni_buffs_with_conn.emplace_back(uni_buff_connection{std::move(u_buff_dep.buffer_ptr), std::move(scoped_conn)});
+  }
+}
 
 bool mesh::operator<(const mesh &rhs) const {
   if (vao->vao_id < rhs.vao->vao_id) {
@@ -34,8 +50,8 @@ void mesh::draw(unsigned long long delta_time) const {
   vao->bind();
   prog->bind();
 
-  for (const auto &ptr : uni_buffs) {
-    ptr->rebind();
+  for (const auto &u_buff_conn : uni_buffs_with_conn) {
+    u_buff_conn.buffer_ptr->rebind();
   }
 
   if (!prog->ubb_manager().check_compatibility()) {
