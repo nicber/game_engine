@@ -19,12 +19,18 @@ class triangle_renderer;
 class triangle_renderer : public render_component
 {
 public:
-  triangle_renderer() {}
+  triangle_renderer() {
+    std::random_device rd;
+    gen = std::mt19937(rd());
+  }
 
   std::shared_ptr<const drawer> create_drawer() final override {
     if (!drawer_ptr) {
       construct_drawer();
     }
+    float color_vec[4];
+    std::generate(color_vec, color_vec + 4, [=] { return dist(gen); });
+    std::copy((char*)color_vec, (char*)(color_vec + 4), uni_buff->begin("color"));
     return drawer_ptr;
   }
 
@@ -49,7 +55,10 @@ private:
         "}";
 
       std::string fragment_source =
-        "void main() { gl_FragColor = vec4(1,1,1,0); }";
+        "uniform Color {"
+        "  vec4 color;"
+        "};"
+        "void main() { gl_FragColor = color; }";
 
       shader vertex_shader(shader_type::vertex, vertex_source, {});
       shader fragment_shader(shader_type::fragment, fragment_source, {});
@@ -60,19 +69,27 @@ private:
                                                 ogl_program->get_vertex_attr("position"));
       vao->bind_buffer_to_elements_array(std::move(indices));
 
-      auto mesh_ptr = std::make_shared<game_engine::render::mesh>(std::move(ogl_program),
-                                                             std::move(vao),
-                                                             game_engine::render::mesh::uni_buff_vector(),
-                                                             3,
-                                                             0,
-                                                             0,
-                                                             1,
-                                                             0);
+      uni_buff = std::make_shared<uniform_buffer>(*ogl_program, "Color", buf_freq_access::mod_freq, buf_kind_access::read_gl_write_app);
+      uni_buff->bind_to("Color_bind");
+      ogl_program->ubb_manager().add_binding("Color", "Color_bind");
+
+      auto mesh_ptr = game_engine::render::create_mesh(std::move(ogl_program),
+                                                       std::move(vao),
+                                                       game_engine::render::mesh::uni_buff_vector{{uni_buff, true}},
+                                                       3,
+                                                       0,
+                                                       0,
+                                                       1,
+                                                       0);
 
       drawer_ptr = std::make_shared<drawer>();
       *drawer_ptr += mesh_ptr;
     }
+
   std::shared_ptr<drawer> drawer_ptr;
+  std::shared_ptr<uniform_buffer> uni_buff;
+  std::mt19937 gen;
+  std::uniform_real_distribution<float> dist{0,1};
 };
 
 extern "C" {
