@@ -12,7 +12,7 @@ namespace game_engine
 			namespace ai
 			{
 				/** \brief Class that represents an 'intelligent' class that can update itself. */
-				class ai_component : public logic::component
+				class ai_component : public virtual logic::component
 				{
 				public:
 					/** \brief Called by ai_subsystem when it's updating all components.

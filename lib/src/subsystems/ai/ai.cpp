@@ -14,7 +14,7 @@ namespace game_engine
 					{
 						for (auto comp_ptr : comp_vector.second)
 						{
-							auto& ent = static_cast<ai_component&>(*comp_ptr);
+							auto& ent = dynamic_cast<ai_component&>(*comp_ptr);
 							ent.ai_update();
 						}
 					}

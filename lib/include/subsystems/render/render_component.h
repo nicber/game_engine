@@ -14,7 +14,7 @@ namespace game_engine
 			{
 				/** \brief Class that can draw itself. */
 				class render_component
-          : public logic::component
+          : public virtual logic::component
 				{
 				public:
           virtual std::shared_ptr<const drawer> create_drawer() = 0;

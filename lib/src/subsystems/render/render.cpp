@@ -98,7 +98,7 @@ bool render_subsystem::update_drawers_if_nec() {
     for (auto& components_of_a_type : reg_components) {
       auto& vector_of_components = components_of_a_type.second;
       for (auto comp : vector_of_components) {
-        auto drawer = static_cast<render_component*>(comp)->create_drawer();
+        auto drawer = dynamic_cast<render_component*>(comp)->create_drawer();
         auto d_meshes_its = drawer->get_meshes();
         for (auto it = d_meshes_its.first; it != d_meshes_its.second; ++it) {
           auto lower_bound = meshes.lower_bound(*it);
