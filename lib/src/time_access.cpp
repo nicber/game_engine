@@ -86,5 +86,13 @@ namespace game_engine
 
 			return res;
 		}
+
+    bool time::is_zero() const {
+      return plat_time == 0;
+    }
+
+    void time::set_zero() {
+      plat_time = 0;
+    }
 	}
 }

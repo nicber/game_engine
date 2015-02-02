@@ -60,6 +60,9 @@ namespace game_engine
 			friend std::ostream& operator<<(std::ostream& ostr, const time& tim);
 
 			long long to(type typ) const;
+
+      bool is_zero() const;
+      void set_zero();
 		};		
 
 		/** \brief Returns an OS-specific value that represents a point in time
