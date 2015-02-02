@@ -4,9 +4,17 @@
 #include "opengl/program.h"
 #include "opengl/uniform_buffer.h"
 #include "opengl/vertex_array_object.h"
+#include "time_access.h"
 #include <vector>
 
 namespace game_engine {
+namespace logic {
+namespace subsystems {
+namespace render{
+class render_subsystem;
+}
+}
+}
 namespace render {
 class mesh : public std::enable_shared_from_this<mesh> {
   struct uni_buff_connection {
@@ -23,7 +31,7 @@ public:
 public:
   bool operator<(const mesh &rhs) const;
 
-  void draw(unsigned long long delta_time) const;
+  void draw(logic::time delta_time) const;
 
 private:
    /* \brief This constructor is private since it should use shared_from_this which hasn't been
@@ -43,6 +51,7 @@ private:
 
 private:
   friend class mesh_constructor;
+  friend class game_engine::logic::subsystems::render::render_subsystem;
 
   std::shared_ptr<const opengl::program> prog;
   std::shared_ptr<const opengl::vertex_array_object> vao;
@@ -53,7 +62,7 @@ private:
   const size_t instance_count;
   const size_t base_instance;
 
-  unsigned long long absolute_time_last_update = 0;
+  mutable logic::time absolute_last_update_time;
 };
 
 /** \brief Constructs a mesh. It needs:

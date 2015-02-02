@@ -29,7 +29,6 @@ void render_subsystem::handle_events() {
   std::cout << "GL Info: " << glGetString(GL_VERSION) << std::endl;
 
   time last_update_time = read_absolute_time();
-  unsigned long long time_since_last_update = 0;
 
   while (true) {
     {
@@ -40,13 +39,7 @@ void render_subsystem::handle_events() {
         });
       }
 
-      if (update_drawers_if_nec()) {
-        last_update_time = read_absolute_time();
-        time_since_last_update = 0;
-      } else {
-        time_since_last_update = read_absolute_time().to(time::type::usec)
-                                - last_update_time.to(time::type::usec);
-      }
+      update_drawers_if_nec();
 
       sf::Event event;
       window.pollEvent(event);
@@ -68,7 +61,12 @@ void render_subsystem::handle_events() {
       if (m_it->unique()) {
         m_it = meshes.erase(m_it);
       } else {
-        (*m_it)->draw(time_since_last_update);
+        auto &mesh = **m_it;
+
+        if (mesh.absolute_last_update_time.is_zero()) {
+          mesh.absolute_last_update_time = last_update_time;
+        }
+        mesh.draw(last_update_time - mesh.absolute_last_update_time);
         ++m_it;
       }
     }

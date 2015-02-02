@@ -29,8 +29,9 @@ void mesh::init(const mesh::uni_buff_vector &uni_buffs_)
                       [ mesh_wptr = std::weak_ptr<mesh>(shared_this_ptr) ] () {
                         auto mesh_ptr = mesh_wptr.lock();
                         assert(mesh_ptr && "it should not have been called by the signal if it is expired");
-                        mesh_ptr->absolute_time_last_update = 0; // by setting it to 0 we make the drawer thread start counting
-                                                                 // delta time since the next update that occurs.
+                        // by setting it to 0 we make the drawer thread start counting
+                        // delta time since the next update that occurs.
+                        mesh_ptr->absolute_last_update_time.set_zero();
                       }).track_foreign(std::move(shared_this_ptr)));
     }
     uni_buffs_with_conn.emplace_back(uni_buff_connection{std::move(u_buff_dep.buffer_ptr), std::move(scoped_conn)});
@@ -47,7 +48,7 @@ bool mesh::operator<(const mesh &rhs) const {
   }
 }
 
-void mesh::draw(unsigned long long delta_time) const {
+void mesh::draw(logic::time delta_time) const {
   vao->bind();
   prog->bind();
 
