@@ -17,7 +17,7 @@ namespace game_engine
           : public virtual logic::component
 				{
 				public:
-          virtual std::shared_ptr<const drawer> create_drawer() = 0;
+          virtual std::shared_ptr<const drawer> update_opengl_get_drawer() = 0;
 				};
 			}
 		}

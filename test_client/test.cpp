@@ -24,7 +24,7 @@ public:
     gen = std::mt19937(rd());
   }
 
-  std::shared_ptr<const drawer> create_drawer() final override {
+  std::shared_ptr<const drawer> update_opengl_get_drawer() final override {
     if (!drawer_ptr) {
       construct_drawer();
     }
