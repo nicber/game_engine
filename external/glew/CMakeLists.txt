@@ -1,7 +1,5 @@
 find_package(PkgConfig REQUIRED)
 
-
-
 pkg_check_modules(GLEW glew)
 
 set(GAME_ENGINE_INCLUDE ${GAME_ENGINE_INCLUDE} ${GLEW_INCLUDE_DIRS} PARENT_SCOPE)

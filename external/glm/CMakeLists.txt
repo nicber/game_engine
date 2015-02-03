@@ -1,0 +1,5 @@
+find_package(PkgConfig REQUIRED)
+
+pkg_check_modules(GLM glm)
+
+set(GAME_ENGINE_INCLUDE ${GAME_ENGINE_INCLUDE} ${GLM_INCLUDE_DIRS} PARENT_SCOPE)
