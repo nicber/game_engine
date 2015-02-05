@@ -9,6 +9,35 @@
 namespace game_engine {
 namespace opengl {
 namespace parser {
+inconsistent_file::inconsistent_file(std::string error_msg_,
+                  std::vector<face> faces_,
+                  std::vector<glm::vec3> vertices_,
+                  std::vector<glm::vec3> tex_coords_,
+                  std::vector<glm::vec3> normals_)
+ :std::runtime_error(std::move(error_msg_)),
+  faces(std::move(faces_)),
+  vertices(std::move(vertices_)),
+  tex_coords(std::move(tex_coords_)),
+  normals(std::move(normals_))
+{}
+
+const std::vector<face> &inconsistent_file::get_faces() const {
+  return faces;
+}
+
+const std::vector<glm::vec3> &inconsistent_file::get_vertices() const {
+  return vertices;
+}
+
+const std::vector<glm::vec3> &inconsistent_file::get_tex_coords() const {
+  return tex_coords;
+}
+
+const std::vector<glm::vec3> &inconsistent_file::get_normals() const {
+  return normals;
+}
+
+
 static std::string create_message(const std::string &message_str, const std::string &source_str, size_t pos) {
   size_t context_start(pos >= 10 ? pos - 10 : 0);
   std::stringstream ss;
@@ -38,10 +67,6 @@ size_t parse_error::position() const {
   return pos;
 }
 
-struct v_vt_n_indices {
-  unsigned int v_i, vt_i, n_i;
-};
-
 static size_t hash_value(const v_vt_n_indices &i) {
   size_t seed(0);
   boost::hash_combine(seed, i.v_i);
@@ -61,14 +86,10 @@ static bool operator==(const v_vt_n_indices &lhs, const v_vt_n_indices &rhs) {
   return r;
 }
 
-struct face {
-  v_vt_n_indices indices[3];
-};
-
-static obj_model create_indices(const std::vector<face> &faces,
-                                const std::vector<glm::vec3> &vertices,
-                                const std::vector<glm::vec3> &tex_coords,
-                                const std::vector<glm::vec3> &normals)
+static obj_model create_indices(std::vector<face> faces,
+                                std::vector<glm::vec3> vertices,
+                                std::vector<glm::vec3> tex_coords,
+                                std::vector<glm::vec3> normals)
 {
   unsigned int id(1);
   std::vector<unsigned int> new_indices;
@@ -78,9 +99,32 @@ static obj_model create_indices(const std::vector<face> &faces,
   std::unordered_map<v_vt_n_indices, unsigned int, boost::hash<v_vt_n_indices>> indices_map;
 
   new_indices.reserve(faces.size() * 3);
+  auto move_and_throw_inconsistent_file = [&] (std::string error_msg_) {
+    throw inconsistent_file(std::move(error_msg_),
+                            std::move(faces),
+                            std::move(vertices),
+                            std::move(tex_coords),
+                            std::move(normals));
+  };
 
   for (auto &f : faces) {
     for (auto &ind : f.indices) {
+      if (ind.v_i > vertices.size()) {
+        std::stringstream ss;
+        ss << "vertex index " << ind.v_i << " out of range [1;" << vertices.size() << "]";
+        move_and_throw_inconsistent_file(ss.str());
+      }
+      if (ind.vt_i > tex_coords.size()) {
+        std::stringstream ss;
+        ss << "texture coords index " << ind.vt_i << " out of range [1;" << tex_coords.size() << "]";
+        move_and_throw_inconsistent_file(ss.str());
+      }
+      if (ind.n_i > normals.size()) {
+        std::stringstream ss;
+        ss << "normal index " << ind.n_i << " out of range [1;" << normals.size() << "]";
+        move_and_throw_inconsistent_file(ss.str());
+      }
+
       // we have to count from 1 so that we can tell which indices are new (i.e. == 0),
       // and which ones have already been processed.
       auto &new_index = indices_map[ind];

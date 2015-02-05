@@ -7,6 +7,34 @@
 namespace game_engine {
 namespace opengl {
 namespace parser {
+struct v_vt_n_indices {
+  unsigned int v_i, vt_i, n_i;
+};
+
+struct face {
+  v_vt_n_indices indices[3];
+};
+
+class inconsistent_file : public std::runtime_error {
+public:
+  inconsistent_file(std::string error_msg_,
+                    std::vector<face> faces_,
+                    std::vector<glm::vec3> vertices_,
+                    std::vector<glm::vec3> tex_coords_,
+                    std::vector<glm::vec3> normals_);
+
+  const std::vector<face> &get_faces() const;
+  const std::vector<glm::vec3> &get_vertices() const;
+  const std::vector<glm::vec3> &get_tex_coords() const;
+  const std::vector<glm::vec3> &get_normals() const;
+
+private:
+  std::vector<face> faces;
+  std::vector<glm::vec3> vertices;
+  std::vector<glm::vec3> tex_coords;
+  std::vector<glm::vec3> normals;
+};
+
 class parse_error : public std::runtime_error {
 public:
   parse_error(std::string message_str_, std::string source_str_, size_t pos_);
