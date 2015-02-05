@@ -43,7 +43,7 @@ static std::string create_message(const std::string &message_str, const std::str
   std::stringstream ss;
 
   ss << "parsing failure aproximately at position " << pos << " : " << message_str
-     << "in source:\n" << std::string(source_str, context_start);
+     << " in source:\n" << std::string(source_str, context_start);
 
   return ss.str();
 }
