@@ -71,11 +71,13 @@ static obj_model create_indices(const std::vector<face> &faces,
                                 const std::vector<glm::vec3> &normals)
 {
   unsigned int id(1);
-  std::vector<unsigned int> new_indices(faces.size() * 3);
+  std::vector<unsigned int> new_indices;
   std::vector<glm::vec3> new_vertices;
   std::vector<glm::vec3> new_tex_coords;
   std::vector<glm::vec3> new_normals;
   std::unordered_map<v_vt_n_indices, unsigned int, boost::hash<v_vt_n_indices>> indices_map;
+
+  new_indices.reserve(faces.size() * 3);
 
   for (auto &f : faces) {
     for (auto &ind : f.indices) {
