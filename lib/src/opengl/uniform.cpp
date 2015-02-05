@@ -10,6 +10,15 @@
 
 namespace game_engine {
 namespace opengl {
+uniform_setter::uniform_setter(uniform u_, GLint loc_, GLuint prog_id_)
+ :uniform(std::move(u_)),
+  location(loc_),
+  prog_id(prog_id_)
+{}
+
+uniform_setter::uniform_setter()
+{}
+
 bool operator==(const uniform &lhs, const uniform &rhs) {
 #define COMP(x) (lhs.x == rhs.x)
   return COMP(name) &&
@@ -29,7 +38,7 @@ bool operator!=(const uniform &lhs, const uniform &rhs) {
   return !(lhs == rhs);
 }
 
-std::vector<uniform> get_uniforms_of_program(GLuint prog_id) {
+std::vector<uniform_setter> get_uniforms_of_program(GLuint prog_id) {
   GLint number_uniforms;
   glGetProgramiv(prog_id, GL_ACTIVE_UNIFORMS, &number_uniforms);
 
@@ -55,6 +64,7 @@ std::vector<uniform> get_uniforms_of_program(GLuint prog_id) {
   gl_vector array_strides = get_data(GL_UNIFORM_ARRAY_STRIDE);
   gl_vector matrix_strides = get_data(GL_UNIFORM_MATRIX_STRIDE);
   gl_vector row_major = get_data(GL_UNIFORM_IS_ROW_MAJOR);
+  gl_vector locations(number_uniforms);
   std::vector<std::string> names(number_uniforms);
 
   GLint max_name_length;
@@ -66,6 +76,7 @@ std::vector<uniform> get_uniforms_of_program(GLuint prog_id) {
     glGetActiveUniformName(prog_id, i, max_name_length, &real_length, name_buffer.data());
     assert(real_length <= (GLsizei)max_name_length);
     names[i].assign(name_buffer.data());
+    locations[i] = glGetUniformLocation(prog_id, names[i].c_str());
   }
 
   GLint number_blocks;
@@ -95,19 +106,21 @@ std::vector<uniform> get_uniforms_of_program(GLuint prog_id) {
     block_names[i].assign(block_name_buffer.data());
   }
 
-  std::vector<uniform> result(number_uniforms);
+  std::vector<uniform_setter> result(number_uniforms);
   for (size_t i = 0; i < (size_t)number_uniforms; ++i) {
     auto b_ind = block_indices[i];
-    result[i] = {names[i],
-                 block_names[b_ind],
-                 b_ind,
-                 block_sizes[b_ind],
-                 offsets[i],
-                 sizes[i],
-                 array_strides[i],
-                 matrix_strides[i],
-                 row_major[i] == GL_TRUE,
-                 (GLenum)types[i]};
+    result[i] = {{names[i],
+                  block_names[b_ind],
+                  b_ind,
+                  block_sizes[b_ind],
+                  offsets[i],
+                  sizes[i],
+                  array_strides[i],
+                  matrix_strides[i],
+                  row_major[i] == GL_TRUE,
+                  (GLenum)types[i]},
+                 locations[i],
+                 prog_id};
   }
 
   return result;

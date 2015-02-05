@@ -239,7 +239,7 @@ bool program::has_uniform(const std::string &name) const {
   return it != uniforms.get<1>().end();
 }
 
-const  uniform &program::get_uniform(const std::string &name) const {
+const  uniform_setter &program::get_uniform(const std::string &name) const {
   auto it = uniforms.get<1>().find(name);
   return *it;
 }

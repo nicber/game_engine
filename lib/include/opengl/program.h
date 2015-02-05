@@ -65,7 +65,7 @@ public:
 class program {
 public:
   using uniform_cont = boost::multi_index_container<
-                         uniform,
+                         uniform_setter,
                          boost::multi_index::indexed_by<
                            boost::multi_index::ordered_non_unique<
                              boost::multi_index::member<uniform, std::string, &uniform::block_name>
@@ -91,7 +91,7 @@ public:
   const vertex_attr &get_vertex_attr(const std::string &name) const;
 
   bool has_uniform(const std::string &name) const;
-  const uniform &get_uniform(const std::string &name) const;
+  const uniform_setter &get_uniform(const std::string &name) const;
 
   const uniform_cont &get_uniforms() const;
 

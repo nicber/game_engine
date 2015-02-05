@@ -21,12 +21,21 @@ struct uniform {
   GLenum type;
 };
 
+class uniform_setter : public uniform {
+public:
+  uniform_setter(uniform u_, GLint loc_, GLuint prog_id_);
+  uniform_setter();
+private:
+  GLint location;
+  GLuint prog_id;
+};
+
 bool operator==(const uniform &lhs, const uniform &rhs);
 bool operator!=(const uniform &lhs, const uniform &rhs);
 
 /** \brief Utility function for querying information about a program's uniforms all at once.
  */
-std::vector<uniform> get_uniforms_of_program(GLuint prog_id);
+std::vector<uniform_setter> get_uniforms_of_program(GLuint prog_id);
 
 struct uniform_buffer_data;
 class uniform_buffer;
