@@ -51,9 +51,14 @@ static size_t hash_value(const v_vt_n_indices &i) {
 }
 
 static bool operator==(const v_vt_n_indices &lhs, const v_vt_n_indices &rhs) {
-  return lhs.v_i == rhs.v_i &&
-         lhs.vt_i == rhs.vt_i &&
-         lhs.n_i == rhs.n_i;
+  bool r = lhs.v_i == rhs.v_i &&
+           lhs.vt_i == rhs.vt_i &&
+           lhs.n_i == rhs.n_i;
+  if (r) {
+    assert(hash_value(lhs) == hash_value(rhs));
+  }
+
+  return r;
 }
 
 struct face {
