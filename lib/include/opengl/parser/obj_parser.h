@@ -12,10 +12,10 @@ public:
   parse_error(std::string message_str_, std::string source_str_, size_t pos_);
 
   /** \brief Returns the error message. */
-  const std::string &message_str() const;
+  const std::string &error_message() const;
 
   /** \brief Returns the source string. */
-  const std::string &source_str() const;
+  const std::string &source_string() const;
 
   /** \brief Returns an aproximate error position. */
   size_t position() const;

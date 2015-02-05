@@ -3,7 +3,7 @@
 #include <cstdio>
 #include <cstring>
 #include "opengl/parser/obj_parser.h"
-#include <stringstream>
+#include <sstream>
 #include <unordered_map>
 
 namespace game_engine {
@@ -13,24 +13,24 @@ static std::string create_message(const std::string &message_str, const std::str
   size_t context_start(pos >= 10 ? pos - 10 : 0);
   std::stringstream ss;
 
-  ss << "parsing failure aproximately at position " << pos < <" : " << message_str
+  ss << "parsing failure aproximately at position " << pos << " : " << message_str
      << "in source:\n" << std::string(source_str, context_start);
 
   return ss.str();
 }
 
 parse_error::parse_error(std::string message_str_, std::string source_str_, size_t pos_)
- :std::runtime_error(create_message(message_str_, source_str_, pos_),
+ :std::runtime_error(create_message(message_str_, source_str_, pos_)),
   message_str(std::move(message_str_)),
   source_str(std::move(source_str_)),
   pos(pos_)
 {}
 
-const std::string &parse_error::message_str() const {
+const std::string &parse_error::error_message() const {
   return message_str;
 }
 
-const std::string &parse_error::source_str() const {
+const std::string &parse_error::source_string() const {
   return source_str;
 }
 
@@ -91,7 +91,7 @@ static obj_model create_indices(const std::vector<face> &faces,
     }
   }
 
-  assert (new_indices.size() = faces.size() * 3);
+  assert (new_indices.size() == faces.size() * 3);
 
   return {std::move(new_indices), std::move(new_vertices),
           std::move(new_tex_coords), std::move(new_normals)};
