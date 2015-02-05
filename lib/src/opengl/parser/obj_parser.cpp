@@ -90,9 +90,11 @@ static obj_model create_indices(const std::vector<face> &faces,
         assert(new_normals.size() == id - 1);
         new_index = id;
         ++id;
-        new_vertices.emplace_back(vertices[ind.v_i]);
-        new_tex_coords.emplace_back(tex_coords[ind.vt_i]);
-        new_normals.emplace_back(normals[ind.n_i]);
+        auto tex_coord_new = ind.vt_i ? tex_coords[ind.vt_i - 1] : glm::vec3();
+        auto normal_new = ind.n_i ? normals[ind.n_i - 1] : glm::vec3();
+        new_vertices.emplace_back(vertices[ind.v_i - 1]);
+        new_tex_coords.emplace_back(std::move(tex_coord_new));
+        new_normals.emplace_back(std::move(normal_new));
       }
       new_indices.emplace_back(new_index - 1);
     }
