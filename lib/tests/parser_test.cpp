@@ -12,6 +12,7 @@ TEST(ParserTest, CorrectParsing) {
   "\nv 0 1 0\n" // double newline
   "vt 0 0" // no newline
   "vt 1 0\n"
+  "# a comment\n"
   "   vt \t 1  1"
   "\n vt 0 1 1\n" //double newline and also we add the w component
   "\nn 1  2      3\n"

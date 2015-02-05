@@ -247,6 +247,8 @@ obj_model parse_obj_format(const char *str) {
       }
     } else if (def_type[0] == '#') {
       //comment
+      std::sscanf(str + pos, "%*[^\n]%n", &delta_pos);
+      pos += delta_pos;
     } else {
       throw parse_error("unknown definition type", str, pos);
     }
