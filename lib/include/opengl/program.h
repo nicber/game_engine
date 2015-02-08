@@ -131,5 +131,11 @@ private:
   mutable unor_map<frag_loc> frag_locs;
   program_uniform_block_binding_manager bind_manager{this};
 };
+
+/** \brief Utility function to help classes that have only a program id that
+ * comes from a program like the one above, but they have nor got access to
+ * the wrapper class.
+ */
+void bind_program(GLint prog_id);
 }
 }

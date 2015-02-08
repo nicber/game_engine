@@ -239,7 +239,7 @@ bool program::has_uniform(const std::string &name) const {
   return it != uniforms.get<1>().end();
 }
 
-const  uniform_setter &program::get_uniform(const std::string &name) const {
+uniform_setter program::get_uniform(const std::string &name) const {
   auto it = uniforms.get<1>().find(name);
   return *it;
 }
@@ -260,9 +260,14 @@ const frag_loc &program::get_frag_loc(const std::string &name) const {
 }
 
 void program::bind() const {
+  bind_program(program_id);
+}
+
+void bind_program(GLuint prog_id) {
   static GLuint currently_bound_program = 0;
-  if (program_id != currently_bound_program) {
-    glUseProgram(program_id);
+  if (prog_id != currently_bound_program) {
+    glUseProgram(prog_id);
+    currently_bound_program = prog_id;
   }
 }
 
