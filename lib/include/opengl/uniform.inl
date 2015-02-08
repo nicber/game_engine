@@ -164,8 +164,10 @@ struct call_set_f {
 static void call(GLint loc, GLsizei count, It begin) {
   std::vector<typename It::value_type> copy_vec;
   copy_vec.reserve(count);
-  std::copy(begin, begin + count, std::back_inserter(copy_vec));
-  call_set_f::call(loc, count, copy_vec.data());
+  auto end(begin);
+  std::advance(end, count);
+  std::copy(begin, end, std::back_inserter(copy_vec));
+  gl_uni_set_f(loc, count, copy_vec.data());
 }
 };
 
