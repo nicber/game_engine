@@ -188,8 +188,6 @@ void uniform_setter::set(GLsizei count, It begin) {
   call_set_f<It>::call(location, count, std::move(begin));
 }
 
-/** \brief Sets an array of uniforms to the content of [begin; end).
- */
 template <typename It>
 void uniform_setter::set(It begin, It end) {
   set(std::distance(begin, end), std::move(begin));
