@@ -58,7 +58,6 @@ auto &get_names_map() {
   return names_map;
 }
 const char *get_gl_type_string(GLenum enum_val) {
-  auto &map(get_names_map());
   return get_names_map().at(enum_val).enum_name;
 }
 const char *get_cpp_type_string(GLenum enum_val) {
@@ -135,39 +134,45 @@ std::vector<uniform_setter> get_uniforms_of_program(GLuint prog_id) {
   }
 
   GLint number_blocks;
+  gl_vector block_sizes;
+  gl_vector name_lengths;
+  std::vector<std::string> block_names;
   glGetProgramiv(prog_id, GL_ACTIVE_UNIFORM_BLOCKS, &number_blocks);
 
-  auto get_block_data = [prog_id, number_blocks] (GLenum param)
-    {
-      std::vector<GLint> data_retrieved(number_blocks);
-      for (size_t i = 0; i < (size_t)number_blocks; ++i) {
-        glGetActiveUniformBlockiv(prog_id, i, param, &data_retrieved[i]);
-      }
-      return data_retrieved;
-    };
+  if (number_blocks != 0) {
+    auto get_block_data = [prog_id, number_blocks] (GLenum param)
+      {
+        std::vector<GLint> data_retrieved(number_blocks);
+        for (size_t i = 0; i < (size_t)number_blocks; ++i) {
+          glGetActiveUniformBlockiv(prog_id, i, param, &data_retrieved[i]);
+        }
+        return data_retrieved;
+      };
 
-  gl_vector block_sizes = get_block_data(GL_UNIFORM_BLOCK_DATA_SIZE);
-  gl_vector name_lengths = get_block_data(GL_UNIFORM_BLOCK_NAME_LENGTH);
-  std::vector<std::string> block_names(number_blocks);
-  size_t max_block_name_length = *std::max_element(name_lengths.begin(),
-                                                   name_lengths.end());
-  std::vector<char> block_name_buffer(max_block_name_length);
+    block_sizes = get_block_data(GL_UNIFORM_BLOCK_DATA_SIZE);
+    name_lengths = get_block_data(GL_UNIFORM_BLOCK_NAME_LENGTH);
+    block_names = std::vector<std::string>(number_blocks);
 
-  for (size_t i = 0; i < (size_t)number_blocks; ++i) {
-    GLsizei real_length;
-    glGetActiveUniformBlockName(prog_id, i, max_block_name_length, &real_length,
-                                block_name_buffer.data());
-    assert(real_length <= (GLsizei)max_block_name_length);
-    block_names[i].assign(block_name_buffer.data());
+    size_t max_block_name_length = *std::max_element(name_lengths.begin(),
+                                                     name_lengths.end());
+    std::vector<char> block_name_buffer(max_block_name_length);
+
+    for (size_t i = 0; i < (size_t)number_blocks; ++i) {
+      GLsizei real_length;
+      glGetActiveUniformBlockName(prog_id, i, max_block_name_length, &real_length,
+                                  block_name_buffer.data());
+      assert(real_length <= (GLsizei)max_block_name_length);
+      block_names[i].assign(block_name_buffer.data());
+    }
   }
 
   std::vector<uniform_setter> result(number_uniforms);
   for (size_t i = 0; i < (size_t)number_uniforms; ++i) {
     auto b_ind = block_indices[i];
     result[i] = {{names[i],
-                  block_names[b_ind],
+                  b_ind >= 0 ? block_names[b_ind] : "",
                   b_ind,
-                  block_sizes[b_ind],
+                  b_ind >= 0 ? block_sizes[b_ind] : -1,
                   offsets[i],
                   sizes[i],
                   array_strides[i],
