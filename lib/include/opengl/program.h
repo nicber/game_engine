@@ -91,7 +91,7 @@ public:
   const vertex_attr &get_vertex_attr(const std::string &name) const;
 
   bool has_uniform(const std::string &name) const;
-  const uniform_setter &get_uniform(const std::string &name) const;
+  uniform_setter get_uniform(const std::string &name) const;
 
   const uniform_cont &get_uniforms() const;
 
