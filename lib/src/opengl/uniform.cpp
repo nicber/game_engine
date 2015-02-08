@@ -3,13 +3,68 @@
 #include <boost/multi_index/global_fun.hpp>
 #include <boost/multi_index/ordered_index.hpp>
 #include <boost/multi_index/sequenced_index.hpp>
+#define INCLUDED_BY_UNIFORM_CPP
 #include "opengl/uniform.h"
+#include <unordered_map>
 #include <memory>
 #include <vector>
 #include <string>
 
 namespace game_engine {
 namespace opengl {
+static std::vector<int> prepare_vector(GLsizei count, unsigned components, const bool *data) {
+  std::vector<int> ret;
+  ret.reserve(count * components);
+  std::copy(data, data + (count * components), std::back_inserter(ret));
+  return ret;
+}
+
+void gl_uniform1bv(GLint location, GLsizei count, const bool *data) {
+  auto vec(prepare_vector(count, 1, data));
+  glUniform1iv(location, count, vec.data());
+}
+
+void gl_uniform2bv(GLint location, GLsizei count, const bool *data) {
+  auto vec(prepare_vector(count, 1, data));
+  glUniform2iv(location, count, vec.data());
+}
+
+void gl_uniform3bv(GLint location, GLsizei count, const bool *data) {
+  auto vec(prepare_vector(count, 1, data));
+  glUniform3iv(location, count, vec.data());
+}
+
+void gl_uniform4bv(GLint location, GLsizei count, const bool *data) {
+  auto vec(prepare_vector(count, 1, data));
+  glUniform4iv(location, count, vec.data());
+}
+
+struct names_struct {
+ const char *cpp_name;
+ const char *enum_name;
+};
+
+auto &get_names_map() {
+  static std::unordered_map<GLenum, names_struct> names_map = [] {
+    assert (names_array_counter < 100);
+    std::unordered_map<GLenum, names_struct> ret;
+    for (size_t i(0); i < names_array_counter; ++i) {
+      ret.emplace(names_array[i].enum_val,
+                       names_struct{names_array[i].cpp_name,
+                                    names_array[i].enum_name});
+    }
+    return ret;
+  }();
+  return names_map;
+}
+const char *get_gl_type_string(GLenum enum_val) {
+  auto &map(get_names_map());
+  return get_names_map().at(enum_val).enum_name;
+}
+const char *get_cpp_type_string(GLenum enum_val) {
+  return get_names_map().at(enum_val).cpp_name;
+}
+
 uniform_setter::uniform_setter(uniform u_, GLint loc_, GLuint prog_id_)
  :uniform(std::move(u_)),
   location(loc_),

@@ -23,8 +23,29 @@ struct uniform {
 
 class uniform_setter : public uniform {
 public:
+  struct type_mismatch : std::invalid_argument {
+    using std::invalid_argument::invalid_argument;
+  };
+
+public:
   uniform_setter(uniform u_, GLint loc_, GLuint prog_id_);
   uniform_setter();
+
+  /** \brief Sets a uniform to t.
+   * \throws type_mismatch if T is not compatible with the uniform's type.
+   */
+  template <typename T>
+  void set(const T &t);
+
+  /** \brief Sets an array of uniforms to the content of [begin; begin + count].
+   */
+  template <typename It>
+  void set(GLsizei count, It begin);
+
+  /** \brief Sets an array of uniforms to the content of [begin; end).
+   */
+  template <typename It>
+  void set(It begin, It end);
 private:
   GLint location;
   GLuint prog_id;
@@ -70,3 +91,5 @@ private:
 uniform_block_binding_handle get_free_uniform_block_binding(std::string name);
 }
 }
+
+#include "uniform.inl"
