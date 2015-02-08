@@ -205,3 +205,28 @@ TEST(OpenGLTest, UniformBufferProgramBinding) {
 
   EXPECT_TRUE(prog.ubb_manager().check_compatibility());
 }
+
+TEST(OpenGLTest, UniformSetValue) {
+  sf::Context ctx;
+  glewInit();
+
+  shader vert(shader_type::vertex,
+              "uniform mat4 matr;"
+              "void main() { gl_Position = matr * vec4(1,1,1,0); }", {});
+
+  shader frag(shader_type::fragment,
+              "void main() { gl_FragColor = vec4(1,1,1,1); }", {});
+
+  program prog(vert, frag, {}, {}, {});
+  auto uni_set = prog.get_uniform("matr");
+
+  EXPECT_THROW(uni_set.set(glm::vec3()),
+               game_engine::opengl::uniform_setter::type_mismatch);
+
+  std::list<glm::mat4> list;
+  list.emplace_back();
+
+  uni_set.set(glm::mat4());
+  uni_set.set(1, list.begin());
+  uni_set.set(list.begin(), list.end());
+}
