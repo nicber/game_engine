@@ -182,6 +182,7 @@ template <typename T>
 void uniform_setter::set(const T &t) {
   set(1, &t);
 }
+
 template <typename It>
 void uniform_setter::set(GLsizei count, It begin) {
   check_cpp_gl_compatibility<typename std::iterator_traits<It>::value_type>(type);
