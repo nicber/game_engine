@@ -39,8 +39,8 @@ if(GAME_ENGINE_BUILD_DOCS)
 endif()
 
 set(GAME_ENGINE_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
-set(GAME_ENGINE_INCLUDE ${GAME_ENGINE_INCLUDE} "${GAME_ENGINE_ROOT}/lib/include")
-include_directories(${GAME_ENGINE_INCLUDE})
+include_directories("${GAME_ENGINE_ROOT}/lib/include")
+include_directories(SYSTEM ${GAME_ENGINE_INCLUDE})
 # Binaries
 
 add_subdirectory(binsrc)
