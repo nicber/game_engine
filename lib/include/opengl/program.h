@@ -70,7 +70,7 @@ public:
                            boost::multi_index::ordered_non_unique<
                              boost::multi_index::member<uniform, std::string, &uniform::block_name>
                            >,
-                           boost::multi_index::ordered_non_unique<  
+                           boost::multi_index::ordered_non_unique<
                              boost::multi_index::member<uniform, std::string, &uniform::name>
                            >
                          >
