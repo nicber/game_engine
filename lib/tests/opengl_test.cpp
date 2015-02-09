@@ -229,4 +229,7 @@ TEST(OpenGLTest, UniformSetValue) {
   uni_set.set(glm::mat4());
   uni_set.set(1, list.begin());
   uni_set.set(list.begin(), list.end());
+
+  std::vector<glm::mat4> vec(1);
+  uni_set.set(vec.begin(), vec.end());
 }
