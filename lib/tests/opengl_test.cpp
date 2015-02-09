@@ -186,7 +186,7 @@ TEST(OpenGLTest, UniformBufferProgramBinding) {
               "void main() { gl_FragColor = vec4(1,1,1,1); }", {});
   program prog(vert, frag, {}, {}, {});
   uniform_buffer buffer(prog, "Mat", buf_freq_access::mod_little, buf_kind_access::read_gl_write_gl);
-  
+
   {
     std::vector<uniform_block_binding_handle> tmp_handles;
     std::string tmp_str("tmp");

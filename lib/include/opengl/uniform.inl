@@ -78,7 +78,7 @@ GET_GL_TYPE(GL_UNSIGNED_INT_VEC3, glm::uvec3, glUniform3uiv)
 GET_GL_TYPE(GL_UNSIGNED_INT_VEC4, glm::uvec4, glUniform4uiv)
 GET_GL_TYPE(GL_BOOL, bool, gl_uniform1bv)
 GET_GL_TYPE(GL_BOOL_VEC2, glm::bvec2, gl_uniform2bv)
-GET_GL_TYPE(GL_BOOL_VEC3, glm::bvec3, gl_uniform3bv) 
+GET_GL_TYPE(GL_BOOL_VEC3, glm::bvec3, gl_uniform3bv)
 GET_GL_TYPE(GL_BOOL_VEC4, glm::bvec4, gl_uniform4bv)
 GET_GL_TYPE(GL_FLOAT_MAT2, glm::mat2, glUniformMatrix2fv)
 GET_GL_TYPE(GL_FLOAT_MAT3, glm::mat3, glUniformMatrix3fv)
@@ -187,7 +187,7 @@ template <typename It>
 void uniform_setter::set(GLsizei count, It begin) {
   check_cpp_gl_compatibility<typename std::iterator_traits<It>::value_type>(type);
 
-  bind_program(prog_id); 
+  bind_program(prog_id);
   call_set_f<It>::call(location, count, std::move(begin));
 }
 
