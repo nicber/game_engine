@@ -158,25 +158,33 @@ void check_cpp_gl_compatibility(GLenum uniform_gl_t) {
   }
 }
 
+template <typename U>
+void call_set_f(GLint loc, GLsizei count, U* begin)
+{
+  gl_uni_set_f(loc, count, begin);
+}
 
-template <typename It>
-struct call_set_f {
-static void call(GLint loc, GLsizei count, It begin) {
-  std::vector<typename It::value_type> copy_vec;
+template <typename U>
+std::enable_if_t<std::is_convertible<U, typename std::vector<std::remove_const_t<typename std::iterator_traits<U>::value_type>>::const_iterator>::value>
+call_set_f(GLint loc, GLsizei count, U begin) {
+  call_set_f(loc, count, &*begin);
+}
+
+// the gl functions get a pointer to the data.
+// if we have an iterator that's not a pointer in disguise
+// (aka std::vector<T>::iterator) we have to build a vector
+// with all the data and the pass a pointer to it.
+template <typename U>
+std::enable_if_t<!std::is_convertible<U, typename std::vector<std::remove_const_t<typename std::iterator_traits<U>::value_type>>::const_iterator>::value>
+call_set_f(GLint loc, GLsizei count, U begin)
+{
+  std::vector<typename U::value_type> copy_vec;
   copy_vec.reserve(count);
   auto end(begin);
   std::advance(end, count);
   std::copy(begin, end, std::back_inserter(copy_vec));
-  gl_uni_set_f(loc, count, copy_vec.data());
+  call_set_f(loc, count, copy_vec.cbegin());
 }
-};
-
-template <typename T>
-struct call_set_f<T*> {
-static void call(GLint loc, GLsizei count, T* begin) {
-  gl_uni_set_f(loc, count, begin);
-}
-};
 
 template <typename T>
 void uniform_setter::set(const T &t) {
@@ -188,7 +196,7 @@ void uniform_setter::set(GLsizei count, It begin) {
   check_cpp_gl_compatibility<typename std::iterator_traits<It>::value_type>(type);
 
   bind_program(prog_id);
-  call_set_f<It>::call(location, count, std::move(begin));
+  call_set_f(location, count, std::move(begin));
 }
 
 template <typename It>
