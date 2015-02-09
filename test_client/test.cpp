@@ -42,7 +42,7 @@ private:
       auto indices = std::make_shared<buffer<unsigned short>>(3, buf_freq_access::mod_once,
                                                               buf_kind_access::read_gl_write_app);
 
-      vec2 data[] = {{0.5,0}, {0,sqrt(3)/2}, {-0.5, 0}};
+      vec2 data[] = {{0.5,0}, {0,static_cast<float>(sqrt(3)/2)}, {-0.5, 0}};
       std::copy(std::begin(data), std::end(data), points->begin());
 
       unsigned short ind_data[] = {0, 1, 2};
