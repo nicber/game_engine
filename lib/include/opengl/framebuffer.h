@@ -13,6 +13,7 @@ public:
 
 public:
   framebuffer();
+  ~framebuffer();
 
   void bind_to(render_target target);
 
