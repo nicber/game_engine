@@ -18,6 +18,12 @@ public:
   void bind_to(render_target target);
 
 private:
+  /** \brief Returns true and stores the render_target this framebuffer is
+   * currently bound to. If there is no such target, it returns false and
+   * does not touch the contents of the passed reference.
+   */
+  bool get_bind(render_target &ret);
+private:
   GLuint framebuffer_id;
 };
 }
