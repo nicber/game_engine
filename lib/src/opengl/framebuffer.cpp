@@ -11,14 +11,14 @@ renderbuffer_attachment  init_renderbuff_at(GLenum constant) {
 }
 
 renderbuffer_attachment renderbuffer_attachment::color_attachmenti(size_t i) {
-
-  init_renderbuff_at(GL_DEPTH_STENCIL_ATTACHMENT);
+  return init_renderbuff_at(i);
 }
-renderbuffer_attachment renderbuffer_attachment::depth_stencil_attachment =
-  init_renderbuff_at(GL_DEPTH_STENCIL_ATTACHMENT);
 
-renderbuffer_attachment renderbuffer_attachment::depth_stencil_attachment =
-  init_renderbuff_at(GL_DEPTH_STENCIL_ATTACHMENT);
+renderbuffer_attachment renderbuffer_attachment::depth_attachment =
+  init_renderbuff_at(GL_DEPTH_ATTACHMENT);
+
+renderbuffer_attachment renderbuffer_attachment::stencil_attachment =
+  init_renderbuff_at(GL_STENCIL_ATTACHMENT);
 
 renderbuffer_attachment renderbuffer_attachment::depth_stencil_attachment =
   init_renderbuff_at(GL_DEPTH_STENCIL_ATTACHMENT);
