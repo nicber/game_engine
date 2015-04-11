@@ -1,4 +1,5 @@
 #pragma once
+#include <boost/functional/hash_fwd.hpp>
 #include <GL/glew.h>
 #include <memory>
 #include "renderbuffer.h"
@@ -11,11 +12,17 @@ struct renderbuffer_attachment {
   static renderbuffer_attachment depth_attachment;
   static renderbuffer_attachment stencil_attachment;
   static renderbuffer_attachment depth_stencil_attachment;
+
+  bool operator==(const renderbuffer_attachment &rhs) const;
+
 private:
   friend renderbuffer_attachment init_renderbuff_at(GLenum constant);
   friend class framebuffer;
+  friend size_t hash_value(const renderbuffer_attachment &rnd_at);
   GLenum gl_constant;
 };
+
+size_t hash_value(const renderbuffer_attachment &rnd_at);
 
 /** \brief Class that represents a framebuffer. It provides several member
  * functions that abstract the OpenGL API.
@@ -57,7 +64,8 @@ private:
 private:
   GLuint framebuffer_id;
   std::unordered_map<renderbuffer_attachment,
-                     std::weak_ptr<const renderbuffer_attachment>
+                     std::weak_ptr<const renderbuffer>,
+                     boost::hash<renderbuffer_attachment>
                     > rbuff_attachments;
 };
 }

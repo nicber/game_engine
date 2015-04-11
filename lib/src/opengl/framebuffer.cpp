@@ -1,3 +1,4 @@
+#include <boost/functional/hash.hpp>
 #include <cassert>
 #include "opengl/framebuffer.h"
 
@@ -21,6 +22,16 @@ renderbuffer_attachment renderbuffer_attachment::depth_stencil_attachment =
 
 renderbuffer_attachment renderbuffer_attachment::depth_stencil_attachment =
   init_renderbuff_at(GL_DEPTH_STENCIL_ATTACHMENT);
+
+bool renderbuffer_attachment::operator==(const renderbuffer_attachment &rhs) const
+{
+  return gl_constant == rhs.gl_constant;
+}
+
+size_t hash_value(const renderbuffer_attachment &rnd_at)
+{
+  return boost::hash_value(rnd_at.gl_constant);
+}
 
 static GLuint read_and_draw_bound = 0;
 static GLuint draw_bound = 0;
