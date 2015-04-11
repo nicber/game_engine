@@ -16,8 +16,13 @@ private:
   friend class framebuffer;
   GLenum gl_constant;
 };
+
+/** \brief Class that represents a framebuffer. It provides several member
+ * functions that abstract the OpenGL API.
+ */
 class framebuffer {
 public:
+  /** \brief This enum provides type safety when using framebuffer targets. */
   enum class render_target : GLenum {
     read = GL_DRAW_FRAMEBUFFER,
     draw = GL_READ_FRAMEBUFFER,
@@ -28,6 +33,7 @@ public:
   framebuffer();
   ~framebuffer();
 
+  /** \brief Binds the framebuffer to a certain render_target. */
   void bind_to(render_target target);
 
   /** \brief Attaches a passed renderbuffer to a specific attachment.
@@ -46,8 +52,7 @@ public:
 private:
   /** \brief Returns true and stores the render_target this framebuffer is
    * currently bound to. If there is no such target, it returns false and
-   * does not touch the contents of the passed reference.
-   */
+   * does not touch the contents of the passed reference. */
   bool get_bind(render_target &ret);
 private:
   GLuint framebuffer_id;
