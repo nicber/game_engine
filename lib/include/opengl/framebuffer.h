@@ -61,6 +61,10 @@ private:
    * currently bound to. If there is no such target, it returns false and
    * does not touch the contents of the passed reference. */
   bool get_bind(render_target &ret);
+
+  void do_attach(renderbuffer_attachment rnd_at,
+                 const renderbuffer &rbuffer);
+
 private:
   GLuint framebuffer_id;
   std::unordered_map<renderbuffer_attachment,

@@ -79,6 +79,16 @@ void framebuffer::attach(renderbuffer_attachment rnd_at,
 void framebuffer::attach(renderbuffer_attachment rnd_at,
                          const renderbuffer &rbuffer)
 {
+  auto it = rbuff_attachments.find(rnd_at);
+  if (it != rbuff_attachments.end() && it->second.lock().get() != &rbuffer) {
+    rbuff_attachments.erase(it);
+  }
+  do_attach(rnd_at, rbuffer);
+}
+
+void framebuffer::do_attach(renderbuffer_attachment rnd_at,
+                         const renderbuffer &rbuffer)
+{
   render_target framebuffer_binding;
   if (!get_bind(framebuffer_binding)) {
     framebuffer_binding = render_target::read_and_draw;
