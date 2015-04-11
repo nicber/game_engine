@@ -35,6 +35,7 @@ public:
 private:
   void bind();
 private:
+  friend class framebuffer;
   GLuint renderbuffer_id;
 };
 }

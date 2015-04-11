@@ -3,6 +3,25 @@
 
 namespace game_engine {
 namespace opengl {
+renderbuffer_attachment  init_renderbuff_at(GLenum constant) {
+  renderbuffer_attachment r;
+  r.gl_constant = constant;
+  return r;
+}
+
+renderbuffer_attachment renderbuffer_attachment::color_attachmenti(size_t i) {
+
+  init_renderbuff_at(GL_DEPTH_STENCIL_ATTACHMENT);
+}
+renderbuffer_attachment renderbuffer_attachment::depth_stencil_attachment =
+  init_renderbuff_at(GL_DEPTH_STENCIL_ATTACHMENT);
+
+renderbuffer_attachment renderbuffer_attachment::depth_stencil_attachment =
+  init_renderbuff_at(GL_DEPTH_STENCIL_ATTACHMENT);
+
+renderbuffer_attachment renderbuffer_attachment::depth_stencil_attachment =
+  init_renderbuff_at(GL_DEPTH_STENCIL_ATTACHMENT);
+
 static GLuint read_and_draw_bound = 0;
 static GLuint draw_bound = 0;
 static GLuint read_bound = 0;
@@ -37,6 +56,28 @@ void framebuffer::bind_to(framebuffer::render_target target) {
     default:
       assert(false);
   }
+}
+
+void framebuffer::attach(renderbuffer_attachment rnd_at,
+                         const std::shared_ptr<const renderbuffer> &ptr)
+{
+  rbuff_attachments[rnd_at] = ptr;
+  attach(rnd_at, *ptr);
+}
+
+void framebuffer::attach(renderbuffer_attachment rnd_at,
+                         const renderbuffer &rbuffer)
+{
+  render_target framebuffer_binding;
+  if (!get_bind(framebuffer_binding)) {
+    framebuffer_binding = render_target::read_and_draw;
+    bind_to(framebuffer_binding);
+  }
+
+  glFramebufferRenderbuffer(static_cast<GLenum>(framebuffer_binding),
+                            rnd_at.gl_constant,
+                            GL_RENDERBUFFER,
+                            rbuffer.renderbuffer_id);
 }
 
 bool framebuffer::get_bind(render_target &ret) {
