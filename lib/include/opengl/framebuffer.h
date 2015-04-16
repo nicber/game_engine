@@ -14,6 +14,7 @@ struct renderbuffer_attachment {
   static renderbuffer_attachment depth_stencil_attachment;
 
   bool operator==(const renderbuffer_attachment &rhs) const;
+  bool operator!=(const renderbuffer_attachment &rhs) const;
 
 private:
   friend renderbuffer_attachment init_renderbuff_at(GLenum constant);

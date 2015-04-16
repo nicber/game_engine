@@ -28,6 +28,11 @@ bool renderbuffer_attachment::operator==(const renderbuffer_attachment &rhs) con
   return gl_constant == rhs.gl_constant;
 }
 
+bool renderbuffer_attachment::operator!=(const renderbuffer_attachment &rhs) const
+{
+  return gl_constant != rhs.gl_constant;
+}
+
 size_t hash_value(const renderbuffer_attachment &rnd_at)
 {
   return boost::hash_value(rnd_at.gl_constant);
@@ -72,17 +77,32 @@ void framebuffer::bind_to(framebuffer::render_target target) {
 void framebuffer::attach(renderbuffer_attachment rnd_at,
                          const std::shared_ptr<const renderbuffer> &ptr)
 {
-  rbuff_attachments[rnd_at] = ptr;
+  if (rnd_at != renderbuffer_attachment::depth_stencil_attachment) {
+    rbuff_attachments[rnd_at] = ptr;
+  } else {
+    rbuff_attachments[renderbuffer_attachment::depth_attachment] = ptr;
+    rbuff_attachments[renderbuffer_attachment::stencil_attachment] = ptr;
+  }
   attach(rnd_at, *ptr);
 }
 
 void framebuffer::attach(renderbuffer_attachment rnd_at,
                          const renderbuffer &rbuffer)
 {
-  auto it = rbuff_attachments.find(rnd_at);
-  if (it != rbuff_attachments.end() && it->second.lock().get() != &rbuffer) {
-    rbuff_attachments.erase(it);
+  auto remove_attachment = [&] (renderbuffer_attachment att) {
+    auto it = rbuff_attachments.find(att);
+    if (it != rbuff_attachments.end() && it->second.lock().get() != &rbuffer) {
+      rbuff_attachments.erase(it);
+    }
+  };
+
+  if (rnd_at != renderbuffer_attachment::depth_stencil_attachment) {
+    remove_attachment(rnd_at);
+  } else {
+    remove_attachment(renderbuffer_attachment::stencil_attachment);
+    remove_attachment(renderbuffer_attachment::depth_attachment);
   }
+
   do_attach(rnd_at, rbuffer);
 }
 
