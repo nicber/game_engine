@@ -4,36 +4,36 @@
 
 namespace game_engine {
 namespace opengl {
-renderbuffer_attachment  init_renderbuff_at(GLenum constant) {
-  renderbuffer_attachment r;
+attachment init_att(GLenum constant) {
+  attachment r;
   r.gl_constant = constant;
   return r;
 }
 
-renderbuffer_attachment renderbuffer_attachment::color_attachmenti(size_t i) {
-  return init_renderbuff_at(i);
+attachment attachment::color_attachmenti(size_t i) {
+  return init_att(i);
 }
 
-renderbuffer_attachment renderbuffer_attachment::depth_attachment =
-  init_renderbuff_at(GL_DEPTH_ATTACHMENT);
+attachment attachment::depth_attachment =
+  init_att(GL_DEPTH_ATTACHMENT);
 
-renderbuffer_attachment renderbuffer_attachment::stencil_attachment =
-  init_renderbuff_at(GL_STENCIL_ATTACHMENT);
+attachment attachment::stencil_attachment =
+  init_att(GL_STENCIL_ATTACHMENT);
 
-renderbuffer_attachment renderbuffer_attachment::depth_stencil_attachment =
-  init_renderbuff_at(GL_DEPTH_STENCIL_ATTACHMENT);
+attachment attachment::depth_stencil_attachment =
+  init_att(GL_DEPTH_STENCIL_ATTACHMENT);
 
-bool renderbuffer_attachment::operator==(const renderbuffer_attachment &rhs) const
+bool attachment::operator==(const attachment &rhs) const
 {
   return gl_constant == rhs.gl_constant;
 }
 
-bool renderbuffer_attachment::operator!=(const renderbuffer_attachment &rhs) const
+bool attachment::operator!=(const attachment &rhs) const
 {
   return gl_constant != rhs.gl_constant;
 }
 
-size_t hash_value(const renderbuffer_attachment &rnd_at)
+size_t hash_value(const attachment &rnd_at)
 {
   return boost::hash_value(rnd_at.gl_constant);
 }
@@ -74,39 +74,39 @@ void framebuffer::bind_to(framebuffer::render_target target) {
   }
 }
 
-void framebuffer::attach(renderbuffer_attachment rnd_at,
+void framebuffer::attach(attachment rnd_at,
                          const std::shared_ptr<const renderbuffer> &ptr)
 {
-  if (rnd_at != renderbuffer_attachment::depth_stencil_attachment) {
+  if (rnd_at != attachment::depth_stencil_attachment) {
     rbuff_attachments[rnd_at] = ptr;
   } else {
-    rbuff_attachments[renderbuffer_attachment::depth_attachment] = ptr;
-    rbuff_attachments[renderbuffer_attachment::stencil_attachment] = ptr;
+    rbuff_attachments[attachment::depth_attachment] = ptr;
+    rbuff_attachments[attachment::stencil_attachment] = ptr;
   }
   attach(rnd_at, *ptr);
 }
 
-void framebuffer::attach(renderbuffer_attachment rnd_at,
+void framebuffer::attach(attachment rnd_at,
                          const renderbuffer &rbuffer)
 {
-  auto remove_attachment = [&] (renderbuffer_attachment att) {
+  auto remove_attachment = [&] (attachment att) {
     auto it = rbuff_attachments.find(att);
     if (it != rbuff_attachments.end() && it->second.lock().get() != &rbuffer) {
       rbuff_attachments.erase(it);
     }
   };
 
-  if (rnd_at != renderbuffer_attachment::depth_stencil_attachment) {
+  if (rnd_at != attachment::depth_stencil_attachment) {
     remove_attachment(rnd_at);
   } else {
-    remove_attachment(renderbuffer_attachment::stencil_attachment);
-    remove_attachment(renderbuffer_attachment::depth_attachment);
+    remove_attachment(attachment::stencil_attachment);
+    remove_attachment(attachment::depth_attachment);
   }
 
   do_attach(rnd_at, rbuffer);
 }
 
-void framebuffer::do_attach(renderbuffer_attachment rnd_at,
+void framebuffer::do_attach(attachment rnd_at,
                          const renderbuffer &rbuffer)
 {
   render_target framebuffer_binding;

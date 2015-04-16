@@ -7,23 +7,23 @@
 
 namespace game_engine {
 namespace opengl {
-struct renderbuffer_attachment {
-  static renderbuffer_attachment color_attachmenti(size_t i);
-  static renderbuffer_attachment depth_attachment;
-  static renderbuffer_attachment stencil_attachment;
-  static renderbuffer_attachment depth_stencil_attachment;
+struct attachment {
+  static attachment color_attachmenti(size_t i);
+  static attachment depth_attachment;
+  static attachment stencil_attachment;
+  static attachment depth_stencil_attachment;
 
-  bool operator==(const renderbuffer_attachment &rhs) const;
-  bool operator!=(const renderbuffer_attachment &rhs) const;
+  bool operator==(const attachment &rhs) const;
+  bool operator!=(const attachment &rhs) const;
 
 private:
-  friend renderbuffer_attachment init_renderbuff_at(GLenum constant);
+  friend attachment init_att(GLenum constant);
   friend class framebuffer;
-  friend size_t hash_value(const renderbuffer_attachment &rnd_at);
+  friend size_t hash_value(const attachment &rnd_at);
   GLenum gl_constant;
 };
 
-size_t hash_value(const renderbuffer_attachment &rnd_at);
+size_t hash_value(const attachment &rnd_at);
 
 /** \brief Class that represents a framebuffer. It provides several member
  * functions that abstract the OpenGL API.
@@ -48,14 +48,15 @@ public:
    * It takes a shared_ptr that is converted to a weak_ptr which is then
    * checked to see if no renderbuffer bound to an attachment of this
    * framebuffer has been destroyed. */
-  void attach(renderbuffer_attachment rnd_at,
+  void attach(attachment rnd_at,
               const std::shared_ptr<const renderbuffer> &ptr);
 
   /** \brief Attaches a passed renderbuffer to a specific attachment.
    * It does not take a shared_ptr to let the user manage renderbuffers as they
    * see fit. */
-  void attach(renderbuffer_attachment rnd_at,
+  void attach(attachment rnd_at,
               const renderbuffer& rbuffer);
+
 
 private:
   /** \brief Returns true and stores the render_target this framebuffer is
@@ -63,14 +64,14 @@ private:
    * does not touch the contents of the passed reference. */
   bool get_bind(render_target &ret);
 
-  void do_attach(renderbuffer_attachment rnd_at,
+  void do_attach(attachment rnd_at,
                  const renderbuffer &rbuffer);
 
 private:
   GLuint framebuffer_id;
-  std::unordered_map<renderbuffer_attachment,
+  std::unordered_map<attachment,
                      std::weak_ptr<const renderbuffer>,
-                     boost::hash<renderbuffer_attachment>
+                     boost::hash<attachment>
                     > rbuff_attachments;
 };
 }
