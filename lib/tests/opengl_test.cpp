@@ -1,8 +1,9 @@
 #include <gtest/gtest.h>
-#include "opengl/buffer.h"
-#include "opengl/program.h"
-#include "opengl/shader.h"
-#include "opengl/uniform_buffer.h"
+#include <opengl/buffer.h>
+#include <opengl/program.h>
+#include <opengl/shader.h>
+#include <opengl/texture.h>
+#include <opengl/uniform_buffer.h>
 #include <SFML/Window/Context.hpp>
 
 using namespace game_engine::opengl;
@@ -232,4 +233,14 @@ TEST(OpenGLTest, UniformSetValue) {
 
   std::vector<glm::mat4> vec(1);
   uni_set.set(vec.begin(), vec.end());
+}
+
+TEST(OpenGLTest, CubeMapSideIndex) {
+  using game_engine::opengl::cube_map_side;
+  EXPECT_EQ(get_face_index(cube_map_side::positive_x), 0);
+  EXPECT_EQ(get_face_index(cube_map_side::negative_x), 1);
+  EXPECT_EQ(get_face_index(cube_map_side::positive_y), 2);
+  EXPECT_EQ(get_face_index(cube_map_side::negative_y), 3);
+  EXPECT_EQ(get_face_index(cube_map_side::positive_z), 4);
+  EXPECT_EQ(get_face_index(cube_map_side::negative_z), 5);
 }

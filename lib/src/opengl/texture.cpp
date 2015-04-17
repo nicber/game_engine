@@ -2,6 +2,11 @@
 
 namespace game_engine {
 namespace opengl {
+int get_face_index(cube_map_side side)
+{
+  return static_cast<GLenum>(side) - GL_TEXTURE_CUBE_MAP_POSITIVE_X;
+}
+
 texture::texture(texture_type typ)
  :type(static_cast<GLenum>(typ))
 {

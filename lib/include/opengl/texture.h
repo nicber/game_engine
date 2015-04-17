@@ -123,6 +123,8 @@ enum class cube_map_side : GLenum {
   negative_z = GL_TEXTURE_CUBE_MAP_NEGATIVE_Z
 };
 
+int get_face_index(cube_map_side);
+
 enum class min_filter : GLenum {
   nearest = GL_NEAREST,
   linear = GL_LINEAR,
