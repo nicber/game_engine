@@ -169,6 +169,7 @@ private:
   void bind();
 
 private:
+  friend class framebuffer;
   GLuint texture_id = 0;
   const GLenum type;
 };

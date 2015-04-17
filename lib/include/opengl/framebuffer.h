@@ -3,6 +3,7 @@
 #include <GL/glew.h>
 #include <memory>
 #include "renderbuffer.h"
+#include "texture.h"
 #include <unordered_map>
 
 namespace game_engine {
@@ -57,6 +58,16 @@ public:
   void attach(attachment rnd_at,
               const renderbuffer& rbuffer);
 
+  void attach(attachment rnd_at, size_t level,
+              const std::shared_ptr<const texture> &ptr);
+
+  void attach(attachment rnd_at, size_t level, const texture &tex);
+
+  void attach(attachment rnd_at, size_t level, cube_map_side side,
+              const std::shared_ptr<const texture> &ptr);
+
+  void attach(attachment rnd_at, size_t level, cube_map_side side,
+              const texture &tex);
 
 private:
   /** \brief Returns true and stores the render_target this framebuffer is
@@ -64,15 +75,25 @@ private:
    * does not touch the contents of the passed reference. */
   bool get_bind(render_target &ret);
 
-  void do_attach(attachment rnd_at,
-                 const renderbuffer &rbuffer);
+  render_target bind_if_not_bound();
+
+  void add_attachment(const std::weak_ptr<const void> ptr, attachment att);
+
+  void remove_attachment_if_not_eq(const void *ptr, attachment att);
+
+  void do_attach(attachment rnd_at, const renderbuffer &rbuffer);
+
+  void do_attach(attachment tex_at, const texture &tex, size_t level);
+
+  void do_attach(attachment tex_at, const texture &tex, size_t level,
+                 cube_map_side side);
 
 private:
   GLuint framebuffer_id;
   std::unordered_map<attachment,
-                     std::weak_ptr<const renderbuffer>,
+                     std::weak_ptr<const void>,
                      boost::hash<attachment>
-                    > rbuff_attachments;
+                    > attachments;
 };
 }
 }

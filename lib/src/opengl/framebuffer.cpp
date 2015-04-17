@@ -77,48 +77,42 @@ void framebuffer::bind_to(framebuffer::render_target target) {
 void framebuffer::attach(attachment rnd_at,
                          const std::shared_ptr<const renderbuffer> &ptr)
 {
-  if (rnd_at != attachment::depth_stencil_attachment) {
-    rbuff_attachments[rnd_at] = ptr;
-  } else {
-    rbuff_attachments[attachment::depth_attachment] = ptr;
-    rbuff_attachments[attachment::stencil_attachment] = ptr;
-  }
-  attach(rnd_at, *ptr);
+  add_attachment(ptr, rnd_at);
+  do_attach(rnd_at, *ptr);
 }
 
 void framebuffer::attach(attachment rnd_at,
                          const renderbuffer &rbuffer)
 {
-  auto remove_attachment = [&] (attachment att) {
-    auto it = rbuff_attachments.find(att);
-    if (it != rbuff_attachments.end() && it->second.lock().get() != &rbuffer) {
-      rbuff_attachments.erase(it);
-    }
-  };
-
-  if (rnd_at != attachment::depth_stencil_attachment) {
-    remove_attachment(rnd_at);
-  } else {
-    remove_attachment(attachment::stencil_attachment);
-    remove_attachment(attachment::depth_attachment);
-  }
-
+  remove_attachment_if_not_eq(&rbuffer, rnd_at);
   do_attach(rnd_at, rbuffer);
 }
 
-void framebuffer::do_attach(attachment rnd_at,
-                         const renderbuffer &rbuffer)
+void framebuffer::attach(attachment att, size_t level,
+            const std::shared_ptr<const texture> &ptr)
 {
-  render_target framebuffer_binding;
-  if (!get_bind(framebuffer_binding)) {
-    framebuffer_binding = render_target::read_and_draw;
-    bind_to(framebuffer_binding);
-  }
+  add_attachment(ptr, att);
+  do_attach(att, *ptr, level);
+}
 
-  glFramebufferRenderbuffer(static_cast<GLenum>(framebuffer_binding),
-                            rnd_at.gl_constant,
-                            GL_RENDERBUFFER,
-                            rbuffer.renderbuffer_id);
+void framebuffer::attach(attachment att, size_t level, const texture &tex)
+{
+  remove_attachment_if_not_eq(&tex, att);
+  do_attach(att, tex, level);
+}
+
+void framebuffer::attach(attachment att, size_t level, cube_map_side side,
+            const std::shared_ptr<const texture> &ptr)
+{
+  add_attachment(ptr, att);
+  do_attach(att, *ptr, level, side);
+}
+
+void framebuffer::attach(attachment att, size_t level, cube_map_side side,
+            const texture &tex)
+{
+  remove_attachment_if_not_eq(&tex, att);
+  do_attach(att, tex, level, side);
 }
 
 bool framebuffer::get_bind(render_target &ret) {
@@ -133,6 +127,75 @@ bool framebuffer::get_bind(render_target &ret) {
     return true;
   }
   return false;
+}
+
+framebuffer::render_target framebuffer::bind_if_not_bound()
+{
+  render_target framebuffer_binding;
+  if (!get_bind(framebuffer_binding)) {
+    framebuffer_binding = render_target::read_and_draw;
+    bind_to(framebuffer_binding);
+  }
+  return framebuffer_binding;
+}
+
+void framebuffer::add_attachment(const std::weak_ptr<const void> ptr,
+                                 attachment att)
+{
+  if (att != attachment::depth_stencil_attachment) {
+    attachments[att] = std::move(ptr);
+  } else {
+    attachments[attachment::depth_attachment] = std::move(ptr);
+    attachments[attachment::stencil_attachment] = std::move(ptr);
+  }
+}
+
+void framebuffer::remove_attachment_if_not_eq(const void *image_ptr,
+                                              attachment att)
+{
+  auto remove_attachment = [&] (attachment att) {
+    auto it = attachments.find(att);
+    if (it != attachments.end() && it->second.lock().get() != image_ptr) {
+      attachments.erase(it);
+    }
+  };
+  if (att != attachment::depth_stencil_attachment) {
+    remove_attachment(att);
+  } else {
+    remove_attachment(attachment::stencil_attachment);
+    remove_attachment(attachment::depth_attachment);
+  }
+}
+
+void framebuffer::do_attach(attachment rnd_at,
+                         const renderbuffer &rbuffer)
+{
+  auto framebuffer_binding = bind_if_not_bound();
+  glFramebufferRenderbuffer(static_cast<GLenum>(framebuffer_binding),
+                            rnd_at.gl_constant,
+                            GL_RENDERBUFFER,
+                            rbuffer.renderbuffer_id);
+}
+
+void framebuffer::do_attach(attachment tex_at, const texture &tex, size_t level)
+{
+  auto framebuffer_binding = bind_if_not_bound();
+  glFramebufferTexture(static_cast<GLenum>(framebuffer_binding),
+                       tex_at.gl_constant,
+                       tex.texture_id,
+                       level);
+}
+
+void framebuffer::do_attach(attachment tex_at, const texture &tex, size_t level,
+                            cube_map_side side)
+{
+  auto framebuffer_binding = bind_if_not_bound();
+  auto layer = get_face_index(side);
+  glFramebufferTextureLayer(static_cast<GLenum>(framebuffer_binding),
+                            tex_at.gl_constant,
+                            tex.texture_id,
+                            level,
+                            layer);
 }
 }
 }
