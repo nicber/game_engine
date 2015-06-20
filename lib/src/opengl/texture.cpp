@@ -18,6 +18,40 @@ texture::~texture()
   glDeleteTextures(1, &texture_id);
 }
 
+void texture::create_empty(cube_map_side side, GLsizei size, GLuint level,
+                           texture_internal_format i_f)
+
+{
+  bind();
+
+  glTexImage2D(static_cast<GLenum>(type),
+               level,
+               static_cast<GLenum>(i_f),
+               size,
+               size,
+               0, // border has to be 0.
+               GL_RGB, // if data is NULL then there won't be a pixel transfer
+                       // and the format parameter doesn't matter.
+               GL_UNSIGNED_BYTE,
+               nullptr);
+}
+
+void texture::create_empty(GLsizei width, GLsizei height, GLuint level,
+                           texture_internal_format i_f)
+{
+  bind();
+
+  glTexImage2D(static_cast<GLenum>(type),
+               level,
+               static_cast<GLenum>(i_f),
+               width,
+               height,
+               0, // border has to be 0.
+               GL_RGB, // if data is NULL then there won't be a pixel transfer
+                       // and the format parameter doesn't matter.
+               GL_UNSIGNED_BYTE,
+               nullptr);
+}
 void texture::bind()
 {
   glBindTexture(type, texture_id);

@@ -145,6 +145,12 @@ public:
   texture(texture_type typ);
   ~texture();
 
+  void create_empty(cube_map_side side, GLsizei size, GLuint level,
+                    texture_internal_format i_f);
+
+  void create_empty(GLsizei width, GLsizei height, GLuint level,
+                    texture_internal_format i_f);
+
   /** \brief Uploads texture data for a certain side of the cubemap texture.
    * It only works if the texture is a cubemap.
    */
