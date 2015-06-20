@@ -11,7 +11,7 @@ attachment init_att(GLenum constant) {
 }
 
 attachment attachment::color_attachmenti(size_t i) {
-  return init_att(i);
+  return init_att(GL_COLOR_ATTACHMENT0 + i);
 }
 
 attachment attachment::depth_attachment =

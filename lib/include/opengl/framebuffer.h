@@ -1,5 +1,5 @@
 #pragma once
-#include <boost/functional/hash_fwd.hpp>
+#include <boost/functional/hash.hpp>
 #include <GL/glew.h>
 #include <memory>
 #include "renderbuffer.h"
@@ -16,6 +16,8 @@ struct attachment {
 
   bool operator==(const attachment &rhs) const;
   bool operator!=(const attachment &rhs) const;
+
+  GLenum get_gl_constant() const;
 
 private:
   friend attachment init_att(GLenum constant);
