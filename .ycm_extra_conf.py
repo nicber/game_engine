@@ -38,6 +38,8 @@ flags = [
 '-Wall',
 '-Wextra',
 '-Werror',
+'-Wdocumentation',
+'-Wsign-conversion',
 # THIS IS IMPORTANT! Without a "-std=<something>" flag, clang won't know which
 # language to use when compiling headers. So it will guess. Badly. So C++
 # headers will be compiled as C headers. You don't want that so ALWAYS specify
@@ -59,11 +61,11 @@ flags = [
 '-I',
 '/usr/include/libdrm',
 '-I',
-'/mnt/940AA1EF0AA1CF14/libuv/include',
+'/win_dirs/d/libuv/include',
 '-I',
-'/mnt/940AA1EF0AA1CF14/GameEngine/lib/include',
+'/win_dirs/d/GameEngine/lib/include',
 '-I',
-'/mnt/940AA1EF0AA1CF14/GameEngine/external/gtest/gtest-1.7.0/include'
+'/win_dirs/d/GameEngine/external/gtest/gtest-1.7.0/include'
 ]
 
 
