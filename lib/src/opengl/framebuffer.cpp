@@ -33,6 +33,11 @@ bool attachment::operator!=(const attachment &rhs) const
   return gl_constant != rhs.gl_constant;
 }
 
+GLenum attachment::get_gl_constant() const
+{
+  return gl_constant;
+}
+
 size_t hash_value(const attachment &rnd_at)
 {
   return boost::hash_value(rnd_at.gl_constant);
