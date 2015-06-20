@@ -4,6 +4,7 @@ namespace game_engine {
 namespace render {
 mesh::mesh(std::shared_ptr<const opengl::program> prog_,
            std::shared_ptr<const opengl::vertex_array_object> vao_,
+           before_draw_function func_,
            size_t count_,
            size_t base_index_,
            size_t base_vertex_,
@@ -11,6 +12,7 @@ mesh::mesh(std::shared_ptr<const opengl::program> prog_,
            size_t base_instance_)
  :prog(std::move(prog_)),
   vao(std::move(vao_)),
+  before_draw_func(std::move(func_)),
   count(count_),
   base_index(base_index_),
   base_vertex(base_vertex_),
@@ -52,6 +54,10 @@ void mesh::draw(logic::time delta_time) const {
   vao->bind();
   prog->bind();
 
+  if (before_draw_func) {
+    before_draw_func(delta_time);
+  }
+
   for (const auto &u_buff_conn : uni_buffs_with_conn) {
     u_buff_conn.buffer_ptr->rebind();
   }
@@ -73,13 +79,14 @@ void mesh::draw(logic::time delta_time) const {
 struct mesh_constructor : public mesh {
   mesh_constructor(std::shared_ptr<const opengl::program> prog_,
                    std::shared_ptr<const opengl::vertex_array_object> vao_,
+                   before_draw_function func_,
                    size_t count_,
                    size_t base_index_,
                    size_t base_vertex_,
                    size_t instance_count_,
                    size_t base_instance_)
- :mesh(std::move(prog_), std::move(vao_), count_,
-       base_index_, base_vertex_, instance_count_,
+ :mesh(std::move(prog_), std::move(vao_), std::move(func_),
+       count_, base_index_, base_vertex_, instance_count_,
        base_instance_)
   {}
 
@@ -90,14 +97,18 @@ struct mesh_constructor : public mesh {
 
 std::shared_ptr<mesh> create_mesh(std::shared_ptr<const opengl::program> prog_,
                                   std::shared_ptr<const opengl::vertex_array_object> vao_,
+                                  before_draw_function func_,
                                   const mesh::uni_buff_vector &uni_buffs_,
                                   size_t count_,
                                   size_t base_index_,
                                   size_t base_vertex_,
                                   size_t instance_count_,
                                   size_t base_instance_) {
-  auto ptr = std::make_shared<mesh_constructor>(std::move(prog_), std::move(vao_), count_,
-                                                base_index_, base_vertex_, instance_count_,
+  auto ptr = std::make_shared<mesh_constructor>(std::move(prog_),
+                                                std::move(vao_),
+                                                std::move(func_), count_,
+                                                base_index_, base_vertex_,
+                                                instance_count_,
                                                 base_instance_);
   ptr->init(uni_buffs_);
   return ptr;

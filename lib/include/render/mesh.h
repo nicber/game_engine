@@ -15,7 +15,12 @@ class render_subsystem;
 }
 }
 }
+
 namespace render {
+using before_draw_function = std::function<void(logic::time)>;
+
+const before_draw_function before_draw_nothing = before_draw_function();
+
 class mesh : public std::enable_shared_from_this<mesh> {
   struct uni_buff_connection {
     std::shared_ptr<const opengl::uniform_buffer> buffer_ptr;
@@ -40,6 +45,7 @@ private:
    */
   mesh(std::shared_ptr<const opengl::program> prog_,
        std::shared_ptr<const opengl::vertex_array_object> vao_,
+       before_draw_function func_,
        size_t count_,
        size_t base_index_,
        size_t base_vertex_,
@@ -56,6 +62,7 @@ private:
   std::shared_ptr<const opengl::program> prog;
   std::shared_ptr<const opengl::vertex_array_object> vao;
   std::vector<uni_buff_connection> uni_buffs_with_conn;
+  before_draw_function before_draw_func;
   const size_t count;
   const size_t base_index;
   const size_t base_vertex;
@@ -75,6 +82,7 @@ private:
  */
 std::shared_ptr<mesh> create_mesh(std::shared_ptr<const opengl::program> prog_,
                                   std::shared_ptr<const opengl::vertex_array_object> vao_,
+                                  before_draw_function func_,
                                   const mesh::uni_buff_vector &uni_buffs_,
                                   size_t count_,
                                   size_t base_index_,
