@@ -23,7 +23,7 @@ void render_subsystem::handle_events() {
     std::string error("error initialing glew");
     throw std::runtime_error(error /*+ std::string(glewGetErrorString(err))*/);
   }
-  
+
   glViewport(0, 0, 800, 600);
 
   std::cout << "GL Info: " << glGetString(GL_VERSION) << std::endl;
