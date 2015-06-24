@@ -4,6 +4,7 @@ list(APPEND GAME_ENGINE_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/subsystem.cpp)
 list(APPEND GAME_ENGINE_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/time_access.cpp)
 list(APPEND GAME_ENGINE_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/world.cpp)
 
+add_subdirectory(logging)
 add_subdirectory(opengl)
 add_subdirectory(platform)
 add_subdirectory(render)
