@@ -12,6 +12,7 @@
 [Rr]elease/
 x64/
 build/
+build-clang/
 [Bb]in/
 [Oo]bj/
 
