@@ -57,15 +57,33 @@ connection_dest output_location_set::get_connection(GLuint loc) const
 
 boost::optional<GLuint> output_location_set::get_connection(connection_dest dest) const
 {
-  auto it = std::find_if(connections.cbegin(), connections.cend(),
-            [&dest](auto &pair) {
-              return pair.second == dest;
-            });
+  auto it = find_equal_dest(dest);
 
   if (it == connections.cend()) {
     return boost::none;
   } else {
     return it->first;
+  }
+}
+
+bool output_location_set::remove_connection(GLuint loc)
+{
+  if (connections.erase(loc)) {
+    vector_uptodate = false;
+    return true;
+  } else {
+    return false;
+  }
+}
+
+bool output_location_set::remove_connection(connection_dest dest)
+{
+  auto it = find_equal_dest(dest);
+  if (it != connections.end()) {
+    connections.erase(it);
+    return true;
+  } else {
+    return false;
   }
 }
 
@@ -101,6 +119,16 @@ void output_location_set::update_vector_if_nec() const
       attachments_in_order[pair.first] = target;
     }
   }
+}
+
+output_location_set::map_loc_dest::const_iterator
+output_location_set::find_equal_dest(connection_dest dest) const
+{
+  auto it = std::find_if(connections.cbegin(), connections.cend(),
+            [&dest](auto &pair) {
+              return pair.second == dest;
+            });
+  return it;
 }
 }
 }

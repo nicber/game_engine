@@ -48,6 +48,18 @@ public:
    */
   boost::optional<GLuint> get_connection(connection_dest dest) const;
 
+  /** \brief Removes a connection associated with the loc location.
+   * \param loc The location of the shader output.
+   * \return true if there was a connection associated with loc.
+   */
+  bool remove_connection(GLuint loc);
+
+  /** \brief Removes the connection that dest is part of.
+   * \param dest The destination of the shader output.
+   * \return true if there was a connection associated with dest.
+   */
+  bool remove_connection(connection_dest dest);
+
   /** \brief Applies necessary changes to the global state to make sure that
    * program outputs will be written to the appropriate attachments of the
    * framebuffer specified by the argument.
@@ -57,12 +69,14 @@ public:
   void apply_to(framebuffer &fb) const;
 
 private:
-  void update_vector_if_nec() const;
+  using map_loc_dest = std::map<GLuint, connection_dest>;
+  map_loc_dest connections;
+  mutable std::vector<GLenum> attachments_in_order;
+  mutable bool vector_uptodate = false;
 
 private:
-  mutable std::vector<GLenum> attachments_in_order;
-  std::map<GLuint, connection_dest> connections;
-  mutable bool vector_uptodate = false;
+  void update_vector_if_nec() const;
+  map_loc_dest::const_iterator find_equal_dest(connection_dest dest) const;
 };
 }
 }
