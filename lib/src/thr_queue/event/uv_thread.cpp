@@ -34,9 +34,9 @@ public:
   std::atomic<bool> should_stop;
   bool async_constructed = false;
   std::unique_ptr<uv_async_t> global_async = nullptr;
-  boost::thread thr;
   std::deque<std::function<void()>> init_start_requests;
   boost::mutex init_start_requests_mt;
+  boost::thread thr;
 };
 
 static uv_thread thr;
