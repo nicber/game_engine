@@ -1,4 +1,7 @@
+#include "opengl/framebuffer.h"
 #include "opengl/output_location.h"
+#include <boost/variant/variant.hpp>
+#include <boost/variant/apply_visitor.hpp>
 
 namespace game_engine {
 namespace opengl {
@@ -55,7 +58,7 @@ connection_dest output_location_set::get_connection(GLuint loc) const
 boost::optional<GLuint> output_location_set::get_connection(connection_dest dest) const
 {
   auto it = std::find_if(connections.cbegin(), connections.cend(),
-            [dest](auto &pair) {
+            [&dest](auto &pair) {
               return pair.second == dest;
             });
 
@@ -69,6 +72,9 @@ boost::optional<GLuint> output_location_set::get_connection(connection_dest dest
 void output_location_set::apply_to(framebuffer &fb) const
 {
   update_vector_if_nec();
+  if (attachments_in_order.empty()) {
+    return;
+  }
   fb.bind_to(framebuffer::render_target::draw);
   glDrawBuffers(attachments_in_order.size(), attachments_in_order.data());
 }
@@ -80,14 +86,20 @@ void output_location_set::update_vector_if_nec() const
   }
 
   vector_uptodate = true;
-  attachments_in_order.reserve(connections.size());
-  attachments_in_order.clear();
-  std::fill_n(std::back_inserter(attachments_in_order),
-              connections.size(), GL_NONE);
 
-  for (auto & pair : connections) {
-    auto target = boost::apply_visitor(get_gl_constant(), pair.second);
-    attachments_in_order[pair.first] = target;
+  if (connections.empty()) {
+    attachments_in_order.clear();
+  } else {
+    auto last = connections.rbegin()->first;
+    attachments_in_order.reserve(last + 1);
+    attachments_in_order.clear();
+    std::fill_n(std::back_inserter(attachments_in_order),
+                last + 1, GL_NONE);
+
+    for (auto & pair : connections) {
+      auto target = boost::apply_visitor(get_gl_constant(), pair.second);
+      attachments_in_order[pair.first] = target;
+    }
   }
 }
 }

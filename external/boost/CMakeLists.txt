@@ -1,5 +1,5 @@
-set(Boost_USE_MULTITHREADED ON)  
-find_package(Boost REQUIRED COMPONENTS chrono context system thread) 
+set(Boost_USE_MULTITHREADED ON)
+find_package(Boost REQUIRED COMPONENTS chrono context system thread)
 
 set(GAME_ENGINE_INCLUDE ${GAME_ENGINE_INCLUDE} ${Boost_INCLUDE_DIRS} PARENT_SCOPE)
 set(GAME_ENGINE_DEP_LIBS ${GAME_ENGINE_DEP_LIBS} ${Boost_LIBRARIES} PARENT_SCOPE)

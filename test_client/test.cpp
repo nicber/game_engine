@@ -1,7 +1,10 @@
 #include <iostream>
 #include "launcher_api.h"
 #include "opengl/buffer.h"
+#include "opengl/framebuffer.h"
+#include "opengl/output_location.h"
 #include "opengl/program.h"
+#include "opengl/texture.h"
 #include "opengl/vertex_array_object.h"
 #include "subsystems/render/render.h"
 #include "world.h"
@@ -36,6 +39,15 @@ public:
 
 private:
     void construct_drawer() {
+      textu = std::make_shared<texture>(texture_type::two_d);
+      textu->create_empty(1024, 1024, 0, texture_internal_format::rgb);
+      attachment attment(attachment::color_attachmenti(1));
+      framebuff = std::make_shared<framebuffer>();
+      framebuff->attach(attment, 0, textu);
+      output_location_set out_loc_set;
+      out_loc_set.connect(attment, 1);
+      out_loc_set.apply_to(*framebuff);
+
       auto points = std::make_shared<buffer<vec2>>(3, buf_freq_access::mod_once,
                                                    buf_kind_access::read_gl_write_app);
 
@@ -55,14 +67,15 @@ private:
         "}";
 
       std::string fragment_source =
+        "out varying vec4 color_out;"
         "uniform Color {"
         "  vec4 color;"
         "};"
-        "void main() { gl_FragColor = color; }";
+        "void main() { color_out = color; }";
 
       shader vertex_shader(shader_type::vertex, vertex_source, {});
       shader fragment_shader(shader_type::fragment, fragment_source, {});
-      auto ogl_program = std::make_shared<program>(program(vertex_shader, fragment_shader, {}, {attrib_pair{"position", 1}}, {}));
+      auto ogl_program = std::make_shared<program>(program(vertex_shader, fragment_shader, {}, {attrib_pair{"position", 1}}, {frag_data_loc{"color_out", 1}}));
 
       auto vao = std::make_shared<vertex_array_object>();
       vao->bind_buffer_to_attrib<vec2, float, 2>(std::move(points), 0, 0,
@@ -75,6 +88,10 @@ private:
 
       auto mesh_ptr = game_engine::render::create_mesh(std::move(ogl_program),
                                                        std::move(vao),
+                                                       [] (game_engine::logic::time){
+                                                         glm::ivec4 v{0,0,0,0};
+                                                         glClearBufferiv(GL_COLOR, 1, glm::value_ptr(v));
+                                                       },
                                                        game_engine::render::mesh::uni_buff_vector{{uni_buff, true}},
                                                        3,
                                                        0,
@@ -88,6 +105,8 @@ private:
 
   std::shared_ptr<drawer> drawer_ptr;
   std::shared_ptr<uniform_buffer> uni_buff;
+  std::shared_ptr<texture> textu;
+  std::shared_ptr<framebuffer> framebuff;
   std::mt19937 gen;
   std::uniform_real_distribution<float> dist{0,1};
 };

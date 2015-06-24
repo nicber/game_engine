@@ -1,12 +1,14 @@
 #pragma once
 
 #include <boost/optional.hpp>
-#include <boost/variant.hpp>
-#include "framebuffer.h"
+#include <boost/variant/variant_fwd.hpp>
+#include <GL/glew.h>
+#include <map>
 
 namespace game_engine {
 namespace opengl {
-
+struct attachment;
+class framebuffer;
 /** \brief This enum is used for specifying where shader outputs are to be
  * written when drawing.
  */
