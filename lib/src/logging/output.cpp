@@ -7,7 +7,7 @@ class stderr_output : public output
 public:
   void handle_complete_message(std::unique_ptr<message> me) override
   {
-    std::cerr << '[' << me->file << ": " << me->line << ']' << me->ss.str()
+    std::cerr << '[' << me->file << ": " << me->line << "] " << me->ss.str()
               << std::endl;
   }
 };
