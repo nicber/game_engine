@@ -3,12 +3,6 @@
 
 namespace game_engine {
 namespace logging {
-bool enabled(const char *, unsigned int)
-{
-  //TODO
-  return true;
-}
-
 logger::logger(const char *function, const char *pretty_function,
                const char *file, unsigned int line)
  :d(new message)
