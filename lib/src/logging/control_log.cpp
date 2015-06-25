@@ -10,9 +10,17 @@ bool enabled(const char *file, unsigned int line)
   return pol == policy::enable;
 }
 
+static bool iterating = false;
 static policy default_policy = policy::enable;
 using line_map = std::unordered_map<unsigned int, policy>;
 static std::unordered_map<std::string, line_map> file_line_policies;
+
+static void check_not_iterating()
+{
+  if (iterating) {
+    throw std::logic_error("can't modify logging policies while iterating");
+  }
+}
 
 void set_default_for_all(policy pol)
 {
@@ -21,18 +29,21 @@ void set_default_for_all(policy pol)
 
 void set_default_for_file(std::string file, policy pol)
 {
+  check_not_iterating();
   file_line_policies[file][0] = pol;
 }
 
 void set_policy_for_file_line(std::string file, unsigned int line,
                               policy pol)
 {
+  check_not_iterating();
   file_line_policies[file][line] = pol;
 }
 
 
 policy get_policy_for(const std::string &file, unsigned int line)
 {
+  check_not_iterating();
   auto line_map_it = file_line_policies.find(file);
   if (line_map_it != file_line_policies.end()) {
     auto &line_map = line_map_it->second;
@@ -75,6 +86,7 @@ void remove_file_policy(const std::string &file)
 
 void remove_file_line_policy(const std::string &file, unsigned int line)
 {
+  check_not_iterating();
   auto line_map_it = file_line_policies.find(file);
   if (line_map_it != file_line_policies.end()) {
     auto &line_map = line_map_it->second;
@@ -90,18 +102,25 @@ applied_policy::applied_policy(const std::string &f, unsigned int l, policy p)
 
 void apply_to_all_policies(visitor_func vf)
 {
-  for(auto &p1 : file_line_policies) {
-    applied_policy ap_pol(p1.first, 0, policy::disable);
-    for (auto &p2 : p1.second) {
-      ap_pol.line = p2.first;
-      ap_pol.pol = p2.second;
-      vf(std::move(ap_pol));
+  iterating = true;
+  try {
+    for(auto &p1 : file_line_policies) {
+      applied_policy ap_pol(p1.first, 0, policy::disable);
+      for (auto &p2 : p1.second) {
+        ap_pol.line = p2.first;
+        ap_pol.pol = p2.second;
+        vf(std::move(ap_pol));
+      }
     }
-  }
 
-  std::string empty_str;
-  applied_policy ap_pol(empty_str, 0 , get_default_policy());
-  vf(std::move(ap_pol));
+    std::string empty_str;
+    applied_policy ap_pol(empty_str, 0 , get_default_policy());
+    vf(std::move(ap_pol));
+  } catch (...) {
+    iterating = false;
+    throw;
+  }
+  iterating = false;
 }
 }
 }
