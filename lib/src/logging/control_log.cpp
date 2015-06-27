@@ -28,6 +28,7 @@ static void check_not_iterating()
 
 void set_default_for_all(policy pol)
 {
+  check_not_iterating();
   default_policy = pol;
 }
 
@@ -49,7 +50,6 @@ void set_policy_for_file_line(std::string file, unsigned int line,
 
 policy get_policy_for(const std::string &file, unsigned int line)
 {
-  check_not_iterating();
   boost::lock_guard<boost::recursive_mutex> l(policy_mutex);
   auto line_map_it = file_line_policies.find(file);
   if (line_map_it != file_line_policies.end()) {
@@ -136,8 +136,8 @@ void apply_to_all_policies(visitor_func vf)
       }
     }
 
-    std::string empty_str;
-    applied_policy ap_pol(empty_str, 0 , get_default_policy());
+    const static std::string empty_str;
+    applied_policy ap_pol(empty_str, 0, default_policy);
     vf(std::move(ap_pol));
   } catch (...) {
     iterating = false;
