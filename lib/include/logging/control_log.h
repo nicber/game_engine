@@ -72,6 +72,9 @@ struct applied_policy {
   applied_policy(const std::string &f, unsigned int l, policy p);
 };
 
+bool operator==(const applied_policy &lhs, const applied_policy &rhs);
+bool operator!=(const applied_policy &lhs, const applied_policy &rhs);
+
 using visitor_func = std::function<void(applied_policy)>;
 
 /** \brief Applies the passed visitor to all existing policies.

@@ -110,6 +110,18 @@ applied_policy::applied_policy(const std::string &f, unsigned int l, policy p)
   pol(p)
 {}
 
+bool operator==(const applied_policy &lhs, const applied_policy &rhs)
+{
+  return lhs.line == rhs.line
+      && lhs.pol == rhs.pol
+      && lhs.file == rhs.file;
+}
+
+bool operator!=(const applied_policy &lhs, const applied_policy &rhs)
+{
+  return !(lhs == rhs);
+}
+
 void apply_to_all_policies(visitor_func vf)
 {
   boost::lock_guard<boost::mutex> l(policy_mutex);
