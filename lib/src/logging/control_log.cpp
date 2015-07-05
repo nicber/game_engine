@@ -104,6 +104,13 @@ void remove_file_line_policy(const std::string &file, unsigned int line)
   }
 }
 
+void remove_all_policies()
+{
+  check_not_iterating();
+  boost::lock_guard<boost::recursive_mutex> l(policy_mutex);
+  file_line_policies = {};
+}
+
 applied_policy::applied_policy(const std::string &f, unsigned int l, policy p)
  :file(f),
   line(l),

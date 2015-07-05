@@ -60,6 +60,9 @@ void remove_file_policy(const std::string &file);
  */
 void remove_file_line_policy(const std::string &file, unsigned int line);
 
+/** \brief Removes all policies added. */
+void remove_all_policies();
+
 /** \brief Helper struct for the apply_to_all_policies function.
  * The member file indicates the file the policy applies to. If it is an
  * empty string then the policy is the global policy.
