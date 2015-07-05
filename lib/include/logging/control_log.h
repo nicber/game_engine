@@ -1,3 +1,5 @@
+#pragma once
+
 #include <functional>
 #include "logging/log.h"
 #include <string>
