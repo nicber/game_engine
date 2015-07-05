@@ -27,6 +27,12 @@ TEST(LoggingTest, BasicControl)
   EXPECT_EQ(policy::disable, get_policy_for("lala", 300));
   EXPECT_EQ(policy::disable, get_policy_for("lala", 30));
   EXPECT_EQ(policy::disable, get_policy_for("bla", 304));
+  remove_all_policies();
+  int count_policies = 0;
+  apply_to_all_policies([&](applied_policy) {
+    count_policies++;
+  });
+  EXPECT_EQ(1, count_policies);
 }
 
 TEST(LoggingTest, ExceptionsDuringIter)
