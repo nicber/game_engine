@@ -32,7 +32,6 @@ using aio_buffer_ptr = std::shared_ptr<aio_buffer>;
 
 struct aio_result_t {
   std::atomic<bool> finished;
-  std::atomic<bool> succeeded;
   boost::optional<aio_runtime_error> aio_except;
   aio_buffer_ptr buf;
   size_t read_bytes;
@@ -41,8 +40,9 @@ struct aio_result_t {
 };
 
 using aio_result = std::shared_ptr<aio_result_t>;
+void socket_thread();
 
-class aio_operation {
+class aio_operation_t : public std::enable_shared_from_this<aio_operation_t> {
 public:
   aio_result perform();
 
@@ -66,7 +66,11 @@ private:
   bool submitted;
   aio_result result;
   friend class file;
+  friend void game_engine::aio::socket_thread();
 };
+
+using aio_operation   = std::shared_ptr<aio_operation_t>;
+using aio_operation_w = std::weak_ptr<aio_operation_t>;
 
 enum class omode {
   read_only,

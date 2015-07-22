@@ -1,3 +1,4 @@
+#include "unix_impl.h"
 #include <aio/aio.h>
 #include <algorithm>
 #include <cassert>
@@ -6,22 +7,15 @@
 #include <sstream>
 #include <string.h>
 #include <sys/ioctl.h>
-#include <thr_queue/thread_api.h>
 #include <unistd.h>
 
 namespace game_engine {
 namespace aio {
-static boost::mutex queue_mutex;
-static std::deque<aio_operation> op_queue;
+boost::mutex socket_queue_mutex;
+boost::mutex file_queue_mutex;
+std::deque<aio_operation> socket_queue;
+std::deque<aio_operation> file_queue;
 thread_local bool aio_only_thread = false;
-
-struct file_control_block {
-  int fd;
-  bool socket;
-  bool op_inprogress;
-  bool ready;
-  omode omod;
-};
 
 file::file(const std::string &path, omode omod)
  : cblock(std::make_shared<file_control_block>())
@@ -47,11 +41,11 @@ file::file(const std::string &path, omode omod)
 
   cblock->socket = false;
   cblock->op_inprogress = false;
-  cblock->ready = true;
   cblock->omod = omod;
 }
 
-static bool aio_type_compat_open_mode(aio_type otyp, omode omod) {
+static bool
+aio_type_compat_open_mode(aio_type otyp, omode omod) {
   if (omod == omode::read_write) {
     return true;
   } else if (otyp == aio_type::read && omod == omode::read_only) {
@@ -62,7 +56,8 @@ static bool aio_type_compat_open_mode(aio_type otyp, omode omod) {
   return false;
 }
 
-aio_result aio_operation::file_read()
+aio_result
+aio_operation_t::file_read()
 {
   alloc_result_if_nec();
   assert(!control_block->socket);
@@ -79,11 +74,16 @@ aio_result aio_operation::file_read()
     } else {
       result->succeeded = true;
     }
+  } else {
+    boost::lock_guard<boost::mutex> l(file_queue_mutex);
+    file_queue.emplace_back(shared_from_this());
+    notify_file_queue_change();
   }
   return result;
 }
 
-aio_result aio_operation::file_write()
+aio_result
+aio_operation_t::file_write()
 {
   alloc_result_if_nec();
   assert(!control_block->socket);
@@ -98,36 +98,44 @@ aio_result aio_operation::file_write()
       LOG() << ss.str();
       result->aio_except = aio_runtime_error(ss.str());
     }
+  } else {
+    boost::lock_guard<boost::mutex> l(file_queue_mutex);
+    file_queue.emplace_back(shared_from_this());
+    notify_file_queue_change();
   }
   return result;
 }
 
-aio_result aio_operation::socket_read()
+aio_result
+aio_operation_t::socket_read()
 {
   alloc_result_if_nec();
   try_socket_read();
   if (!result->finished) {
-    boost::lock_guard<boost::mutex> l(queue_mutex);
-    op_queue.emplace_back(*this);
+    boost::lock_guard<boost::mutex> l(socket_queue_mutex);
+    socket_queue.emplace_back(shared_from_this());
+    notify_socket_queue_change();
   }
 
   return result;
 }
 
-aio_result aio_operation::socket_write()
+aio_result
+aio_operation_t::socket_write()
 {
   alloc_result_if_nec();
   try_socket_write();
   if (!result->finished) {
-    boost::lock_guard<boost::mutex> l(queue_mutex);
-    op_queue.emplace_back(*this);
+    boost::lock_guard<boost::mutex> l(socket_queue_mutex);
+    socket_queue.emplace_back(shared_from_this());
+    notify_socket_queue_change();
   }
 
   return result;
 }
 
 void
-aio_operation::try_socket_read()
+aio_operation_t::try_socket_read()
 {
   assert(control_block->socket);
   assert(aio_type_compat_open_mode(type, control_block->omod));
@@ -180,7 +188,7 @@ aio_operation::try_socket_read()
 }
 
 void
-aio_operation::try_socket_write()
+aio_operation_t::try_socket_write()
 {
   assert(control_block->socket);
   assert(aio_type_compat_open_mode(type, control_block->omod));
@@ -224,7 +232,7 @@ aio_operation::try_socket_write()
 }
 
 void
-aio_operation::alloc_result_if_nec()
+aio_operation_t::alloc_result_if_nec()
 {
   if (!result) {
     result = std::make_shared<aio_result_t>();
@@ -232,7 +240,8 @@ aio_operation::alloc_result_if_nec()
   }
 }
 
-aio_result aio_operation::perform()
+aio_result
+aio_operation_t::perform()
 {
   if (type == aio_type::read) {
     if (control_block->socket) {
