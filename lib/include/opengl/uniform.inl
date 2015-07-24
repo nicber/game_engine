@@ -13,7 +13,7 @@ void gl_uniform3bv(GLint location, GLsizei count, const bool* data);
 void gl_uniform4bv(GLint location, GLsizei count, const bool* data);
 
 template <typename T>
-constexpr GLenum gl_type(0);
+GLenum gl_type();
 
 template <typename T>
 const typename T::value_type *to_data_ptr(T* ptr, typename T::value_type = 0) {
@@ -45,7 +45,7 @@ gl_cpp_name_pair names_array[100];
 size_t names_array_counter(0);
 #define GET_GL_TYPE(gl_t, cpp_t, set_f_t) \
 template <> \
-constexpr GLenum gl_type<cpp_t> = gl_t; \
+constexpr GLenum gl_type<cpp_t>() { return  gl_t; } \
 void gl_uni_set_f(GLint loc, GLsizei count, const cpp_t *ptr) { \
   call(set_f_t, loc, count, to_data_ptr(ptr)); \
 } \
@@ -55,7 +55,7 @@ bool initialize_names_map##gl_t = []{ names_array[names_array_counter++] \
 #else
 #define GET_GL_TYPE(gl_t, cpp_t, set_f_t) \
 template <> \
-constexpr GLenum gl_type<cpp_t> = gl_t; \
+constexpr GLenum gl_type<cpp_t>() { return  gl_t; } \
 void gl_uni_set_f(GLint loc, GLsizei count, const cpp_t *ptr);
 #endif
 #undef INCLUDED_BY_UNIFORM_CPP
@@ -147,7 +147,7 @@ void bind_program(GLuint prog_id);
 
 template <typename T>
 void check_cpp_gl_compatibility(GLenum uniform_gl_t) {
-  auto gl_t = gl_type<T>;
+  auto gl_t = gl_type<T>();
   if (uniform_gl_t != gl_t) {
     std::stringstream ss;
     ss << "tried to assign a " << get_cpp_type_string(gl_t)
