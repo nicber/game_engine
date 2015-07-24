@@ -229,7 +229,7 @@ typename buffer<T>::buffer_accessor &buffer<T>::buffer_iterator_base::dereferenc
 }
 
 template <typename T>
-bool buffer<T>::buffer_iterator_base::equal(const buffer<T>::buffer_iterator_base &other) const {
+bool buffer<T>::buffer_iterator_base::equal(const typename buffer<T>::buffer_iterator_base &other) const {
   return buff_acc.offset == other.buff_acc.offset && buff_acc.buff == other.buff_acc.buff;
 }
 
