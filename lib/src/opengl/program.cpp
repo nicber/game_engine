@@ -72,7 +72,7 @@ bool program_uniform_block_binding_manager::check_compatibility_binding (const s
   try {
     bind_it = find_binding_by_name(handles, binding_name);
     block_it = find_block_by_name(*prog_ptr, bind_it->first);
-  } catch (std::runtime_error &e) {
+  } catch (std::runtime_error &) {
     return false;
   }
 
