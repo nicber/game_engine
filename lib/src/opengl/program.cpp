@@ -72,7 +72,7 @@ bool program_uniform_block_binding_manager::check_compatibility_binding (const s
   try {
     bind_it = find_binding_by_name(handles, binding_name);
     block_it = find_block_by_name(*prog_ptr, bind_it->first);
-  } catch (std::runtime_error &e) {
+  } catch (std::runtime_error &) {
     return false;
   }
 
@@ -289,14 +289,11 @@ typename C::iterator find_generic(GLuint program_id, const std::string &name, C 
   }
 }
 
-template <typename T>
-using prg_unor_map_i = typename program::unor_map_i<T>;
-
-prg_unor_map_i<vertex_attr> program::find_vertex_attr(const std::string &name) const {
+program::unor_map_i<vertex_attr> program::find_vertex_attr(const std::string &name) const {
   return find_generic(program_id, name, vertex_attrs, glGetAttribLocation);
 }
 
-prg_unor_map_i<frag_loc> program::find_frag_loc(const std::string &name) const {
+program::unor_map_i<frag_loc> program::find_frag_loc(const std::string &name) const {
   return find_generic(program_id, name, frag_locs, glGetFragDataLocation);
 }
 

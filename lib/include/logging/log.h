@@ -29,6 +29,12 @@ private:
   std::unique_ptr<message> d;
 };
 
-#define LOG() if (game_engine::logging::enabled(__FILE__, __LINE__)) game_engine::logging::logger(__FUNCTION__, __PRETTY_FUNCTION__, __FILE__, __LINE__)
+#ifdef _MSC_VER
+#define FUNCTION_NAME __FUNCSIG__
+#else
+#define FUNCTION_NAME __PRETTY_FUNCTION__
+#endif
+
+#define LOG() if (game_engine::logging::enabled(__FILE__, __LINE__)) game_engine::logging::logger(__FUNCTION__, FUNCTION_NAME, __FILE__, __LINE__)
 }
 }

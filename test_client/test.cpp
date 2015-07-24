@@ -6,6 +6,7 @@
 #include "opengl/program.h"
 #include "opengl/texture.h"
 #include "opengl/vertex_array_object.h"
+#include <random>
 #include "subsystems/render/render.h"
 #include "world.h"
 
