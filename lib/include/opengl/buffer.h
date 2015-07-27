@@ -45,6 +45,11 @@ class buffer : public buffer_base {
     public:
       buffer_iterator_base(const buffer& buf, std::ptrdiff_t offs);
 
+	  buffer_iterator_base(const buffer_iterator_base &other);
+	  buffer_iterator_base(buffer_iterator_base &&other);
+
+	  buffer_iterator_base &operator=(buffer_iterator_base other);
+
       buffer_accessor &dereference() const;
 
       bool equal(const buffer_iterator_base& other) const;
@@ -58,6 +63,11 @@ class buffer : public buffer_base {
       std::ptrdiff_t distance_to(const buffer_iterator_base &other) const;
 
       mutable buffer_accessor buff_acc; // kinda hacky.
+
+	  friend void swap(buffer_iterator_base &lhs, buffer_iterator_base &rhs)
+	  {
+		lhs.buff_acc.exchange(rhs.buff_acc);
+	  }
     };
 
 public:
@@ -67,6 +77,8 @@ public:
 
   /** \brief Proxy class that is returned from the dereference operation
    * of iterators. Abstracts uploading and downloading data from the GPU.
+   * We want accessor1 = accessor2 to be equivalent to *accessor1 = *accessor2,
+   * not to copy the accessor itself.
    */
   class buffer_accessor {
   public:
@@ -75,22 +87,21 @@ public:
     buffer_accessor();
 
     buffer_accessor &operator=(const T &data);
+
     operator T() const;
 
   private:
     friend class buffer_iterator_base;
+	friend void swap(buffer_iterator_base &lhs, buffer_iterator_base &rhs);
 
-    const buffer * const buff = nullptr;
-    std::ptrdiff_t offset;
-  };
+	/** \brief A function that performs a task similar to that of swap, but it
+	 * swaps the accessors themselves instead of the contents pointed to.
+	 * It should only be used by buffer_iterator_base.
+	 */
+	void exchange(buffer_accessor &rhs);
 
-  class const_buffer_iterator:
-    protected buffer_iterator_base,
-    public boost::iterator_facade<const_buffer_iterator, const buffer_accessor, boost::random_access_traversal_tag>
-  {
-    friend boost::iterator_core_access;
-  public:
-    using buffer_iterator_base::buffer_iterator_base;
+    const buffer * buff   = nullptr;
+    std::ptrdiff_t offset = 0;
   };
 
   class buffer_iterator:
@@ -100,7 +111,16 @@ public:
     friend boost::iterator_core_access;
   public:
     using buffer_iterator_base::buffer_iterator_base;
-    buffer_iterator(const const_buffer_iterator &other);
+  };
+
+  class const_buffer_iterator :
+	protected buffer_iterator_base,
+	public boost::iterator_facade<const_buffer_iterator, const buffer_accessor, boost::random_access_traversal_tag>
+  {
+	friend boost::iterator_core_access;
+  public:
+	const_buffer_iterator(const buffer_iterator &other);
+	using buffer_iterator_base::buffer_iterator_base;
   };
 
 public:
