@@ -100,7 +100,7 @@ bool render_subsystem::update_drawers_if_nec() {
         auto d_meshes_its = drawer->get_meshes();
         for (auto it = d_meshes_its.first; it != d_meshes_its.second; ++it) {
           auto lower_bound = meshes.lower_bound(*it);
-          if (*lower_bound != *it) {
+          if (lower_bound == end(meshes) || *lower_bound != *it) {
             meshes.emplace_hint(lower_bound, *it);
           }
         }
