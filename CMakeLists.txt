@@ -13,6 +13,7 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     # we need to enable fiber-safe TLS.
     add_compile_options("/GT")
     add_compile_options("/MP")
+    add_compile_options("/GL")
 else()
 	message(SEND_ERROR "Your compiler hasn't been recognized and it hasn't been set to C++14 mode.'")
 endif()
