@@ -59,6 +59,11 @@ void buffer<T>::buffer_accessor::exchange(typename buffer<T>::buffer_accessor &r
 }
 
 template <typename T>
+buffer<T>::const_buffer_iterator::const_buffer_iterator(typename buffer<T>::buffer_iterator other)
+ :buffer_iterator_base(std::move(other))
+{}
+
+template <typename T>
 buffer<T>::buffer(size_t size, buf_freq_access freq_acc, buf_kind_access kind_acc)
   : buffer_size(size)
 {

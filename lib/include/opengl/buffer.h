@@ -66,7 +66,7 @@ class buffer : public buffer_base {
 
 	  friend void swap(buffer_iterator_base &lhs, buffer_iterator_base &rhs)
 	  {
-		lhs.buff_acc.exchange(rhs.buff_acc);
+		  lhs.buff_acc.exchange(rhs.buff_acc);
 	  }
     };
 
@@ -109,6 +109,7 @@ public:
     public boost::iterator_facade<buffer_iterator, buffer_accessor, boost::random_access_traversal_tag>
   {
     friend boost::iterator_core_access;
+    friend class const_buffer_iterator;
   public:
     using buffer_iterator_base::buffer_iterator_base;
   };
@@ -117,10 +118,10 @@ public:
 	protected buffer_iterator_base,
 	public boost::iterator_facade<const_buffer_iterator, const buffer_accessor, boost::random_access_traversal_tag>
   {
-	friend boost::iterator_core_access;
+	  friend boost::iterator_core_access;
   public:
-	const_buffer_iterator(const buffer_iterator &other);
-	using buffer_iterator_base::buffer_iterator_base;
+  	const_buffer_iterator(buffer_iterator other);
+  	using buffer_iterator_base::buffer_iterator_base;
   };
 
 public:
