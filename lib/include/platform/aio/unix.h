@@ -6,4 +6,6 @@ namespace game_engine {
 namespace aio {
 using aio_result_code = int;
 }
+
+void socket_thread();
 }

@@ -10,7 +10,9 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 	# C++14 is the default. We have to disable the min max macros defined by the
     # windows headers because they conflict with std::min and std::max.
     add_definitions("/D NOMINMAX")
-	add_compile_options("/MP")
+    # we need to enable fiber-safe TLS.
+    add_compile_options("/GT")
+    add_compile_options("/MP")
 else()
 	message(SEND_ERROR "Your compiler hasn't been recognized and it hasn't been set to C++14 mode.'")
 endif()

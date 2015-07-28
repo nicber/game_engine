@@ -40,7 +40,6 @@ struct aio_result_t {
 };
 
 using aio_result = std::shared_ptr<aio_result_t>;
-void socket_thread();
 
 class aio_operation_t : public std::enable_shared_from_this<aio_operation_t> {
 public:
@@ -66,7 +65,9 @@ private:
   bool submitted;
   aio_result result;
   friend class file;
+  #ifdef __unix__
   friend void game_engine::aio::socket_thread();
+  #endif
 };
 
 using aio_operation   = std::shared_ptr<aio_operation_t>;
