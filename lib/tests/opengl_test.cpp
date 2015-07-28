@@ -33,6 +33,30 @@ TEST(OpenGLTest, BufferStoreRead) {
   }
 }
 
+TEST(OpenGLTest, BufferIterators)
+{
+  using char_buff = buffer<unsigned char>;
+  char_buff buff(1, buf_freq_access::mod_freq, buf_kind_access::read_app_write_gl);
+  char_buff::buffer_iterator bit1(buff.begin());
+  char_buff::buffer_iterator bit2(bit1); //copy construct.
+  char_buff::buffer_iterator bit3(std::move(bit1)); //move construct.
+  bit1 = bit2; //copy assignment.
+  bit2 = std::move(bit1); //move assignment.
+
+  char_buff::const_buffer_iterator cbit1(buff.cbegin()); //construct from a const-iterator.
+  char_buff::const_buffer_iterator cbit2(cbit1); //copy construct from a const-iterator.
+  char_buff::const_buffer_iterator cbit3(std::move(cbit1)); //move construct from a const-iterator.
+  cbit1 = bit1; //copy assignment from a non-const iterator.
+  cbit2 = std::move(bit2); // move assignment from a non-const iterator.
+  
+  cbit1 = cbit2; //copy assignment from a const iterator.
+  cbit2 = std::move(cbit3); //move assignment from a const iterator.
+
+  char_buff::const_buffer_iterator cbit4(buff.begin()); //construct from a non-const iterator.
+  char_buff::const_buffer_iterator cbit5(bit1); //copy construct from a non-const iterator.
+  char_buff::const_buffer_iterator cbit6(std::move(bit2)); //move construct from a non-const iterator.
+}
+
 TEST(OpenGLTest, BufferResize) {
   sf::Context ctx;
   glewInit();
