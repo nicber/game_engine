@@ -252,6 +252,9 @@ buffer<T>::buffer_iterator_base::buffer_iterator_base(const buffer_iterator_base
 template <typename T>
 buffer<T>::buffer_iterator_base::buffer_iterator_base(buffer_iterator_base &&other)
 {
+  if (&other == this) {
+    return;
+  }
   swap(*this, other);
   other.buff_acc.buff   = nullptr;
   other.buff_acc.offset = 0;
