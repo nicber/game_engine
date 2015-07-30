@@ -7,7 +7,20 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1y -Wall -Wextra")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-	# It's the default.
+	# C++14 is the default. We have to disable the min max macros defined by the
+    # windows headers because they conflict with std::min and std::max.
+    add_definitions("/D NOMINMAX")
+    # we need to enable fiber-safe TLS.
+    add_compile_options("/GT")
+    add_compile_options("/MP")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /GL")
+	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /GL")
+	set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /LTCG")
+	set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO} /LTCG")
+    set(CMAKE_MODULE_LINKER_FLAGS_RELEASE "${CMAKE_MODULE_LINKER_FLAGS_RELEASE} /LTCG")
+	set(CMAKE_MODULE_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_MODULE_LINKER_FLAGS_RELWITHDEBINFO} /LTCG")
+    set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /LTCG")
+	set(CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO} /LTCG")
 else()
 	message(SEND_ERROR "Your compiler hasn't been recognized and it hasn't been set to C++14 mode.'")
 endif()
@@ -41,6 +54,7 @@ endif()
 set(GAME_ENGINE_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
 include_directories("${GAME_ENGINE_ROOT}/lib/include")
 include_directories(SYSTEM ${GAME_ENGINE_INCLUDE})
+add_definitions(${GAME_ENGINE_DEFINITIONS})
 # Binaries
 
 add_subdirectory(binsrc)

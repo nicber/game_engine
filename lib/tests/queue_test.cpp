@@ -214,7 +214,6 @@ TEST(ThrQueue, ChangeType) {
       if(io_id == cpu_id) {
         different_threads = false;
       }
-      std::cout << "io_id: " << io_id << "\ncpu_id: " << cpu_id << std::endl;
       set_cor_type(coroutine_type::io);
     } });
   }

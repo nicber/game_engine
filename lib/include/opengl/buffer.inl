@@ -13,6 +13,10 @@ buffer<T>::buffer_accessor::buffer_accessor(const buffer<T> &buf, std::ptrdiff_t
 {}
 
 template <typename T>
+buffer<T>::buffer_accessor::buffer_accessor()
+{}
+
+template <typename T>
 typename buffer<T>::buffer_accessor &buffer<T>::buffer_accessor::operator=(const T &data) {
   if (offset >= buff->buffer_size) {
     throw std::runtime_error("attempted to read past the end of buffer");
@@ -45,6 +49,19 @@ buffer<T>::buffer_accessor::operator T() const {
 
   return temp;
 }
+
+template <typename T>
+void buffer<T>::buffer_accessor::exchange(typename buffer<T>::buffer_accessor &rhs)
+{
+	using std::swap;
+	swap(buff, rhs.buff);
+	swap(offset, rhs.offset);
+}
+
+template <typename T>
+buffer<T>::const_buffer_iterator::const_buffer_iterator(typename buffer<T>::buffer_iterator other)
+ :buffer_iterator_base(std::move(other))
+{}
 
 template <typename T>
 buffer<T>::buffer(size_t size, buf_freq_access freq_acc, buf_kind_access kind_acc)
@@ -224,12 +241,39 @@ buffer<T>::buffer_iterator_base::buffer_iterator_base(const buffer& buf,
 {}
 
 template <typename T>
+buffer<T>::buffer_iterator_base::buffer_iterator_base(const buffer_iterator_base &other)
+{
+	buffer_accessor accs;
+	accs.buff = other.buff_acc.buff;
+	accs.offset = other.buff_acc.offset;
+	buff_acc.exchange(accs);
+}
+
+template <typename T>
+buffer<T>::buffer_iterator_base::buffer_iterator_base(buffer_iterator_base &&other)
+{
+  if (&other == this) {
+    return;
+  }
+  swap(*this, other);
+  other.buff_acc.buff   = nullptr;
+  other.buff_acc.offset = 0;
+}
+
+template <typename T>
+typename buffer<T>::buffer_iterator_base &buffer<T>::buffer_iterator_base::operator=(buffer_iterator_base other)
+{
+  swap(*this, other);
+  return *this;
+}
+
+template <typename T>
 typename buffer<T>::buffer_accessor &buffer<T>::buffer_iterator_base::dereference() const {
   return buff_acc;
 }
 
 template <typename T>
-bool buffer<T>::buffer_iterator_base::equal(const buffer<T>::buffer_iterator_base &other) const {
+bool buffer<T>::buffer_iterator_base::equal(const typename buffer<T>::buffer_iterator_base &other) const {
   return buff_acc.offset == other.buff_acc.offset && buff_acc.buff == other.buff_acc.buff;
 }
 
