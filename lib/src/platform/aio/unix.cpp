@@ -43,17 +43,6 @@ file::file(const std::string &path, omode omod)
   cblock->op_inprogress = false;
   cblock->omod = omod;
 }
-
-static bool
-aio_type_compat_open_mode(aio_type otyp, omode omod) {
-  if (omod == omode::read_write) {
-    return true;
-  } else if (otyp == aio_type::read && omod == omode::read_only) {
-    return true;
-  } else if (otyp == aio_type::write && omod == omode::write_only) {
-    return true;
-  }
-  return false;
 }
 
 aio_result

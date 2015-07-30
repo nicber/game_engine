@@ -15,7 +15,9 @@ struct file_control_block;
 
 enum class aio_type {
   read,
-  write
+  write,
+  send_msg,
+  recv_msg
 };
 
 struct aio_buffer {
@@ -23,48 +25,44 @@ struct aio_buffer {
   char *buf;
   bool own;
 
-  aio_buffer();
+  aio_buffer(size_t len);
   aio_buffer(size_t len_, char *buf_);
   ~aio_buffer();
 };
 
 using aio_buffer_ptr = std::shared_ptr<aio_buffer>;
 
-struct aio_result_t {
+struct aio_result_t : private aio_result_platform {
   std::atomic<bool> finished;
   boost::optional<aio_runtime_error> aio_except;
   aio_buffer_ptr buf;
-  size_t read_bytes;
+  uint32_t read_bytes;
 
+  friend class aio_operation_t;
   aio_result_t();
 };
 
 using aio_result = std::shared_ptr<aio_result_t>;
 
-class aio_operation_t : public std::enable_shared_from_this<aio_operation_t> {
+class aio_operation_t : public std::enable_shared_from_this<aio_operation_t>
+                      , private aio_operation_platform
+{
 public:
   aio_result perform();
 
 private:
-  aio_result file_read();
-  aio_result file_write();
-  aio_result socket_read();
-  aio_result socket_write();
-  void try_socket_read();
-  void try_socket_write();
   void alloc_result_if_nec();
 
-private:
   std::shared_ptr<file_control_block> control_block;
   aio_buffer_ptr buf;
-  char *real_buffer;
   aio_type type;
   off_t offset;
-  size_t nbytes_min;
-  size_t nbytes_max;
+  uint32_t nbytes_min;
+  uint32_t nbytes_max;
   bool submitted;
   aio_result result;
   friend class file;
+  friend class socket;
   #ifdef __unix__
   friend void game_engine::aio::socket_thread();
   #endif
@@ -90,5 +88,7 @@ public:
 private:
   std::shared_ptr<file_control_block> cblock;
 };
+
+bool aio_type_compat_open_mode(aio_type otyp, omode omod);
 }
 }
