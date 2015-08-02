@@ -3,7 +3,6 @@
 #include <atomic>
 #include <boost/optional.hpp>
 #include <memory>
-#include <platform/aio.h>
 
 namespace game_engine {
 namespace aio {
@@ -32,7 +31,7 @@ struct aio_buffer {
 
 using aio_buffer_ptr = std::shared_ptr<aio_buffer>;
 
-struct aio_result_t : private aio_result_platform {
+struct aio_result_t {
   std::atomic<bool> finished;
   boost::optional<aio_runtime_error> aio_except;
   aio_buffer_ptr buf;
@@ -45,7 +44,6 @@ struct aio_result_t : private aio_result_platform {
 using aio_result = std::shared_ptr<aio_result_t>;
 
 class aio_operation_t : public std::enable_shared_from_this<aio_operation_t>
-                      , private aio_operation_platform
 {
 public:
   aio_result perform();
