@@ -4,6 +4,7 @@
 #include <deque>
 #include <memory>
 #include <thr_queue/functor.h> 
+#include <thr_queue/future.h> 
 #include <thr_queue/thread_api.h> 
 #include <uv.h>
 
@@ -25,9 +26,15 @@ struct uv_thread {
 
 uv_thread &get_uv_thr();
 
+/** \brief Schedules the passed function to run in the libuv thread and then
+ * returns a boost::future that will be signaled when the function will be
+ * executed.
+ */
 template <typename F>
 boost::future<void> uv_thr_sync_do(F func);
 
+/** \brief Initializes a uv_async_t structure synchronously.
+ */
 void uv_thr_async_init(uv_async_t *async, uv_async_cb f_ptr);
 }
 }

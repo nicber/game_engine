@@ -27,7 +27,7 @@ uv_thr_sync_do(F func)
       }
     };
 
-    auto functor_ptr = std::make_unique<spec_functor<decltype(lambda)>>(std::move(lambda));
+    auto functor_ptr = make_functor(std::move(lambda));
     thr.init_start_requests.emplace_back(std::move(functor_ptr));
   }
 
