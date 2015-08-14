@@ -1,6 +1,13 @@
 #pragma once
 
-#include "thr_queue/future.h"
+namespace game_engine {
+namespace thr_queue {
+class coroutine;
+class queue;
+}
+}
+
+#include "thr_queue/event/future.h"
 #include "thr_queue/functor.h"
 
 #include <deque>
@@ -10,13 +17,6 @@
 
 namespace game_engine {
 namespace thr_queue {
-class coroutine;
-class queue;
-namespace event {
-class condition_variable;
-class mutex;
-}
-
 /** We have to declare this private function here because we need it to be
  * static we we friend it inside queue.
  * Otherwise the compiler will complain about an extern function (declared by
@@ -50,6 +50,20 @@ constexpr steal_work_t steal_work;
  *   executed one after the other in one thread.
  */
 class queue {
+private:
+  /** A subclass of the functor template that also moves the result of the
+   * stored function to the promise type when it's ran.
+   */
+  template <typename F>
+  struct work : functor {
+    using result_type = typename std::result_of<F()>::type;
+    event::promise<result_type> prom;
+    F func;
+    work(F f, event::promise<result_type> p);
+
+    void operator()() final override;
+  };
+
 public:
   using callback_t = std::function<void(queue &)>;
 
@@ -75,7 +89,7 @@ public:
 
   /** \brief Adds a function to be executed to the queue. */
   template <typename F>
-  get_future_type<F> submit_work(F func);
+  event::future<typename queue::work<F>::result_type> submit_work(F func);
 
   /** \brief Appends a queue to this one.
    * Depending on what type of queue is appended and what type this queue is
@@ -107,18 +121,6 @@ public:
   queue_type type() const;
 
 private:
-  /** A subclass of the functor template that also moves the result of the
-   * stored function to the promise type when it's ran.
-   */
-  template <typename F>
-  struct work : functor {
-    get_promise_type<F> prom;
-    F func;
-    work(F f, get_promise_type<F> p);
-
-    void operator()() final override;
-  };
-
   /** \brief A utility function that is only an implementation detail.
    * It has to be added here as a friend.
    */

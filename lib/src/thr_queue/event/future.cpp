@@ -1,3 +1,5 @@
+#include <thr_queue/util_queue.h>
+#include "../global_thr_pool_impl.h"
 #include <thr_queue/event/future.h>
 
 namespace game_engine {
@@ -17,12 +19,23 @@ void promise<void>::set_value()
 
 void future_generic_base::wait() const
 {
-  if (ready()) {
-    return;
-  }
   auto &d = get_priv();
   boost::unique_lock<mutex> l(d.co_mt);
-  d.cv.wait(l);
+  if (d.set_flag) {
+    return;
+  } else if (running_coroutine_or_yielded_from) {
+    d.cv.wait(l);
+  } else {
+    boost::promise<void> prom;
+    auto fut = prom.get_future();
+    queue q(queue_type::parallel);
+    q.submit_work([this, &prom] {
+      wait();
+      prom.set_value();
+    });
+    schedule_queue_first(std::move(q));
+    fut.wait();
+  }
 }
 
 bool future_generic_base::ready() const

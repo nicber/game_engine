@@ -1,6 +1,5 @@
 #pragma once
 
-#include "thr_queue/event/cond_var.h"
 #include "thr_queue/queue.h"
 
 namespace game_engine {

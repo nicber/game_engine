@@ -19,7 +19,7 @@ bool valid_function(const std::function<T()> &f) {
 namespace game_engine {
 namespace thr_queue {
 template <typename F>
-get_future_type<F> queue::submit_work(F func) {
+event::future<typename queue::work<F>::result_type> queue::submit_work(F func) {
   if (!valid_function(func)) {
     throw std::runtime_error("invalid function passed");
   }
@@ -27,7 +27,8 @@ get_future_type<F> queue::submit_work(F func) {
   boost::lock_guard<boost::recursive_mutex> guard(queue_mut);
 
   auto work = std::unique_ptr<queue::work<F>>(
-      new queue::work<F>(std::move(func), get_promise_type<F>()));
+      new queue::work<F>(std::move(func),
+                         event::promise<queue::work<F>::result_type>()));
   auto fut = work->prom.get_future();
   work_queue.emplace_back(work.release());
   if (cb_added) {
@@ -42,13 +43,13 @@ get_future_type<F> queue::submit_work(F func) {
 // F is the function.
 template <typename F, typename T>
 struct worker {
-  static void do_work_and_store(F &f, get_promise_type<F> &prom) {
+  static void do_work_and_store(F &f, event::promise<F> &prom) {
     prom.set_value(f());
   }
 };
 template <typename F>
 struct worker<F, void> {
-  static void do_work_and_store(F &f, get_promise_type<F> &prom) {
+  static void do_work_and_store(F &f, event::promise<void> &prom) {
     f();
     prom.set_value();
   }
@@ -57,8 +58,7 @@ struct worker<F, void> {
 template <typename F>
 void queue::work<F>::operator()() {
   try {
-    worker<F, typename std::result_of<F()>::type>::do_work_and_store(func,
-                                                                     prom);
+    worker<F, result_type>::do_work_and_store(func, prom);
   }
   catch (...) {
     prom.set_exception(boost::current_exception());
@@ -66,7 +66,7 @@ void queue::work<F>::operator()() {
 }
 
 template <typename F>
-queue::work<F>::work(F f, get_promise_type<F> p)
+queue::work<F>::work(F f, event::promise<result_type> p)
     : prom(std::move(p)), func(std::move(f)) {}
 }
 }

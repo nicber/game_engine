@@ -4,7 +4,6 @@
 #include <deque>
 #include <memory>
 #include <thr_queue/functor.h> 
-#include <thr_queue/future.h> 
 #include <thr_queue/thread_api.h> 
 #include <uv.h>
 
