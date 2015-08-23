@@ -3,20 +3,12 @@
 #include <atomic>
 #include <boost/optional.hpp>
 #include <memory>
+#include <thr_queue/event/future.h>
 
 namespace game_engine {
 namespace aio {
 struct aio_runtime_error : std::runtime_error {
   using std::runtime_error::runtime_error;
-};
-
-struct file_control_block;
-
-enum class aio_type {
-  read,
-  write,
-  send_msg,
-  recv_msg
 };
 
 struct aio_buffer {
@@ -26,67 +18,51 @@ struct aio_buffer {
 
   aio_buffer(size_t len);
   aio_buffer(size_t len_, char *buf_);
+
+  aio_buffer(aio_buffer &&other);
+  aio_buffer &operator=(aio_buffer rhs);
+
   ~aio_buffer();
+
+private:
+  /** \brief Default construct for the state of a moved-from object.
+   */
+  aio_buffer();
+
+  friend void swap(aio_buffer &lhs, aio_buffer &rhs);
 };
 
 using aio_buffer_ptr = std::shared_ptr<aio_buffer>;
 
-struct aio_result_t {
-  std::atomic<bool> finished;
-  boost::optional<aio_runtime_error> aio_except;
-  aio_buffer_ptr buf;
-  uint32_t read_bytes;
+template <typename T>
+using aio_result_future = game_engine::thr_queue::event::future<T>;
 
-  friend class aio_operation_t;
-  aio_result_t();
+template <typename T>
+using aio_result_promise = game_engine::thr_queue::event::promise<T>;
+
+class aio_operation_base {
+public:
+  virtual ~aio_operation_base();
+
+  void set_perform_on_destruction(bool flag);
+  bool get_perform_on_destruction() const;
+
+protected:
+  bool already_performed = false;
+private:
+  bool perform_on_destr = true;
 };
 
-using aio_result = std::shared_ptr<aio_result_t>;
-
-class aio_operation_t : public std::enable_shared_from_this<aio_operation_t>
+template <typename T>
+class aio_operation_t : public aio_operation_base
 {
 public:
-  aio_result perform();
-
-private:
-  void alloc_result_if_nec();
-
-  std::shared_ptr<file_control_block> control_block;
-  aio_buffer_ptr buf;
-  aio_type type;
-  off_t offset;
-  uint32_t nbytes_min;
-  uint32_t nbytes_max;
-  bool submitted;
-  aio_result result;
-  friend class file;
-  friend class socket;
-  #ifdef __unix__
-  friend void game_engine::aio::socket_thread();
-  #endif
+  aio_result_future<T> perform();
+  ~aio_operation_t();
+protected:
+  virtual aio_result_future<T> do_perform() = 0;
 };
-
-using aio_operation   = std::shared_ptr<aio_operation_t>;
-using aio_operation_w = std::weak_ptr<aio_operation_t>;
-
-enum class omode {
-  read_only,
-  write_only,
-  read_write
-};
-
-class file {
-public:
-  file(const std::string &path, omode omod = omode::read_only);
-
-  aio_operation prepare_read(size_t length, aio_buffer_ptr to_bptr);
-  aio_operation prepare_write(size_t length, aio_buffer_ptr to_bptr);
-
-  aio_operation prepare_read_min_max(size_t min, size_t max, aio_buffer_ptr to_bptr);
-private:
-  std::shared_ptr<file_control_block> cblock;
-};
-
-bool aio_type_compat_open_mode(aio_type otyp, omode omod);
 }
 }
+
+#include "aio.inl"
