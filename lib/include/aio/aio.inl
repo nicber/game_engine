@@ -16,7 +16,7 @@ game_engine::aio::aio_operation_t<T>::perform()
 template<typename T>
 game_engine::aio::aio_operation_t<T>::~aio_operation_t()
 {
-  if (perform_on_destr && !already_performed) {
+  if (get_perform_on_destruction() && !already_performed) {
     perform();
   }
 }

@@ -62,6 +62,9 @@ public:
 protected:
   virtual aio_result_future<T> do_perform() = 0;
 };
+
+template <typename T>
+using aio_operation = std::unique_ptr<aio_operation_t<T>>;
 }
 }
 
