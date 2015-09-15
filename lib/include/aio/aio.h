@@ -34,12 +34,6 @@ private:
 
 using aio_buffer_ptr = std::shared_ptr<aio_buffer>;
 
-template <typename T>
-using aio_result_future = game_engine::thr_queue::event::future<T>;
-
-template <typename T>
-using aio_result_promise = game_engine::thr_queue::event::promise<T>;
-
 class aio_operation_base {
 public:
   virtual ~aio_operation_base();
@@ -57,14 +51,43 @@ template <typename T>
 class aio_operation_t : public aio_operation_base
 {
 public:
-  aio_result_future<T> perform();
-  ~aio_operation_t();
+  using aio_result_future = game_engine::thr_queue::event::future<T>;
+  using aio_result_promise = game_engine::thr_queue::event::promise<T>;
+
+  aio_result_future perform();
+  virtual ~aio_operation_t() = 0;
+
 protected:
-  virtual aio_result_future<T> do_perform() = 0;
+  virtual aio_result_future do_perform() = 0;
+  void perform_on_destruction_if_need();
 };
 
 template <typename T>
 using aio_operation = std::unique_ptr<aio_operation_t<T>>;
+
+/** \brief Implementation detail for make_aio_operation. Do not use.
+ */
+template <typename F>
+class lambda_aio_operation_t : public aio_operation_t<typename std::result_of_t<F()>::value_type>
+{
+public:
+  lambda_aio_operation_t(F func);
+  ~lambda_aio_operation_t();
+
+protected:
+  aio_result_future do_perform() final override;
+
+private:
+  F function;
+};
+
+/** \brief This function takes a lambda compatible and wraps it into
+ * an aio_operation. The lambda must comply with this signature:
+ * event::future<T> function()
+ * where T will become the type the resulting aio_operation returns.
+ */
+template <typename F>
+std::unique_ptr<lambda_aio_operation_t<F>> make_aio_operation(F function);
 }
 }
 
