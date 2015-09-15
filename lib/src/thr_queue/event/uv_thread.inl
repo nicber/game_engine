@@ -34,6 +34,30 @@ uv_thr_sync_do(F func)
   uv_async_send(thr.global_async.get());
   return fut;
 }
+
+template <typename Ret, typename F>
+event::future<Ret>
+uv_thr_cor_do(F func)
+{
+  auto &thr = get_uv_thr();
+  assert(thr.global_async);
+  assert(!thr.should_stop);
+  event::promise<Ret> prom;
+  auto fut = prom.get_future();
+
+  { 
+    boost::lock_guard<boost::mutex> req_lock(thr.init_start_requests_mt);
+    auto lambda = [func = std::move(func), prom = std::move(prom)] () mutable {
+      func(std::move(prom));
+    };
+
+    auto functor_ptr = make_functor(std::move(lambda));
+    thr.init_start_requests.emplace_back(std::move(functor_ptr));
+  }
+
+  uv_async_send(thr.global_async.get());
+  return fut;
+}
 }
 }
 }

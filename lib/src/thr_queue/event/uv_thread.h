@@ -4,6 +4,7 @@
 #include <deque>
 #include <memory>
 #include <thr_queue/functor.h> 
+#include <thr_queue/event/future.h>
 #include <thr_queue/thread_api.h> 
 #include <uv.h>
 
@@ -31,6 +32,14 @@ uv_thread &get_uv_thr();
  */
 template <typename F>
 boost::future<void> uv_thr_sync_do(F func);
+
+/** \brief Schedules to passed function to be run on the libuv thread.
+ * The function will be passed a promise<Ret> that it can use to indicate
+ * progress to another piece of code. 
+ * The corresponding future is returned by this function.
+ */
+template <typename Ret, typename F>
+event::future<Ret> uv_thr_cor_do(F func);
 
 /** \brief Initializes a uv_async_t structure synchronously.
  */
