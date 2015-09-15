@@ -56,7 +56,8 @@ void swap(promise_base<R> &lhs, promise_base<R> &rhs);
 template <typename R>
 class promise_base {
 public:
-  typedef R value_type;
+  using value_type = R
+    ;
   promise_base();
   promise_base &operator=(promise_base const& rhs) = delete;
   promise_base(promise_base const& rhs) = delete;
@@ -107,6 +108,9 @@ public:
 template <typename R>
 class future_base : public future_generic_base {
   future_promise_priv_shared &get_priv() const final override;
+
+public:
+  using value_type = R;
   
 protected:
   future_base(std::shared_ptr<future_promise_priv<R>> d_);

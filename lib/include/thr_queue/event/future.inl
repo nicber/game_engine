@@ -171,7 +171,7 @@ void promise<R>::set_value(R val)
 {
   boost::lock_guard<boost::mutex> l(d->os_mt);
   if (d->set_flag) {
-    throw promise_already_set();
+    throw promise_already_set("the promise has already been set to a value");
   }
   d->val = std::move(val);
   notify_all_cvs();
@@ -200,7 +200,7 @@ R future<R>::get()
     d->val = boost::none;
     return val;
   } else {
-    throw future_was_emptied_before();
+    throw future_was_emptied_before("the future was emptied before");
   }
 }
 
