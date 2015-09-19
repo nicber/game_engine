@@ -4,6 +4,7 @@
 #include <boost/optional.hpp>
 #include <memory>
 #include <thr_queue/event/future.h>
+#include <uv.h>
 
 namespace game_engine {
 namespace aio {
@@ -76,7 +77,7 @@ class lambda_aio_operation_t : public aio_operation_t<typename std::result_of_t<
 {
 public:
   lambda_aio_operation_t(F func);
-  ~lambda_aio_operation_t();
+  ~lambda_aio_operation_t() final override;
 
 protected:
   aio_result_future do_perform() final override;
