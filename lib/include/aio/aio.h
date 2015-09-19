@@ -11,23 +11,27 @@ struct aio_runtime_error : std::runtime_error {
   using std::runtime_error::runtime_error;
 };
 
-struct aio_buffer {
-  size_t len;
-  char *buf;
-  bool own;
+struct aio_buffer : uv_buf_t {
+  using size_type = decltype(uv_buf_t().len);
+  /** \brief Default construct for the state of a moved-from, aka empty, object.
+   */
+  aio_buffer();
 
-  aio_buffer(size_t len);
-  aio_buffer(size_t len_, char *buf_);
+  aio_buffer(uv_buf_t &&buf);
+  aio_buffer(size_type length);
+
+  aio_buffer(const aio_buffer &) = delete;
 
   aio_buffer(aio_buffer &&other);
   aio_buffer &operator=(aio_buffer rhs);
 
+  void append(aio_buffer other);
+
+  uv_buf_t get_subbuffer(size_type shift);
+
   ~aio_buffer();
 
 private:
-  /** \brief Default construct for the state of a moved-from object.
-   */
-  aio_buffer();
 
   friend void swap(aio_buffer &lhs, aio_buffer &rhs);
 };
