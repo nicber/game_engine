@@ -11,7 +11,7 @@ boost::future<void>
 uv_thr_sync_do(F func)
 {
   auto &thr = get_uv_thr();
-  assert(thr.global_async);
+  while(!thr.async_constructed);
   assert(!thr.should_stop);
   boost::promise<void> prom;
   auto fut = prom.get_future();
@@ -40,7 +40,10 @@ event::future<Ret>
 uv_thr_cor_do(F func)
 {
   auto &thr = get_uv_thr();
-  assert(thr.global_async);
+
+  while (!thr.async_constructed) {
+  }
+
   assert(!thr.should_stop);
   event::promise<Ret> prom;
   auto fut = prom.get_future();
