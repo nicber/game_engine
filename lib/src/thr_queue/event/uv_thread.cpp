@@ -44,7 +44,8 @@ void process_init_start_requests_or_stop(uv_async_t *) {
                                     boost::defer_lock);
 
   while (lock.lock(), thr.init_start_requests.size()) {
-    auto q = std::move(thr.init_start_requests);
+    decltype(thr.init_start_requests) q;
+    std::swap(q, thr.init_start_requests);
     lock.unlock();
     for (auto &f : q) {
       (*f)();
