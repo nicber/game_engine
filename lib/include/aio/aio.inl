@@ -14,6 +14,11 @@ aio_operation_t<T>::perform()
 }
 
 template<typename T>
+aio_operation_t<T>::~aio_operation_t()
+{
+}
+
+template<typename T>
 void 
 aio_operation_t<T>::perform_on_destruction_if_need()
 {
