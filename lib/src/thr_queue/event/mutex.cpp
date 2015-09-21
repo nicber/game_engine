@@ -22,6 +22,7 @@ void mutex::lock() {
   // time to run.
   while (true) {
     assert(!lock.owns_lock());
+    assert(running_coroutine_or_yielded_from);
     lock.lock();
 
     if (!owning_cor) {
