@@ -24,13 +24,13 @@ void worker_thread::loop() {
   };
 
   do {
-    while (while_cond()) {
-      auto w_it = std::find(
-          data.waiting_threads.begin(), data.waiting_threads.end(), this);
-      if (w_it != data.waiting_threads.end()) {
-        data.waiting_threads.erase(w_it);
-      }
+    auto w_it = std::find(
+      data.waiting_threads.begin(), data.waiting_threads.end(), this);
+    if (w_it != data.waiting_threads.end()) {
+      data.waiting_threads.erase(w_it);
+    }
 
+    while (while_cond()) {
       if (should_stop) {
         // we inform another thread that we won't be
         // able to do our assigned
@@ -50,24 +50,24 @@ void worker_thread::loop() {
       }
 
       assert(work_queue->size());
-	  std::deque<coroutine> work_to_do;
-	  auto number_jobs_take = work_queue->size() / 10;
-	  number_jobs_take = std::max(decltype(number_jobs_take)(1), number_jobs_take);
-	  //printf("stole %d coroutines\n", number_jobs_take);
-	  auto end_iter = work_queue->begin() + number_jobs_take;
+      std::deque<coroutine> work_to_do;
+      auto number_jobs_take = work_queue->size() / 10;
+      number_jobs_take = std::max(decltype(number_jobs_take)(1), number_jobs_take);
+      //printf("stole %d coroutines\n", number_jobs_take);
+      auto end_iter = work_queue->begin() + number_jobs_take;
       std::move(work_queue->begin(), end_iter, std::back_inserter(work_to_do));
-	  work_queue->erase(work_queue->begin(), end_iter);
+      work_queue->erase(work_queue->begin(), end_iter);
       lock_data.unlock();
 
-	  for (auto& cor : work_to_do) {
-		running_coroutine_or_yielded_from = &cor;
-		cor.switch_to_from(*master_coroutine);
-		if (*after_yield) {
-		  (*after_yield)();
-		  *after_yield = std::function<void()>();
-		}
-		running_coroutine_or_yielded_from = master_coroutine;
-	  }
+      for (auto& cor : work_to_do) {
+        running_coroutine_or_yielded_from = &cor;
+        cor.switch_to_from(*master_coroutine);
+        if (*after_yield) {
+          (*after_yield)();
+          *after_yield = std::function<void()>();
+        }
+        running_coroutine_or_yielded_from = master_coroutine;
+      }
     }
     // lock_data is guaranteed to be locked now.
 
