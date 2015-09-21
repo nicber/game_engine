@@ -50,6 +50,7 @@ class buffer : public buffer_base {
 
 	  buffer_iterator_base &operator=(buffer_iterator_base other);
 
+    protected:
       buffer_accessor &dereference() const;
 
       bool equal(const buffer_iterator_base& other) const;
@@ -68,6 +69,8 @@ class buffer : public buffer_base {
 	  {
 		  lhs.buff_acc.exchange(rhs.buff_acc);
 	  }
+
+      friend boost::iterator_core_access;
     };
 
 public:
@@ -104,23 +107,20 @@ public:
     std::ptrdiff_t offset = 0;
   };
 
-  class buffer_iterator:
-    protected buffer_iterator_base,
-    public boost::iterator_facade<buffer_iterator, buffer_accessor, boost::random_access_traversal_tag>
+  struct buffer_iterator:
+    buffer_iterator_base,
+    boost::iterator_facade<buffer_iterator, buffer_accessor, boost::random_access_traversal_tag>
   {
-    friend boost::iterator_core_access;
-    friend class const_buffer_iterator;
-  public:
+    friend struct const_buffer_iterator;
     using buffer_iterator_base::buffer_iterator_base;
   };
 
-  class const_buffer_iterator :
-	protected buffer_iterator_base,
-	public boost::iterator_facade<const_buffer_iterator, const buffer_accessor, boost::random_access_traversal_tag>
+  struct const_buffer_iterator :
+	buffer_iterator_base,
+	boost::iterator_facade<const_buffer_iterator, const buffer_accessor, boost::random_access_traversal_tag>
   {
-	  friend boost::iterator_core_access;
-  public:
   	const_buffer_iterator(buffer_iterator other);
+    public:
   	using buffer_iterator_base::buffer_iterator_base;
   };
 

@@ -54,7 +54,7 @@ aio_buffer::~aio_buffer()
 }
 
 aio_buffer::aio_buffer()
- :uv_buf_t{0, nullptr}
+ :uv_buf_t(uv_buf_init(nullptr, 0))
 {}
 
 void swap(aio_buffer & lhs, aio_buffer & rhs)

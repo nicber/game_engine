@@ -31,7 +31,7 @@ using functor_ptr = std::unique_ptr<functor>;
 template <typename F>
 functor_ptr make_functor(F f)
 {
-  auto func = std::make_unique<spec_functor<F>>(std::move(f));
+  functor_ptr func = std::make_unique<spec_functor<F>>(std::move(f));
   return func;
 }
 }

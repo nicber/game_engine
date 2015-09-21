@@ -110,15 +110,15 @@ void wait_all(InIt first, InIt last)
 template<typename... Rs>
 size_t wait_any(const future<Rs>&... futs)
 {
-  auto check_ready = [&] -> boost::optional<size_t> {
+  auto check_ready = [&]() -> boost::optional<size_t> {
     bool any_ready[] = {futs.ready()...};
-    for (size_t i = 0; i < sizeof...(Rs), ++i) {
+    for (size_t i = 0; i < sizeof...(Rs); ++i) {
       if (any_ready[i]) {
         return i;
       }
     }
     return boost::none;
-  }
+  };
 
   if (auto index = check_ready()) {
     return *index;
@@ -127,7 +127,6 @@ size_t wait_any(const future<Rs>&... futs)
   auto shared_cv = std::make_shared<condition_variable>();
   promise<void> cor_prom;
   future<void> cor_cut = cor_prom.get_future();
-  
 
   std::vector<boost::unique_lock<boost::mutex>> locks;
   std::vector<std::vector<std::weak_ptr<condition_variable>>*> cv_vectors;
@@ -140,27 +139,25 @@ size_t wait_any(const future<Rs>&... futs)
     cv_vectors.emplace_back(&d->when_any_callbacks);
   };
 
-  {(preproc(futs),0)...};
+  int l{(preproc(futs),0)...};
   boost::lock(begin(locks), end(locks));
   for (auto *cv_vec : cv_vectors) {
     cv_vec->emplace_back(shared_cv);
   }
-  
-
 }
 
 template<typename... Rs>
 void wait_all(const future<Rs>&... futs)
 {
   struct waiter {
-    waiter()
+    waiter(const future_generic_base &fut_)
      :fut(fut_)
     {}
 
     ~waiter() {
       fut.wait();
     }
-    const Fut &fut;
+    const future_generic_base &fut;
   };
   waiter waiters[]{futs...};
 }
@@ -169,18 +166,18 @@ template<typename R>
 void promise<R>::set_value(R val)
 
 {
-  boost::lock_guard<boost::mutex> l(d->os_mt);
-  if (d->set_flag) {
+  boost::lock_guard<boost::mutex> l(this->d->os_mt);
+  if (this->d->set_flag) {
     throw promise_already_set("the promise has already been set to a value");
   }
-  d->val = std::move(val);
-  notify_all_cvs();
+  this->d->val = std::move(val);
+  this->notify_all_cvs();
 }
 
 template<typename R>
 future_promise_priv_shared & game_engine::thr_queue::event::future_base<R>::get_priv() const
 {
-  return const_cast<future_promise_priv<R>&>(*d);
+  return const_cast<future_promise_priv<R>&>(*this->d);
 }
 
 template<typename R>
@@ -191,13 +188,13 @@ game_engine::thr_queue::event::future_base<R>::future_base(std::shared_ptr<futur
 template<typename R>
 R future<R>::get()
 {
-  wait();
-  boost::lock_guard<boost::mutex> l(d->os_mt);
-  if (d->except_ptr) {
-    std::rethrow_exception(d->except_ptr);
-  } else if (d->val) {
-    R val = std::move(*d->val);
-    d->val = boost::none;
+  this->wait();
+  boost::lock_guard<boost::mutex> l(this->d->os_mt);
+  if (this->d->except_ptr) {
+    std::rethrow_exception(this->d->except_ptr);
+  } else if (this->d->val) {
+    R val = std::move(*this->d->val);
+    this->d->val = boost::none;
     return val;
   } else {
     throw future_was_emptied_before("the future was emptied before");
@@ -207,14 +204,14 @@ R future<R>::get()
 template<typename R>
 const R &future<R>::peek() const
 {
-  wait();
-  boost::lock_guard<boost::mutex> l(d->os_mt);
-  if (d->except_ptr) {
-    std::rethrow_exception(d->except_ptr);
-  } else if (d->val) {
-    return *d->val;
+  this->wait();
+  boost::lock_guard<boost::mutex> l(this->d->os_mt);
+  if (this->d->except_ptr) {
+    std::rethrow_exception(this->d->except_ptr);
+  } else if (this->d->val) {
+    return *this->d->val;
   } else {
-    throw future_was_emptied_before();
+    throw future_was_emptied_before("the future was emptied before");
   }
 }
 }

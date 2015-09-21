@@ -17,7 +17,7 @@ struct uv_thread {
   ~uv_thread();
 
   std::atomic<bool> should_stop;
-  std::atomic<bool> async_constructed = false;
+  std::atomic<bool> async_constructed{false};
   std::unique_ptr<uv_async_t> global_async = nullptr;
   std::deque<std::unique_ptr<functor>> init_start_requests;
   boost::mutex init_start_requests_mt;

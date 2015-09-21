@@ -28,7 +28,8 @@ event::future<typename queue::work<F>::result_type> queue::submit_work(F func) {
 
   auto work = std::unique_ptr<queue::work<F>>(
       new queue::work<F>(std::move(func),
-                         event::promise<queue::work<F>::result_type>()));
+                         typename event::promise<
+                           typename queue::work<F>::result_type>()));
   auto fut = work->prom.get_future();
   work_queue.emplace_back(work.release());
   if (cb_added) {

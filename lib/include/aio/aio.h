@@ -75,12 +75,13 @@ using aio_operation = std::unique_ptr<aio_operation_t<T>>;
 template <typename F>
 class lambda_aio_operation_t : public aio_operation_t<typename std::result_of_t<F()>::value_type>
 {
+  using aiorf = typename aio_operation_t<typename std::result_of_t<F()>::value_type>::aio_result_future;
 public:
   lambda_aio_operation_t(F func);
   ~lambda_aio_operation_t() final override;
 
 protected:
-  aio_result_future do_perform() final override;
+  aiorf do_perform() final override;
 
 private:
   F function;

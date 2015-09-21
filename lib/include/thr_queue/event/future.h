@@ -128,7 +128,7 @@ public:
 private:
   friend class promise_base<R>;
   friend class promise<R>;
-  using future_base::future_base;
+  using future_base<R>::future_base;
 };
 
 template <>
