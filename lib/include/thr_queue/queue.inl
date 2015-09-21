@@ -60,8 +60,9 @@ void queue::work<F>::operator()() {
   try {
     worker<F, result_type>::do_work_and_store(func, prom);
   }
-  catch (...) {
-    prom.set_exception(boost::current_exception());
+  catch (std::exception &e) {
+    LOG() << "queue worker caught exception: " << e.what();
+    prom.set_exception(std::current_exception());
   }
 }
 
