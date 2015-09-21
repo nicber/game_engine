@@ -19,14 +19,15 @@ void promise<void>::set_value()
 
 void future_generic_base::wait() const
 {
-  auto &d = get_priv();
-  boost::unique_lock<mutex> l(d.co_mt);
-  if (d.set_flag) {
-    return;
-  } else if (running_coroutine_or_yielded_from) {
-    d.cv.wait(l);
+  if (running_coroutine_or_yielded_from) {
+    auto &d = get_priv();
+    boost::unique_lock<mutex> l(d.co_mt);
+    if (d.set_flag) {
+      return;
+    } else {
+      d.cv.wait(l);
+    }
   } else {
-    l.unlock();
     boost::promise<void> prom;
     auto fut = prom.get_future();
     queue q(queue_type::parallel);
