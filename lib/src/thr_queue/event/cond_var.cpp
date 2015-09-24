@@ -36,9 +36,9 @@ void condition_variable::notify() {
   auto wc = std::move(waiting_cors);
   mt_lock.unlock();
 
-  for (auto &cor : wc) {
-    global_thr_pool.schedule(std::move(cor), true);
-  }
+  auto begin_move = std::make_move_iterator(wc.begin());
+  auto end_move = std::make_move_iterator(wc.end());
+  global_thr_pool.schedule(begin_move, end_move, true);
 }
 
 condition_variable::~condition_variable() {

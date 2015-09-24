@@ -20,6 +20,7 @@ void global_thread_pool::schedule(InputIt begin, InputIt end, bool first) {
   
   if(end - begin == 0) {
 	return;
+  static_assert(std::is_same<coroutine&&, decltype(*begin)>::value, "InputIt needs to move the coroutines");
   }
 
   auto cor_type = begin->type();
