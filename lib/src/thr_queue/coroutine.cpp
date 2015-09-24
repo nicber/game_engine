@@ -5,11 +5,11 @@
 namespace game_engine {
 namespace thr_queue {
 
-coroutine::coroutine(coroutine &&other) : coroutine() {
+coroutine::coroutine(coroutine &&other) noexcept : coroutine() {
   swap(*this, other);
 }
 
-coroutine &coroutine::operator=(coroutine &&rhs) {
+coroutine &coroutine::operator=(coroutine &&rhs) noexcept {
   using std::swap;
   coroutine temp; // make sure we don't allocate a stack.
 
@@ -34,7 +34,7 @@ coroutine_type coroutine::type() const { return typ; }
 
 void coroutine::switch_to_from(coroutine &other) {
   auto func_ptr = reinterpret_cast<intptr_t>(function.get());
-  boost::context::jump_fcontext(&other.ctx, ctx, func_ptr);
+  boost::context::jump_fcontext(&other.ctx, ctx, func_ptr, true);
 }
 
 coroutine::coroutine() :

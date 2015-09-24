@@ -27,8 +27,8 @@ public:
   template <typename F>
   coroutine(F func, coroutine_type cor_typ = coroutine_type::io);
 
-  coroutine(coroutine &&other);
-  coroutine &operator=(coroutine &&rhs);
+  coroutine(coroutine &&other) noexcept;
+  coroutine &operator=(coroutine &&rhs) noexcept;
   ~coroutine();
   
   /** \brief Returns the coroutine's type.
