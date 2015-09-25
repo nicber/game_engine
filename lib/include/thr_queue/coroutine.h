@@ -10,8 +10,7 @@ namespace game_engine {
 namespace thr_queue {
 
 enum class coroutine_type {
-  io,
-  cpu,
+  user,
   master
 };
 
@@ -25,7 +24,7 @@ public:
    * will be cor_typ.
    */
   template <typename F>
-  coroutine(F func, coroutine_type cor_typ = coroutine_type::io);
+  coroutine(F func, coroutine_type cor_typ = coroutine_type::user);
 
   coroutine(coroutine &&other) noexcept;
   coroutine &operator=(coroutine &&rhs) noexcept;
