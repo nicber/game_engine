@@ -13,14 +13,10 @@ void global_thread_pool::yield(F func) {
 
 template <typename InputIt>
 void global_thread_pool::schedule(InputIt begin, InputIt end, bool first) {
-  bool should_try_add = false;
-  work_type_data *wdata = nullptr;
-  std::list<worker_thread> *threads = nullptr;
-  boost::mutex *thr_mt = nullptr;
-  
-  if(end - begin == 0) {
-	return;
   static_assert(std::is_same<coroutine&&, decltype(*begin)>::value, "InputIt needs to move the coroutines");
+  auto count = std::distance(begin, end);
+  if (count == 0) {
+  	return;
   }
 
   auto cor_type = begin->type();
@@ -28,32 +24,33 @@ void global_thread_pool::schedule(InputIt begin, InputIt end, bool first) {
           return cor.type() == cor_type;
 		}));
 		
-  if (cor_type == coroutine_type::io) {
-    should_try_add = true;
-    wdata = &io_data;
-    threads = &io_threads;
-    thr_mt = &io_threads_mt;
+  if (this_wthread) {
+    if (first) {
+      work_data.work_queue_prio_size += count;
+      work_data.work_queue_prio.enqueue_bulk(this_wthread->ptok_prio, std::move(begin), count);
+    } else {
+      work_data.work_queue_size += count;
+      work_data.work_queue.enqueue_bulk(this_wthread->ptok, std::move(begin), count);
+    }
   } else {
-    wdata = &cpu_data;
-    threads = nullptr; // we never try to add more cpu threads
+    if (first) {
+      work_data.work_queue_prio_size += count;
+      work_data.work_queue_prio.enqueue_bulk(std::move(begin), count);
+    } else {
+      work_data.work_queue_size += count;
+      work_data.work_queue.enqueue_bulk(std::move(begin), count);
+    }
   }
 
-  boost::unique_lock<boost::mutex> lock_wdata(wdata->mt);
-  boost::unique_lock<boost::mutex> lock_thr_mt;
-  if (thr_mt) {
-    lock_thr_mt = boost::unique_lock<boost::mutex>(*thr_mt);
-  }
-
-  auto& queue_to_append_to = first ? wdata->work_queue_prio : wdata->work_queue;
-  std::move(begin, end, std::back_inserter(queue_to_append_to));
-
-  if (should_try_add && wdata->waiting_threads.size() == 0 &&
-      threads->size() < max_io_threads) {
-    threads->emplace_back(io_data);
-  }
-
-  if (wdata->waiting_threads.size()) {
-    wdata->waiting_threads[0]->cv.notify_one();
+  decltype(count) i = 0;
+  while(true) {
+    unsigned int working = work_data.number_threads - work_data.waiting_threads;
+    if (working < hardware_concurrency && i < count) {
+      PostQueuedCompletionStatus(work_data.iocp, 0, work_data.queue_completionkey, nullptr);
+      ++i;
+    } else {
+      break;
+    }
   }
 }
 }

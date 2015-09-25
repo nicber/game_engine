@@ -2,9 +2,10 @@
 
 #include <atomic>
 #include <cassert>
-#include <deque>
+#include <concurrentqueue.h>
 #include <list>
 #include <memory>
+#include <stack>
 #include "thr_queue/coroutine.h"
 #include "thr_queue/thread_api.h"
 
@@ -13,25 +14,33 @@ namespace thr_queue {
 class worker_thread;
 
 struct work_type_data {
-  boost::mutex mt;
-  std::deque<coroutine> work_queue;
-  std::deque<coroutine> work_queue_prio;
-  std::deque<worker_thread *> waiting_threads;
+  HANDLE iocp;
+  const ULONG queue_completionkey = 0x1;
+  moodycamel::ConcurrentQueue<coroutine> work_queue;
+  moodycamel::ConcurrentQueue<coroutine> work_queue_prio;
+  std::atomic<uint64_t> work_queue_size{0};
+  std::atomic<uint64_t> work_queue_prio_size{0};
+  std::atomic<unsigned int> waiting_threads{0};
+  std::atomic<unsigned int> number_threads{0};
+  std::atomic<bool> shutting_down{false};
 };
 
 class worker_thread {
 public:
   worker_thread(work_type_data &dat);
   void loop();
-  void tell_stop();
-  bool try_notify_work_available();
+  void do_work();
+  void handle_io_operation(OVERLAPPED_ENTRY olapped_entry);
   ~worker_thread();
 
 private:
   friend class global_thread_pool;
-  boost::condition_variable cv;
   work_type_data &data;
-  std::atomic<bool> should_stop;
+  std::atomic<bool> stopped;
+  moodycamel::ConsumerToken ctok;
+  moodycamel::ProducerToken ptok;
+  moodycamel::ConsumerToken ctok_prio;
+  moodycamel::ProducerToken ptok_prio;
   boost::thread thr;
 };
 
@@ -41,7 +50,7 @@ public:
   ~global_thread_pool();
 
   void notify_one_thread(boost::unique_lock<boost::mutex> &lock_data,
-                         std::deque<worker_thread *> &waiting_threads);
+                         moodycamel::ConcurrentQueue<worker_thread *> &waiting_threads);
   void schedule(coroutine cor, bool first);
   
   template <typename InputIt>
@@ -53,15 +62,11 @@ public:
   void yield(F func);
 
 private:
-  work_type_data io_data;
-  work_type_data cpu_data;
+  work_type_data work_data;
 
-  boost::mutex cpu_threads_mt;
-  std::list<worker_thread> cpu_threads;
-
-  boost::mutex io_threads_mt;
-  std::list<worker_thread> io_threads;
-  const unsigned int max_io_threads = 2;
+  boost::mutex threads_mt;
+  std::list<worker_thread> threads;
+  const unsigned int hardware_concurrency;
 };
 
 extern global_thread_pool global_thr_pool;
@@ -69,6 +74,7 @@ extern global_thread_pool global_thr_pool;
 extern thread_local std::function<void()> *after_yield;
 extern thread_local coroutine *master_coroutine;
 extern thread_local coroutine *running_coroutine_or_yielded_from;
+extern thread_local worker_thread *this_wthread;
 }
 }
 
