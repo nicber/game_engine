@@ -192,6 +192,7 @@ R future<R>::get()
   boost::lock_guard<boost::mutex> l(this->d->os_mt);
   if (this->d->except_ptr) {
     std::rethrow_exception(this->d->except_ptr);
+    abort();
   } else if (this->d->val) {
     R val = std::move(*this->d->val);
     this->d->val = boost::none;
@@ -208,6 +209,7 @@ const R &future<R>::peek() const
   boost::lock_guard<boost::mutex> l(this->d->os_mt);
   if (this->d->except_ptr) {
     std::rethrow_exception(this->d->except_ptr);
+    abort();
   } else if (this->d->val) {
     return *this->d->val;
   } else {

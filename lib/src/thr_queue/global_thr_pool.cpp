@@ -67,7 +67,9 @@ static void do_schedule(queue &q,
                         size_t min,
                         bool first) {
   auto cors = queue_to_vec_cor(std::move(q), cv, mt, min);
-  global_thr_pool.schedule(cors.begin(), cors.end(), first);
+  auto begin_move = std::make_move_iterator(cors.begin());
+  auto end_move = std::make_move_iterator(cors.end());
+  global_thr_pool.schedule(begin_move, end_move, first);
 }
 
 void schedule_queue(queue q) { do_schedule(q, nullptr, nullptr, 0, false); }

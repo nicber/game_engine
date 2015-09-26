@@ -2,136 +2,164 @@
 
 #include <algorithm>
 #include <iterator>
+#include <logging/log.h>
 
 namespace game_engine {
 namespace thr_queue {
+thread_local worker_thread *this_wthread = nullptr;
+
 worker_thread::worker_thread(work_type_data &dat)
-    : data(dat), should_stop(false), thr([this] { loop(); }) {}
-
-void worker_thread::loop() {
-  coroutine master_cor;
-  std::function<void()> after_yield_f;
-  master_coroutine = &master_cor;
-  after_yield = &after_yield_f;
-
-  boost::unique_lock<boost::mutex> lock_data(data.mt);
-  auto while_cond = [&] {
-    if (!lock_data.owns_lock()) {
-      lock_data.lock();
-    }
-
-    return data.work_queue.size() || data.work_queue_prio.size() || should_stop;
-  };
-
-  do {
-    auto w_it = std::find(
-      data.waiting_threads.begin(), data.waiting_threads.end(), this);
-    if (w_it != data.waiting_threads.end()) {
-      data.waiting_threads.erase(w_it);
-    }
-
-    while (while_cond()) {
-      if (should_stop) {
-        // we inform another thread that we won't be
-        // able to do our assigned
-        // work.
-        if (data.waiting_threads.size()) {
-          data.waiting_threads[0]->cv.notify_one();
-        }
-
-        goto finish;
-      }
-
-      std::deque<coroutine> *work_queue = nullptr;
-      if (data.work_queue_prio.size()) {
-        work_queue = &data.work_queue_prio;
-      } else {
-        work_queue = &data.work_queue;
-      }
-
-      assert(work_queue->size());
-      std::deque<coroutine> work_to_do;
-      auto number_jobs_take = work_queue->size() / 10;
-      number_jobs_take = std::max(decltype(number_jobs_take)(1), number_jobs_take);
-      //printf("stole %d coroutines\n", number_jobs_take);
-      auto end_iter = work_queue->begin() + number_jobs_take;
-      std::move(work_queue->begin(), end_iter, std::back_inserter(work_to_do));
-      work_queue->erase(work_queue->begin(), end_iter);
-      lock_data.unlock();
-
-      for (auto& cor : work_to_do) {
-        running_coroutine_or_yielded_from = &cor;
-        cor.switch_to_from(*master_coroutine);
-        if (*after_yield) {
-          (*after_yield)();
-          *after_yield = std::function<void()>();
-        }
-        running_coroutine_or_yielded_from = master_coroutine;
-      }
-    }
-    // lock_data is guaranteed to be locked now.
-
-    assert(data.work_queue.size() == 0);
-    assert(data.work_queue_prio.size() == 0);
-
-    data.waiting_threads.push_front(this);
-  } while (cv.wait(lock_data), true);
-  finish:
-  assert(should_stop);
+  :data(dat),
+  stopped(false),
+  ctok(data.work_queue),
+  ptok(data.work_queue),
+  ctok_prio(data.work_queue_prio),
+  ptok_prio(data.work_queue_prio),
+  thr([this] { loop(); }) {
 }
 
-void worker_thread::tell_stop() {
-  should_stop = true;
-  cv.notify_one();
+void worker_thread::loop() {
+  ++data.number_threads;
+  try {
+    this_wthread = this;
+    coroutine master_cor;
+    std::function<void()> after_yield_f;
+    master_coroutine = &master_cor;
+    after_yield = &after_yield_f;
+
+    OVERLAPPED_ENTRY olapped_entry;
+
+    auto wait_cond = [&] {
+      ++data.waiting_threads;
+
+      while (true) {
+        auto wait_time = data.shutting_down ? 0 : INFINITE;
+        ULONG removed_entries;
+        auto wait_iocp = GetQueuedCompletionStatusEx(data.iocp, &olapped_entry, 1, &removed_entries, wait_time, true);
+        if (!wait_iocp) {
+          auto err = GetLastError();
+          if (err == WAIT_IO_COMPLETION) {
+            continue;
+          } else {
+            --data.waiting_threads;
+            if (err != WAIT_TIMEOUT) {
+              LOG() << "GetQueuedCompletionStatus: " << err;
+            }
+            return false;
+          }
+        } else {
+          break;
+        }
+      }
+      --data.waiting_threads;
+      return true;
+    };
+
+    do {
+      if (olapped_entry.lpCompletionKey != data.queue_completionkey) {
+        handle_io_operation(olapped_entry);
+      } else {
+        do_work();
+      }
+    } while (wait_cond());
+  } catch (std::exception &e) {
+    LOG() << "caught when worker thread was stopping: " << e.what();
+  }
+  --data.number_threads;
+  stopped = true;
+}
+
+void worker_thread::do_work()
+{
+  bool could_work;
+  do {
+    could_work = false;
+
+    coroutine work_to_do;
+
+    do {
+      if (data.work_queue_prio.try_dequeue_from_producer(ptok_prio, work_to_do)
+          || data.work_queue_prio.try_dequeue(work_to_do)) {
+        --data.work_queue_prio_size;
+        goto do_work;
+      }
+    } while (data.work_queue_prio_size > 0);
+
+    do {
+      if (data.work_queue.try_dequeue_from_producer(ptok, work_to_do)
+          || data.work_queue.try_dequeue(work_to_do)) {
+        --data.work_queue_size;
+        goto do_work;
+      }
+      if (data.work_queue_prio.try_dequeue_from_producer(ptok_prio, work_to_do)
+          || data.work_queue_prio.try_dequeue(work_to_do)) {
+        --data.work_queue_prio_size;
+        goto do_work;
+      }
+    } while (data.work_queue_size > 0);
+    could_work = false;
+    return;
+    do_work:
+    could_work = true;
+    running_coroutine_or_yielded_from = &work_to_do;
+    work_to_do.switch_to_from(*master_coroutine);
+    if (*after_yield) {
+      (*after_yield)();
+      *after_yield = std::function<void()>();
+    }
+    running_coroutine_or_yielded_from = master_coroutine;
+  } while (could_work);
+}
+
+void worker_thread::handle_io_operation(OVERLAPPED_ENTRY olapped_entry)
+{
 }
 
 worker_thread::~worker_thread() {
-  assert(should_stop);
-  thr.join();
+  assert(stopped);
 }
 
-global_thread_pool::global_thread_pool() {
-  auto hardware_concurrency = boost::thread::hardware_concurrency();
-  auto c_cpu_threads = std::max(1u, hardware_concurrency - 1);
-  auto c_io_threads = 1u;
+global_thread_pool::global_thread_pool()
+ :hardware_concurrency(std::max(1u, boost::thread::hardware_concurrency()))
+{
+  auto c_threads = hardware_concurrency * 8;
 
-  {
-    boost::lock_guard<boost::mutex> lock(io_threads_mt);
-    for (size_t i = 0; i < c_io_threads; ++i) {
-      io_threads.emplace_back(io_data);
-    }
-  }
+  work_data.iocp = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, hardware_concurrency);
 
-  {
-    boost::lock_guard<boost::mutex> lock(cpu_threads_mt);
-    for (size_t i = 0; i < c_cpu_threads; ++i) {
-      cpu_threads.emplace_back(cpu_data);
-    }
+  boost::lock_guard<boost::mutex> lock(threads_mt);
+  for (size_t i = 0; i < c_threads; ++i) {
+    threads.emplace_back(work_data);
   }
 }
 
-global_thread_pool::~global_thread_pool() {
-  boost::lock_guard<boost::mutex> cpu_lock(cpu_data.mt);
-  boost::lock_guard<boost::mutex> io_lock(io_data.mt);
-
-  cpu_data.waiting_threads.clear();
-  cpu_data.work_queue.clear();
-  cpu_data.work_queue_prio.clear();
-
-  io_data.waiting_threads.clear();
-  io_data.work_queue.clear();
-  io_data.work_queue_prio.clear();
-
-  for (auto &thr : cpu_threads) {
-    thr.tell_stop();
+global_thread_pool::~global_thread_pool()
+{
+  boost::unique_lock<boost::mutex> l(threads_mt);
+  work_data.shutting_down = true;
+  for (auto it = threads.begin(); it != threads.end();) {
+    if (it->stopped) {
+      continue;
+      it = threads.erase(it);
+    }
+    // Wake up this specific thread.
+    QueueUserAPC([](ULONG_PTR) {}, it->thr.native_handle(), 0);
+    ++it;
   }
-  for (auto &thr : io_threads) {
-    thr.tell_stop();
+  while (threads.size()) {
+    auto &thr = threads.back();
+    l.unlock();
+    thr.thr.join();
+    l.lock();
+    threads.pop_back();
   }
+  assert(work_data.waiting_threads == 0);
+  assert(work_data.number_threads == 0);
+  CloseHandle(work_data.iocp);
 }
 
 void global_thread_pool::schedule(coroutine cor, bool first) {
-  schedule(&cor, &cor + 1, first);
+  auto move_iter = std::make_move_iterator(&cor);
+  schedule(move_iter, move_iter + 1, first);
 }
 
 void global_thread_pool::yield() {
