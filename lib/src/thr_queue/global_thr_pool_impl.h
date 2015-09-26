@@ -49,8 +49,6 @@ public:
   global_thread_pool();
   ~global_thread_pool();
 
-  void notify_one_thread(boost::unique_lock<boost::mutex> &lock_data,
-                         moodycamel::ConcurrentQueue<worker_thread *> &waiting_threads);
   void schedule(coroutine cor, bool first);
   
   template <typename InputIt>
