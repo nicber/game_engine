@@ -54,7 +54,7 @@ lambda_aio_operation_t<F>::may_block()
 }
 
 template<typename F>
-std::unique_ptr<lambda_aio_operation_t<F>>
+std::shared_ptr<lambda_aio_operation_t<F>>
 make_aio_operation(F function, bool may_block)
 {
   return std::make_unique<lambda_aio_operation_t<F>>(std::move(function), may_block);

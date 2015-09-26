@@ -55,6 +55,7 @@ private:
 
 template <typename T>
 class aio_operation_t : public aio_operation_base
+                       ,protected std::enable_shared_from_this<aio_operation_t<T>>
 {
 public:
   using aio_result_future = game_engine::thr_queue::event::future<T>;
@@ -69,7 +70,7 @@ protected:
 };
 
 template <typename T>
-using aio_operation = std::unique_ptr<aio_operation_t<T>>;
+using aio_operation = std::shared_ptr<aio_operation_t<T>>;
 
 /** \brief Implementation detail for make_aio_operation. Do not use.
  */
@@ -96,7 +97,7 @@ private:
  * where T will become the type the resulting aio_operation returns.
  */
 template <typename F>
-std::unique_ptr<lambda_aio_operation_t<F>> make_aio_operation(F function, bool may_block);
+std::shared_ptr<lambda_aio_operation_t<F>> make_aio_operation(F function, bool may_block);
 }
 }
 
