@@ -28,8 +28,9 @@ aio_operation_t<T>::perform_on_destruction_if_need()
 }
 
 template<typename F>
-lambda_aio_operation_t<F>::lambda_aio_operation_t(F func)
+lambda_aio_operation_t<F>::lambda_aio_operation_t(F func, bool may_block)
  :function(std::move(func))
+ ,may_block_f(may_block)
 {}
 
 template<typename F>
@@ -46,10 +47,17 @@ lambda_aio_operation_t<F>::do_perform()
 }
 
 template<typename F>
-std::unique_ptr<lambda_aio_operation_t<F>>
-make_aio_operation(F function)
+bool
+lambda_aio_operation_t<F>::may_block()
 {
-  return std::make_unique<lambda_aio_operation_t<F>>(std::move(function));
+  return may_block_f;
+}
+
+template<typename F>
+std::unique_ptr<lambda_aio_operation_t<F>>
+make_aio_operation(F function, bool may_block)
+{
+  return std::make_unique<lambda_aio_operation_t<F>>(std::move(function), may_block);
 }
 }
 }

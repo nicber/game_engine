@@ -47,6 +47,7 @@ public:
   bool get_perform_on_destruction() const;
 
 protected:
+  virtual bool may_block() = 0;
   bool already_performed = false;
 private:
   bool perform_on_destr = true;
@@ -77,14 +78,16 @@ class lambda_aio_operation_t : public aio_operation_t<typename std::result_of_t<
 {
   using aiorf = typename aio_operation_t<typename std::result_of_t<F()>::value_type>::aio_result_future;
 public:
-  lambda_aio_operation_t(F func);
+  lambda_aio_operation_t(F func, bool may_block);
   ~lambda_aio_operation_t() final override;
 
 protected:
   aiorf do_perform() final override;
+  bool may_block() final override;
 
 private:
   F function;
+  bool may_block_f;
 };
 
 /** \brief This function takes a lambda compatible and wraps it into
@@ -93,7 +96,7 @@ private:
  * where T will become the type the resulting aio_operation returns.
  */
 template <typename F>
-std::unique_ptr<lambda_aio_operation_t<F>> make_aio_operation(F function);
+std::unique_ptr<lambda_aio_operation_t<F>> make_aio_operation(F function, bool may_block);
 }
 }
 

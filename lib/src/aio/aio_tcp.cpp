@@ -64,7 +64,7 @@ passive_tcp_socket::bind_and_listen(uint16_t port)
     };
 
     return uv_thr_cor_do<bind_listen_result>(std::move(uv_code));
-  });
+  }, false);
 }
 
 aio_operation<passive_tcp_socket::accept_result>
@@ -102,7 +102,7 @@ passive_tcp_socket::accept()
 
     thr_queue::schedule_queue_first(std::move(q));
     return fut;
-  });
+  }, false);
 }
 
 active_tcp_socket::active_tcp_socket()
@@ -140,7 +140,7 @@ active_tcp_socket::bind(uint16_t port)
       }
       prom.set_value(bind_result{});
     });
-  });
+  }, false);
 }
 
 aio_operation<active_tcp_socket::connect_result>
@@ -182,7 +182,7 @@ active_tcp_socket::connect(sockaddr_storage addr)
 
       return fut;
     });
-  });
+  }, false);
 }
 
 
@@ -243,7 +243,7 @@ active_tcp_socket::read(aio_buffer::size_type min_read, aio_buffer::size_type ma
 
       uv_read_start((uv_stream_t*)&d->socket, alloc_cb, read_cb);
     });
-  });
+  }, false);
 }
 
 aio_operation<active_tcp_socket::write_result>
@@ -284,7 +284,7 @@ active_tcp_socket::write(std::vector<aio_buffer> buffers)
 
       uv_write(write_req, (uv_stream_t*)&d->socket, bufs_ptr, nbufs, write_cb);
     });
-  });
+  }, false);
 }
 }
 }
