@@ -5,10 +5,10 @@
 namespace game_engine {
 namespace aio {
 passive_tcp_socket::passive_tcp_socket()
- :d(std::make_shared<data>())
+  :d(std::make_shared<data>())
 {
   using namespace thr_queue::event;
-  uv_thr_cor_do<void>([d = d] (auto prom) {
+  uv_thr_cor_do<void>([d = d](auto prom) {
     if (int err = uv_tcp_init(uv_default_loop(), &d->socket)) {
       std::ostringstream ss;
       ss << "uv_tcp_init: " << uv_strerror(err);
@@ -28,7 +28,7 @@ passive_tcp_socket::bind_and_listen(uint16_t port)
 
   return make_aio_operation([d_lambda = d, port]() mutable {
     auto d = std::move(d_lambda);
-    auto uv_code = [d_l = std::move(d), port] (auto prom) {
+    auto uv_code = [d_l = std::move(d), port](auto prom) {
       sockaddr_in addr;
       uv_ip4_addr("0.0.0.0", port, &addr);
 
@@ -45,12 +45,12 @@ passive_tcp_socket::bind_and_listen(uint16_t port)
         auto &data = *static_cast<passive_tcp_socket::data*>(stream->data);
         assert(status == 0);
         thr_queue::default_par_queue().submit_work([&] {
-          boost::lock_guard<thr_queue::event::mutex> lock (data.mt);
+          boost::lock_guard<thr_queue::event::mutex> lock(data.mt);
           ++data.awaiting_accept;
           data.cv.notify();
         });
       };
-      
+
       const uint8_t backlog_size = 10;
       if (int err = uv_listen((uv_stream_t*)&d_l->socket, backlog_size, listen_cb)) {
         std::ostringstream ss;
@@ -64,9 +64,8 @@ passive_tcp_socket::bind_and_listen(uint16_t port)
     };
 
     return uv_thr_cor_do<bind_listen_result>(std::move(uv_code));
-  }, false);
+  });
 }
-
 aio_operation<passive_tcp_socket::accept_result>
 passive_tcp_socket::accept()
 {
@@ -77,7 +76,7 @@ passive_tcp_socket::accept()
     thr_queue::queue q(thr_queue::queue_type::serial);
 
     auto d = std::move(d_l);
-    q.submit_work([d_l = std::move(d), prom = std::move(prom)] () mutable {
+    q.submit_work([d_l = std::move(d), prom = std::move(prom)]() mutable {
       accept_result proposed_result;
       bool successful_accept;
       do {
@@ -87,9 +86,9 @@ passive_tcp_socket::accept()
         }
         --d_l->awaiting_accept;
         lock.unlock();
-        successful_accept = uv_thr_cor_do<bool>([&socket = d_l->socket, &proposed_result] (auto prom) {
+        successful_accept = uv_thr_cor_do<bool>([&socket = d_l->socket, &proposed_result](auto prom) {
           if (int err = uv_accept((uv_stream_t*)&socket,
-                                  (uv_stream_t*)&proposed_result.client_sock.d->socket)) {
+              (uv_stream_t*)&proposed_result.client_sock.d->socket)) {
             LOG() << "uv_accept: " << uv_strerror(err);
             prom.set_value(false);
             return;
@@ -102,14 +101,14 @@ passive_tcp_socket::accept()
 
     thr_queue::schedule_queue_first(std::move(q));
     return fut;
-  }, false);
+  });
 }
 
 active_tcp_socket::active_tcp_socket()
- :d(std::make_shared<data>())
+  :d(std::make_shared<data>())
 {
   using namespace thr_queue::event;
-  uv_thr_cor_do<void>([d = d] (auto prom) {
+  uv_thr_cor_do<void>([d = d](auto prom) {
     if (int err = uv_tcp_init(uv_default_loop(), &d->socket)) {
       std::ostringstream ss;
       ss << "uv_tcp_init: " << uv_strerror(err);
@@ -128,7 +127,7 @@ active_tcp_socket::bind(uint16_t port)
   using namespace thr_queue::event;
   return make_aio_operation([d = d, port]() mutable {
     auto d_l = std::move(d);
-    return uv_thr_cor_do<bind_result>([d = std::move(d_l), port] (auto prom) {
+    return uv_thr_cor_do<bind_result>([d = std::move(d_l), port](auto prom) {
       sockaddr_in addr;
       uv_ip4_addr("0.0.0.0", port, &addr);
       if (int err = uv_tcp_bind(&d->socket, (sockaddr *)&addr, 0)) {
@@ -140,7 +139,7 @@ active_tcp_socket::bind(uint16_t port)
       }
       prom.set_value(bind_result{});
     });
-  }, false);
+  });
 }
 
 aio_operation<active_tcp_socket::connect_result>
@@ -149,7 +148,7 @@ active_tcp_socket::connect(sockaddr_storage addr)
   using namespace thr_queue::event;
   return make_aio_operation([d = d, addr]() mutable {
     auto dl = std::move(d);
-    return uv_thr_cor_do<connect_result>([d = std::move(dl), addr] (auto prom) {
+    return uv_thr_cor_do<connect_result>([d = std::move(dl), addr](auto prom) {
       using con_req_prom_pair = std::pair<uv_connect_t, thr_queue::event::promise<connect_result>>;
       static_assert(std::is_standard_layout<con_req_prom_pair>::value
                     && offsetof(con_req_prom_pair, first) == 0, "");
@@ -171,7 +170,7 @@ active_tcp_socket::connect(sockaddr_storage addr)
       };
 
       if (int err = uv_tcp_connect(&uv_conn_req->first, &d->socket,
-                                   (const sockaddr*)&addr, connect_cb)) {
+          (const sockaddr*)&addr, connect_cb)) {
         std::ostringstream ss;
         ss << "uv_tcp_connect: " << uv_strerror(err);
         LOG() << ss.str();
@@ -182,7 +181,7 @@ active_tcp_socket::connect(sockaddr_storage addr)
 
       return fut;
     });
-  }, false);
+  });
 }
 
 
@@ -192,7 +191,7 @@ active_tcp_socket::read(aio_buffer::size_type min_read, aio_buffer::size_type ma
   return make_aio_operation([d = d, max_read, min_read]() mutable {
     auto dl = std::move(d);
     return thr_queue::event::uv_thr_cor_do<read_result>(
-    [d = std::move(dl), max_read, min_read] (auto prom) {
+      [d = std::move(dl), max_read, min_read](auto prom) {
       if (d->read_state) {
         prom.set_exception(std::logic_error("a read is already going on"));
         return;
@@ -243,7 +242,7 @@ active_tcp_socket::read(aio_buffer::size_type min_read, aio_buffer::size_type ma
 
       uv_read_start((uv_stream_t*)&d->socket, alloc_cb, read_cb);
     });
-  }, false);
+  });
 }
 
 aio_operation<active_tcp_socket::write_result>
@@ -262,11 +261,11 @@ struct write_internal_state {
 aio_operation<active_tcp_socket::write_result>
 active_tcp_socket::write(std::vector<aio_buffer> buffers)
 {
-  return make_aio_operation([buffers = std::move(buffers), d = d] () mutable {
+  return make_aio_operation([buffers = std::move(buffers), d = d]() mutable {
     auto dl = std::move(d);
     auto bufs = std::move(buffers);
     return thr_queue::event::uv_thr_cor_do<write_result>(
-    [buffers = std::move(bufs), d = std::move(dl)] (auto prom) mutable {
+      [buffers = std::move(bufs), d = std::move(dl)](auto prom) mutable {
       uv_write_t *write_req = new uv_write_t;
       auto *bufs_ptr = buffers.data();
       auto nbufs = buffers.size();
@@ -284,7 +283,7 @@ active_tcp_socket::write(std::vector<aio_buffer> buffers)
 
       uv_write(write_req, (uv_stream_t*)&d->socket, bufs_ptr, nbufs, write_cb);
     });
-  }, false);
+  });
 }
 }
 }

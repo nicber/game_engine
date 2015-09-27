@@ -3,7 +3,9 @@
 #include <atomic>
 #include <boost/optional.hpp>
 #include <memory>
+#include <thr_queue/coroutine.h>
 #include <thr_queue/event/future.h>
+#include <util/function_traits.h>
 #include <uv.h>
 
 namespace game_engine {
@@ -39,6 +41,35 @@ private:
 
 using aio_buffer_ptr = std::shared_ptr<aio_buffer>;
 
+struct perform_helper_base {
+  void about_to_block();
+  void cant_block_anymore();
+
+  perform_helper_base() = default;
+  perform_helper_base(const perform_helper_base &) = delete;
+  perform_helper_base &operator=(const perform_helper_base &) = delete;
+
+  ~perform_helper_base();
+protected:
+  virtual bool future_already_set() = 0;
+private:
+  boost::optional<thr_queue::coroutine> caller_coroutine;
+  friend class aio_operation_base;
+};
+
+template <typename T>
+struct perform_helper : perform_helper_base {
+  using type = T;
+  using opt_fut_T = boost::optional<thr_queue::event::future<T>>;
+  perform_helper(opt_fut_T &fut);
+
+  void set_future(thr_queue::event::future<T> fut);
+
+private:
+  bool future_already_set() final override;
+  opt_fut_T &fut_storage;
+};
+
 class aio_operation_base {
 public:
   virtual ~aio_operation_base();
@@ -48,10 +79,13 @@ public:
 
 protected:
   virtual bool may_block() = 0;
+  void replace_running_cor_and_jump(perform_helper_base &helper, thr_queue::coroutine work_cor);
+
   bool already_performed = false;
 private:
   bool perform_on_destr = true;
 };
+
 
 template <typename T>
 class aio_operation_t : public aio_operation_base
@@ -65,31 +99,30 @@ public:
   virtual ~aio_operation_t() = 0;
 
 protected:
-  virtual aio_result_future do_perform() = 0;
+  virtual aio_result_future do_perform_nonblock() = 0;
+  virtual void do_perform_may_block(perform_helper<T> &helper) = 0;
   void perform_on_destruction_if_need();
+
 };
 
 template <typename T>
 using aio_operation = std::shared_ptr<aio_operation_t<T>>;
 
-/** \brief Implementation detail for make_aio_operation. Do not use.
- */
-template <typename F>
-class lambda_aio_operation_t : public aio_operation_t<typename std::result_of_t<F()>::value_type>
-{
-  using aiorf = typename aio_operation_t<typename std::result_of_t<F()>::value_type>::aio_result_future;
-public:
-  lambda_aio_operation_t(F func, bool may_block);
-  ~lambda_aio_operation_t() final override;
-
-protected:
-  aiorf do_perform() final override;
-  bool may_block() final override;
-
-private:
-  F function;
-  bool may_block_f;
+template <typename F, bool>
+struct lambda_type {
+  using type = typename util::function_traits<F>::return_type::value_type;
 };
+
+template <typename F>
+struct lambda_type<F, false> {
+  using type = std::tuple_element_t<0, typename util::function_traits<F>::args>;
+};
+
+template <typename F>
+using lambda_type_cond_help = typename std::is_same<typename util::function_traits<F>::number_args, std::integral_constant<size_t,0>>;
+
+template <typename F>
+using lambda_type_t = typename lambda_type<F, lambda_type_cond_help<F>::value>::type;
 
 /** \brief This function takes a lambda compatible and wraps it into
  * an aio_operation. The lambda must comply with this signature:
@@ -97,7 +130,7 @@ private:
  * where T will become the type the resulting aio_operation returns.
  */
 template <typename F>
-std::shared_ptr<lambda_aio_operation_t<F>> make_aio_operation(F function, bool may_block);
+aio_operation<lambda_type_t<F>> make_aio_operation(F function);
 }
 }
 

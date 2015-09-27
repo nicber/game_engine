@@ -1,4 +1,5 @@
 #include <aio/aio.h>
+#include "../thr_queue/global_thr_pool_impl.h"
 
 namespace game_engine {
 namespace aio {
@@ -78,5 +79,30 @@ bool aio_operation_base::get_perform_on_destruction() const
 {
   return perform_on_destr;
 }
+
+void aio_operation_base::replace_running_cor_and_jump(perform_helper_base & helper, thr_queue::coroutine work_cor)
+{
+  helper.caller_coroutine = std::move(*thr_queue::running_coroutine_or_yielded_from);
+  *thr_queue::running_coroutine_or_yielded_from = std::move(work_cor);
+  helper.caller_coroutine->switch_to_from(*thr_queue::running_coroutine_or_yielded_from);
+}
+
+
+void perform_helper_base::about_to_block()
+{
+}
+
+void perform_helper_base::cant_block_anymore()
+{
+}
+
+perform_helper_base::~perform_helper_base()
+{
+  if (caller_coroutine) {
+    thr_queue::coroutine this_cor = std::move(*thr_queue::running_coroutine_or_yielded_from);
+    *thr_queue::running_coroutine_or_yielded_from = std::move(caller_coroutine.get());
+  }
+}
+
 }
 }
