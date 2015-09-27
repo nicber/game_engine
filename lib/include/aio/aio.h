@@ -87,6 +87,7 @@ protected:
   virtual bool future_already_set() = 0;
 private:
   boost::optional<thr_queue::coroutine> caller_coroutine;
+  bool apc_pending_exec = false;
   friend class aio_operation_base;
 };
 

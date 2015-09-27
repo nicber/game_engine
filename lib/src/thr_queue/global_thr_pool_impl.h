@@ -41,6 +41,8 @@ private:
   moodycamel::ProducerToken ptok;
   moodycamel::ConsumerToken ctok_prio;
   moodycamel::ProducerToken ptok_prio;
+
+public:
   boost::thread thr;
 };
 
