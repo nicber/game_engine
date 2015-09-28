@@ -126,9 +126,9 @@ worker_thread::~worker_thread() {
 }
 
 global_thread_pool::global_thread_pool()
- :hardware_concurrency(std::max(1u, boost::thread::hardware_concurrency()))
+  :hardware_concurrency(std::max(1u, boost::thread::hardware_concurrency()))
 {
-  auto c_threads = hardware_concurrency * 8;
+  auto c_threads = hardware_concurrency + 8;
 
   work_data.iocp = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, hardware_concurrency);
 
