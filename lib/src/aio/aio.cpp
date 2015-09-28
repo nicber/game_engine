@@ -82,9 +82,9 @@ bool aio_operation_base::get_perform_on_destruction() const
 
 void aio_operation_base::replace_running_cor_and_jump(perform_helper_base & helper, thr_queue::coroutine work_cor)
 {
-  helper.caller_coroutine = std::move(*thr_queue::running_coroutine_or_yielded_from);
-  *thr_queue::running_coroutine_or_yielded_from = std::move(work_cor);
-  helper.caller_coroutine->switch_to_from(*thr_queue::running_coroutine_or_yielded_from);
+  thr_queue::global_thr_pool.yield_to(std::move(work_cor), [&] {
+    helper.caller_coroutine = std::move(*thr_queue::running_coroutine_or_yielded_from);
+  });
 }
 
 
@@ -99,8 +99,8 @@ void perform_helper_base::about_to_block()
       }
       that.apc_pending_exec = false;
       thr_queue::global_thr_pool.schedule(std::move(that.caller_coroutine.get()), true);
-      that.caller_coroutine.reset();
-    }, thr_queue::this_wthread->thr.native_handle(), PtrToUlong(this));
+      that.caller_coroutine = boost::none;
+    }, thr_queue::this_wthread->thr.native_handle(), (ULONG_PTR) (this));
   }
 }
 
@@ -112,14 +112,19 @@ void perform_helper_base::cant_block_anymore()
   }
 }
 
-perform_helper_base::~perform_helper_base()
+void perform_helper_base::done()
 {
   cant_block_anymore();
   if (caller_coroutine) {
-    thr_queue::coroutine this_cor = std::move(*thr_queue::running_coroutine_or_yielded_from);
-    *thr_queue::running_coroutine_or_yielded_from = std::move(caller_coroutine.get());
+    thr_queue::coroutine ccor = std::move(caller_coroutine.get());
+    caller_coroutine = boost::none;
+    thr_queue::global_thr_pool.yield_to(std::move(ccor));
   }
 }
 
+perform_helper_base::~perform_helper_base()
+{
+  assert(!caller_coroutine);
+}
 }
 }

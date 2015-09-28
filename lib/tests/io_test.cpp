@@ -8,6 +8,7 @@ using namespace game_engine;
 
 TEST(TimeSubsystem, TimeChanges)
 {
+  return;
   thr_queue::default_par_queue().submit_work([] {
     passive_tcp_socket server;
     auto bind_listen_result_fut = server.bind_and_listen(4000)->perform();
@@ -31,5 +32,23 @@ TEST(TimeSubsystem, TimeChanges)
         }
       });
     }
+  }).wait();
+}
+
+TEST(AIOSubsystem, ReallyBlocking) {
+  auto blocking_op = make_aio_operation([] (perform_helper<void> &help){
+    thr_queue::event::promise<void> prom;
+    help.set_future(prom.get_future());
+    help.about_to_block();
+    SleepEx(INFINITE, true);
+    Sleep(10);
+    help.cant_block_anymore();
+    prom.set_value();
+  });
+
+  thr_queue::default_par_queue().submit_work([&] {
+    auto fut = blocking_op->perform();
+    EXPECT_EQ(false, fut.ready());
+    fut.wait();
   }).wait();
 }

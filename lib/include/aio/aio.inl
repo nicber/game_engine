@@ -4,7 +4,6 @@
 
 namespace game_engine {
 namespace aio {
-
 template<typename T>
 typename aio_operation_t<T>::aio_result_future
 aio_operation_t<T>::perform()
@@ -17,10 +16,11 @@ aio_operation_t<T>::perform()
     boost::optional<aio_result_future> fut_storage;
     auto helper = std::make_unique<perform_helper<T>>(fut_storage);
     auto helper_ptr = helper.get();
-    thr_queue::coroutine work_cor([helper = std::move(helper), aio_op = shared_from_this()]{
+    auto cor_work = [helper = std::move(helper), aio_op = shared_from_this()]{
       aio_op->do_perform_may_block(*helper);
-    });
-    replace_running_cor_and_jump(*helper_ptr, std::move(work_cor));
+      helper->done();
+    };
+    replace_running_cor_and_jump(*helper_ptr, std::move(cor_work));
     // After the previous function returns we know that fut_storage stores a future.
     assert(fut_storage);
     return std::move(fut_storage).get();

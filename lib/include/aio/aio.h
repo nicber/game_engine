@@ -78,11 +78,14 @@ struct perform_helper_base {
    */
   void cant_block_anymore();
 
+  void done();
+
   perform_helper_base() = default;
   perform_helper_base(const perform_helper_base &) = delete;
   perform_helper_base &operator=(const perform_helper_base &) = delete;
 
   ~perform_helper_base();
+
 protected:
   virtual bool future_already_set() = 0;
 private:
@@ -171,7 +174,7 @@ struct lambda_type {
 
 template <typename F>
 struct lambda_type<F, false> {
-  using type = std::tuple_element_t<0, typename util::function_traits<F>::args>;
+  using type = typename std::remove_reference_t<std::tuple_element_t<0, typename util::function_traits<F>::args>>::type;
 };
 
 template <typename F>
