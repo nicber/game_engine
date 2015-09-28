@@ -11,6 +11,14 @@ void global_thread_pool::yield(F func) {
   yield();
 }
 
+template<typename F>
+void global_thread_pool::yield_to(coroutine next, F after_yield)
+{
+  assert(!run_next);
+  run_next = std::move(next);
+  yield(std::move(after_yield));
+}
+
 template <typename InputIt>
 void global_thread_pool::schedule(InputIt begin, InputIt end, bool first) {
   static_assert(std::is_same<coroutine&&, decltype(*begin)>::value, "InputIt needs to move the coroutines");

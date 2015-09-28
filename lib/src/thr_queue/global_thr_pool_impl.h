@@ -61,6 +61,10 @@ public:
   template <typename F>
   void yield(F func);
 
+  void yield_to(coroutine next);
+
+  template <typename F>
+  void yield_to(coroutine next, F after_yield);
 private:
   work_type_data work_data;
 
@@ -74,6 +78,7 @@ extern global_thread_pool global_thr_pool;
 extern thread_local std::function<void()> *after_yield;
 extern thread_local coroutine *master_coroutine;
 extern thread_local coroutine *running_coroutine_or_yielded_from;
+extern thread_local boost::optional<coroutine> run_next;
 extern thread_local worker_thread *this_wthread;
 }
 }

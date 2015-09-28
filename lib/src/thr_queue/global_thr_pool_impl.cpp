@@ -77,6 +77,12 @@ void worker_thread::do_work()
 
     coroutine work_to_do;
 
+    if (run_next) {
+      work_to_do = std::move(run_next.get());
+      run_next = boost::none;
+      goto do_work;
+    }
+
     do {
       if (data.work_queue_prio.try_dequeue_from_producer(ptok_prio, work_to_do)
           || data.work_queue_prio.try_dequeue(work_to_do)) {
@@ -168,9 +174,17 @@ void global_thread_pool::yield() {
   master_coroutine->switch_to_from(*running_coroutine_or_yielded_from);
 }
 
+void global_thread_pool::yield_to(coroutine next)
+{
+  assert(!run_next);
+  run_next = std::move(next);
+  yield();
+}
+
 thread_local std::function<void()> *after_yield = nullptr;
 thread_local coroutine *master_coroutine = nullptr;
 thread_local coroutine *running_coroutine_or_yielded_from = nullptr;
+thread_local boost::optional<coroutine> run_next;
 global_thread_pool global_thr_pool;
 }
 }
