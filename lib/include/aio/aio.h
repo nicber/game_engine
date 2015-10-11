@@ -151,7 +151,7 @@ private:
  */
 template <typename T>
 class aio_operation_t : public aio_operation_base
-                       ,protected std::enable_shared_from_this<aio_operation_t<T>>
+                       ,public std::enable_shared_from_this<aio_operation_t<T>>
 {
 public:
   using aio_result_future = game_engine::thr_queue::event::future<T>;

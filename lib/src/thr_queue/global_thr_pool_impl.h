@@ -41,13 +41,12 @@ protected:
   virtual generic_work_data &get_data() = 0;
   virtual worker_thread_internals &get_internals() = 0;
 };
-
 }
 }
 
 #ifdef _WIN32
 #include "global_thr_pool_impl_win32.h"
-#elif
+#else
 #include "global_thr_pool_impl_linux.h"
 #endif
 
@@ -97,12 +96,15 @@ public:
 
   template <typename F>
   void yield_to(coroutine next, F after_yield);
-private:
-  work_data work_data;
 
+private:
+  void plat_wakeup_one_thread();
+
+private:
   boost::mutex threads_mt;
   std::list<worker_thread> threads;
   const unsigned int hardware_concurrency;
+  work_data work_data;
 };
 
 extern global_thread_pool global_thr_pool;

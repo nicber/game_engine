@@ -27,11 +27,6 @@ void global_thread_pool::schedule(InputIt begin, InputIt end, bool first) {
   	return;
   }
 
-  auto cor_type = begin->type();
-  assert(std::all_of(begin, end, [&](coroutine& cor) {
-          return cor.type() == cor_type;
-		}));
-		
   if (this_wthread) {
     if (first) {
       work_data.work_queue_prio_size += count;
@@ -54,7 +49,7 @@ void global_thread_pool::schedule(InputIt begin, InputIt end, bool first) {
   while(true) {
     unsigned int working = work_data.number_threads - work_data.waiting_threads;
     if (working < hardware_concurrency && i < count) {
-      PostQueuedCompletionStatus(work_data.iocp, 0, work_data.queue_completionkey, nullptr);
+      plat_wakeup_one_thread();
       ++i;
     } else {
       break;

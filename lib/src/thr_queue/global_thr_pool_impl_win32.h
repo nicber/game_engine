@@ -5,6 +5,8 @@ namespace thr_queue {
 namespace platform {
 struct work_data : generic_work_data {
   work_data(unsigned int concurrency);
+  ~work_data();
+
   HANDLE iocp;
   const ULONG queue_completionkey = 0x1;
 };

@@ -1,10 +1,14 @@
-#pragma once
-
 #include "global_thr_pool_impl.h"
 #include <logging/log.h>
 
 namespace game_engine {
 namespace thr_queue {
+void
+global_thread_pool::plat_wakeup_one_thread()
+{
+  PostQueuedCompletionStatus(work_data.iocp, 0, work_data.queue_completionkey, nullptr);
+}
+
 namespace platform {
 worker_thread_impl::worker_thread_impl(work_data & dat)
  :data(dat)
@@ -83,6 +87,11 @@ worker_thread_impl::get_data()
 work_data::work_data(unsigned int concurrency)
 {
   iocp = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, concurrency);
+}
+
+work_data::~work_data()
+{
+  CloseHandle(iocp);
 }
 }
 }

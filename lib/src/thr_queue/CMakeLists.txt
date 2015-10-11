@@ -6,7 +6,7 @@ list(APPEND GAME_ENGINE_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/util_queue.cpp)
 
 if (WIN32)
   list(APPEND GAME_ENGINE_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/global_thr_pool_impl_win32.cpp)
-elseif()
+else()
   list(APPEND GAME_ENGINE_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/global_thr_pool_impl_linux.cpp)
 endif()
 

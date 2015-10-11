@@ -40,8 +40,12 @@ TEST(AIOSubsystem, ReallyBlocking) {
     thr_queue::event::promise<void> prom;
     help.set_future(prom.get_future());
     help.about_to_block();
+#ifdef _WIN32
     SleepEx(INFINITE, true);
     Sleep(10);
+#else
+    usleep(10 * 1000); // 10 ms
+#endif
     help.cant_block_anymore();
     prom.set_value();
   });

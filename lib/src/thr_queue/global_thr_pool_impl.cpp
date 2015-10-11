@@ -111,8 +111,8 @@ global_thread_pool::~global_thread_pool()
   work_data.shutting_down = true;
   for (auto it = threads.begin(); it != threads.end();) {
     if (it->get_internals().stopped) {
-      continue;
       it = threads.erase(it);
+      continue;
     }
     it->please_die();
     ++it;
@@ -126,7 +126,6 @@ global_thread_pool::~global_thread_pool()
   }
   assert(work_data.waiting_threads == 0);
   assert(work_data.number_threads == 0);
-  CloseHandle(work_data.iocp);
 }
 
 void global_thread_pool::schedule(coroutine cor, bool first) {

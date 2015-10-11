@@ -16,7 +16,7 @@ aio_operation_t<T>::perform()
     boost::optional<aio_result_future> fut_storage;
     auto helper = std::make_unique<perform_helper<T>>(fut_storage);
     auto helper_ptr = helper.get();
-    auto cor_work = [helper = std::move(helper), aio_op = shared_from_this()]{
+    auto cor_work = [helper = std::move(helper), aio_op = this->shared_from_this()]{
       aio_op->do_perform_may_block(*helper);
       helper->done();
     };
