@@ -95,10 +95,9 @@ worker_thread::~worker_thread()
 
 global_thread_pool::global_thread_pool()
   :hardware_concurrency(std::max(1u, boost::thread::hardware_concurrency()))
+  ,work_data(hardware_concurrency)
 {
   auto c_threads = hardware_concurrency + 8;
-
-  work_data.iocp = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, hardware_concurrency);
 
   boost::lock_guard<boost::mutex> lock(threads_mt);
   for (size_t i = 0; i < c_threads; ++i) {

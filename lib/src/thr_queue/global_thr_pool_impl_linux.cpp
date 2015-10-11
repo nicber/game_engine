@@ -13,7 +13,7 @@ worker_thread_impl::worker_thread_impl(work_data & dat)
 
 void
 worker_thread_impl::loop() {
-  ++data.number_threads;
+i/*  ++data.number_threads;
   try {
     this_wthread = static_cast<thr_queue::worker_thread*>(this);
     coroutine master_cor;
@@ -60,18 +60,17 @@ worker_thread_impl::loop() {
     LOG() << "caught when worker thread was stopping: " << e.what();
   }
   --data.number_threads;
-  get_internals().stopped = true;
+  get_internals().stopped = true;*/
 }
 
 void
-worker_thread_impl::handle_io_operation(OVERLAPPED_ENTRY olapped_entry)
+worker_thread_impl::handle_io_operation(epoll_event epoll_ev)
 {
 }
 
 void
 worker_thread_impl::please_die()
 {
-  QueueUserAPC([](ULONG_PTR) {}, get_internals().thr.native_handle(), 0);
 }
 
 generic_work_data &
@@ -82,7 +81,7 @@ worker_thread_impl::get_data()
 
 work_data::work_data(unsigned int concurrency)
 {
-  iocp = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, concurrency);
+
 }
 }
 }

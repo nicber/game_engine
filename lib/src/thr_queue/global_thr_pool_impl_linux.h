@@ -1,12 +1,15 @@
 #pragma once
 
+#include <sys/epoll.h>
+
 namespace game_engine {
 namespace thr_queue {
 namespace platform {
 struct work_data : generic_work_data {
   work_data(unsigned int concurrency);
-  HANDLE iocp;
-  const ULONG queue_completionkey = 0x1;
+
+  int epoll_fd;
+  int eventfd_fd;
 };
 
 class worker_thread_impl : public virtual base_worker_thread {
