@@ -90,26 +90,12 @@ void aio_operation_base::replace_running_cor_and_jump(perform_helper_base & help
 
 void perform_helper_base::about_to_block()
 {
-  if (caller_coroutine) {
-    apc_pending_exec = true;
-    QueueUserAPC([](ULONG_PTR ptr) {
-      auto &that = *reinterpret_cast<perform_helper_base*>(ptr);
-      if (!that.apc_pending_exec) {
-        return;
-      }
-      that.apc_pending_exec = false;
-      thr_queue::global_thr_pool.schedule(std::move(that.caller_coroutine.get()), true);
-      that.caller_coroutine = boost::none;
-    }, thr_queue::this_wthread->get_internals().thr.native_handle(), (ULONG_PTR) (this));
-  }
+  plat_about_to_block();
 }
 
 void perform_helper_base::cant_block_anymore()
 {
-  if (apc_pending_exec) {
-    apc_pending_exec = false;
-    WaitForSingleObjectEx(INVALID_HANDLE_VALUE, 0, true);
-  }
+  plat_cant_block_anymore();
 }
 
 void perform_helper_base::done()

@@ -8,6 +8,12 @@
 #include <util/function_traits.h>
 #include <uv.h>
 
+#ifdef _WIN32
+#include "aio_win32.h"
+#else
+#include "aio_linux.h"
+#endif
+
 namespace game_engine {
 namespace aio {
 /** \brief A class that is used for all exceptions that are caused by IO failures.
@@ -63,7 +69,7 @@ private:
 
 using aio_buffer_ptr = std::shared_ptr<aio_buffer>;
 
-struct perform_helper_base {
+struct perform_helper_base : public platform::perform_helper_impl {
   /** \brief In unix it immediately schedules the coroutine that called the aio_operation
    * in the global thread pool.
    * In Windows, it schedules an APC that will run when the thread is blocked for IO.
@@ -90,8 +96,8 @@ protected:
   virtual bool future_already_set() = 0;
 private:
   boost::optional<thr_queue::coroutine> caller_coroutine;
-  bool apc_pending_exec = false;
   friend class aio_operation_base;
+  friend class platform::perform_helper_impl;
 };
 
 /** \brief Class that abstracts what is done to blocking aio_operations
