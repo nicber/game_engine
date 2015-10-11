@@ -35,10 +35,10 @@ void global_thread_pool::schedule(InputIt begin, InputIt end, bool first) {
   if (this_wthread) {
     if (first) {
       work_data.work_queue_prio_size += count;
-      work_data.work_queue_prio.enqueue_bulk(this_wthread->ptok_prio, std::move(begin), count);
+      work_data.work_queue_prio.enqueue_bulk(this_wthread->get_internals().ptok_prio, std::move(begin), count);
     } else {
       work_data.work_queue_size += count;
-      work_data.work_queue.enqueue_bulk(this_wthread->ptok, std::move(begin), count);
+      work_data.work_queue.enqueue_bulk(this_wthread->get_internals().ptok, std::move(begin), count);
     }
   } else {
     if (first) {

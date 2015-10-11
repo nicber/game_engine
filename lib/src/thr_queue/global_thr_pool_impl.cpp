@@ -6,70 +6,24 @@
 
 namespace game_engine {
 namespace thr_queue {
-thread_local worker_thread *this_wthread = nullptr;
+worker_thread_internals::worker_thread_internals(generic_work_data & dat)
+ :stopped(false),
+  ctok(dat.work_queue),
+  ptok(dat.work_queue),
+  ctok_prio(dat.work_queue_prio),
+  ptok_prio(dat.work_queue_prio)
+{}
 
-worker_thread::worker_thread(work_type_data &dat)
-  :data(dat),
-  stopped(false),
-  ctok(data.work_queue),
-  ptok(data.work_queue),
-  ctok_prio(data.work_queue_prio),
-  ptok_prio(data.work_queue_prio),
-  thr([this] { loop(); }) {
+void
+generic_worker_thread::start_thread()
+{
+  internals.emplace(get_data());
+  internals->thr = boost::thread([this] { loop(); });
 }
 
-void worker_thread::loop() {
-  ++data.number_threads;
-  try {
-    this_wthread = this;
-    coroutine master_cor;
-    std::function<void()> after_yield_f;
-    master_coroutine = &master_cor;
-    after_yield = &after_yield_f;
 
-    OVERLAPPED_ENTRY olapped_entry;
-
-    auto wait_cond = [&] {
-      ++data.waiting_threads;
-
-      while (true) {
-        auto wait_time = data.shutting_down ? 0 : INFINITE;
-        ULONG removed_entries;
-        auto wait_iocp = GetQueuedCompletionStatusEx(data.iocp, &olapped_entry, 1, &removed_entries, wait_time, true);
-        if (!wait_iocp) {
-          auto err = GetLastError();
-          if (err == WAIT_IO_COMPLETION) {
-            continue;
-          } else {
-            --data.waiting_threads;
-            if (err != WAIT_TIMEOUT) {
-              LOG() << "GetQueuedCompletionStatus: " << err;
-            }
-            return false;
-          }
-        } else {
-          break;
-        }
-      }
-      --data.waiting_threads;
-      return true;
-    };
-
-    do {
-      if (olapped_entry.lpCompletionKey != data.queue_completionkey) {
-        handle_io_operation(olapped_entry);
-      } else {
-        do_work();
-      }
-    } while (wait_cond());
-  } catch (std::exception &e) {
-    LOG() << "caught when worker thread was stopping: " << e.what();
-  }
-  --data.number_threads;
-  stopped = true;
-}
-
-void worker_thread::do_work()
+void
+generic_worker_thread::do_work()
 {
   bool could_work;
   do {
@@ -84,25 +38,25 @@ void worker_thread::do_work()
     }
 
     do {
-      if (data.work_queue_prio.try_dequeue_from_producer(ptok_prio, work_to_do)
-          || data.work_queue_prio.try_dequeue(work_to_do)) {
-        --data.work_queue_prio_size;
+      if (get_data().work_queue_prio.try_dequeue_from_producer(internals->ptok_prio, work_to_do)
+          || get_data().work_queue_prio.try_dequeue(work_to_do)) {
+        --get_data().work_queue_prio_size;
         goto do_work;
       }
-    } while (data.work_queue_prio_size > 0);
+    } while (get_data().work_queue_prio_size > 0);
 
     do {
-      if (data.work_queue.try_dequeue_from_producer(ptok, work_to_do)
-          || data.work_queue.try_dequeue(work_to_do)) {
-        --data.work_queue_size;
+      if (get_data().work_queue.try_dequeue_from_producer(internals->ptok, work_to_do)
+          || get_data().work_queue.try_dequeue(work_to_do)) {
+        --get_data().work_queue_size;
         goto do_work;
       }
-      if (data.work_queue_prio.try_dequeue_from_producer(ptok_prio, work_to_do)
-          || data.work_queue_prio.try_dequeue(work_to_do)) {
-        --data.work_queue_prio_size;
+      if (get_data().work_queue_prio.try_dequeue_from_producer(internals->ptok_prio, work_to_do)
+          || get_data().work_queue_prio.try_dequeue(work_to_do)) {
+        --get_data().work_queue_prio_size;
         goto do_work;
       }
-    } while (data.work_queue_size > 0);
+    } while (get_data().work_queue_size > 0);
     could_work = false;
     return;
     do_work:
@@ -117,12 +71,26 @@ void worker_thread::do_work()
   } while (could_work);
 }
 
-void worker_thread::handle_io_operation(OVERLAPPED_ENTRY olapped_entry)
+worker_thread_internals & 
+generic_worker_thread::get_internals()
 {
+  assert(internals.is_initialized());
+  return *internals;
 }
 
-worker_thread::~worker_thread() {
-  assert(stopped);
+worker_thread::worker_thread(work_data & dat)
+ :platform::worker_thread_impl(dat)
+{
+  start_thread();
+}
+
+worker_thread::~worker_thread()
+{
+  if (get_internals().thr.joinable()) {
+    LOG() << "WARNING: Joining worker thread in its destructor.";
+    get_internals().thr.join();
+  }
+  assert(get_internals().stopped);
 }
 
 global_thread_pool::global_thread_pool()
@@ -143,18 +111,17 @@ global_thread_pool::~global_thread_pool()
   boost::unique_lock<boost::mutex> l(threads_mt);
   work_data.shutting_down = true;
   for (auto it = threads.begin(); it != threads.end();) {
-    if (it->stopped) {
+    if (it->get_internals().stopped) {
       continue;
       it = threads.erase(it);
     }
-    // Wake up this specific thread.
-    QueueUserAPC([](ULONG_PTR) {}, it->thr.native_handle(), 0);
+    it->please_die();
     ++it;
   }
   while (threads.size()) {
     auto &thr = threads.back();
     l.unlock();
-    thr.thr.join();
+    thr.get_internals().thr.join();
     l.lock();
     threads.pop_back();
   }
@@ -185,6 +152,7 @@ thread_local std::function<void()> *after_yield = nullptr;
 thread_local coroutine *master_coroutine = nullptr;
 thread_local coroutine *running_coroutine_or_yielded_from = nullptr;
 thread_local boost::optional<coroutine> run_next;
+thread_local worker_thread *this_wthread = nullptr;
 global_thread_pool global_thr_pool;
 }
 }

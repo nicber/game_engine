@@ -100,7 +100,7 @@ void perform_helper_base::about_to_block()
       that.apc_pending_exec = false;
       thr_queue::global_thr_pool.schedule(std::move(that.caller_coroutine.get()), true);
       that.caller_coroutine = boost::none;
-    }, thr_queue::this_wthread->thr.native_handle(), (ULONG_PTR) (this));
+    }, thr_queue::this_wthread->get_internals().thr.native_handle(), (ULONG_PTR) (this));
   }
 }
 

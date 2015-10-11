@@ -11,40 +11,72 @@
 
 namespace game_engine {
 namespace thr_queue {
-class worker_thread;
-
-struct work_type_data {
-  HANDLE iocp;
-  const ULONG queue_completionkey = 0x1;
+struct generic_work_data {
   moodycamel::ConcurrentQueue<coroutine> work_queue;
   moodycamel::ConcurrentQueue<coroutine> work_queue_prio;
-  std::atomic<uint64_t> work_queue_size{0};
-  std::atomic<uint64_t> work_queue_prio_size{0};
-  std::atomic<unsigned int> waiting_threads{0};
-  std::atomic<unsigned int> number_threads{0};
-  std::atomic<bool> shutting_down{false};
+  std::atomic<uint64_t> work_queue_size{ 0 };
+  std::atomic<uint64_t> work_queue_prio_size{ 0 };
+  std::atomic<unsigned int> waiting_threads{ 0 };
+  std::atomic<unsigned int> number_threads{ 0 };
+  std::atomic<bool> shutting_down{ false };
 };
 
-class worker_thread {
-public:
-  worker_thread(work_type_data &dat);
-  void loop();
-  void do_work();
-  void handle_io_operation(OVERLAPPED_ENTRY olapped_entry);
-  ~worker_thread();
+struct worker_thread_internals {
+  worker_thread_internals(generic_work_data &dat);
 
-private:
-  friend class global_thread_pool;
-  work_type_data &data;
   std::atomic<bool> stopped;
   moodycamel::ConsumerToken ctok;
   moodycamel::ProducerToken ptok;
   moodycamel::ConsumerToken ctok_prio;
   moodycamel::ProducerToken ptok_prio;
-
-public:
   boost::thread thr;
 };
+
+class base_worker_thread {
+protected:
+  virtual void loop() = 0;
+  virtual void please_die() = 0;
+  virtual void do_work() = 0;
+  virtual void start_thread() = 0;
+  virtual generic_work_data &get_data() = 0;
+  virtual worker_thread_internals &get_internals() = 0;
+};
+
+}
+}
+
+#ifdef _WIN32
+#include "global_thr_pool_impl_win32.h"
+#elif
+#include "global_thr_pool_impl_linux.h"
+#endif
+
+namespace game_engine {
+namespace thr_queue {
+using work_data = platform::work_data;
+
+class generic_worker_thread : public virtual base_worker_thread {
+protected:
+  void do_work() final override;
+  worker_thread_internals &get_internals() final override;
+  void start_thread() final override;
+
+private:
+  boost::optional<worker_thread_internals> internals;
+};
+
+#pragma warning( push )
+#pragma warning( disable : 4250 )
+class worker_thread final : protected generic_worker_thread, protected platform::worker_thread_impl
+{
+public:
+  worker_thread(work_data &dat);
+  ~worker_thread();
+
+  using generic_worker_thread::get_internals;
+  using platform::worker_thread_impl::please_die;
+};
+#pragma warning( pop )
 
 class global_thread_pool {
 public:
@@ -66,7 +98,7 @@ public:
   template <typename F>
   void yield_to(coroutine next, F after_yield);
 private:
-  work_type_data work_data;
+  work_data work_data;
 
   boost::mutex threads_mt;
   std::list<worker_thread> threads;

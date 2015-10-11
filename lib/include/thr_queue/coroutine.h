@@ -8,6 +8,9 @@
 
 namespace game_engine {
 namespace thr_queue {
+namespace platform {
+class worker_thread_impl;
+}
 
 enum class coroutine_type {
   user,
@@ -43,7 +46,8 @@ public:
 private:
   /** \brief Constructs a master coroutine. */
   coroutine();
-  friend class worker_thread;
+  friend class generic_worker_thread;
+  friend class platform::worker_thread_impl;
 
   /** \brief Changes the coroutine's type to that passed as an argument.
    * It to the master coroutine, changes the coroutine's type and calls
