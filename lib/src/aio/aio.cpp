@@ -28,7 +28,7 @@ aio_buffer & aio_buffer::operator=(aio_buffer rhs)
 }
 
 void
-aio_buffer::append(aio_buffer other)
+aio_buffer::append(const aio_buffer &other)
 {
   char *new_base = (char *)realloc(base, len + other.len);
   if (!new_base) {

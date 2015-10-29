@@ -50,7 +50,7 @@ struct aio_buffer : uv_buf_t {
    * stores the resulting buffer in this one.
    * It allocates memory if it is necessary.
    */
-  void append(aio_buffer other);
+  void append(const aio_buffer &other);
 
   /** \brief Utility function that is useful for interfacing with libuv.
    * Often libuv calls a user callback that is meant to allocate a buffer,
