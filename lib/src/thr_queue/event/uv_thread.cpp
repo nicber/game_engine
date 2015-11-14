@@ -50,8 +50,8 @@ void process_init_start_requests_or_stop(uv_async_t *) {
     for (auto &f : q) {
       (*f)();
     }
+    LOG() << "uv: -" << q.size();
   }
-
   if (thr.should_stop) {
     uv_stop(uv_default_loop());
     return;

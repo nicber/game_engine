@@ -33,6 +33,7 @@ void
 generic_worker_thread::do_work()
 {
   bool could_work;
+  int number_units_of_work = 0;
   do {
     could_work = false;
 
@@ -72,8 +73,9 @@ generic_worker_thread::do_work()
       }
     } while (get_data().work_queue_size > 0);
     could_work = false;
-    return;
+    break;
     do_work:
+    ++number_units_of_work;
     could_work = true;
     running_coroutine_or_yielded_from = &work_to_do;
     work_to_do.switch_to_from(*master_coroutine);
@@ -83,6 +85,8 @@ generic_worker_thread::do_work()
     }
     running_coroutine_or_yielded_from = master_coroutine;
   } while (could_work);
+  if (number_units_of_work) 
+    LOG() << number_units_of_work;
 }
 
 worker_thread_internals & 
