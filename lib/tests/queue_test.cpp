@@ -8,6 +8,7 @@
 #include "thr_queue/queue.h"
 
 #include "thr_queue/util_queue.h"
+#include "../src/thr_queue/event/uv_thread.h"
 
 #include <boost/chrono.hpp>
 
@@ -195,4 +196,47 @@ TEST(ThrQueue, LockUnlock) {
 
   EXPECT_EQ(10000, test.a);
   EXPECT_EQ(10000, test.b);
+}
+
+TEST(ThrQueue, UvRuns)
+{
+  using namespace game_engine::thr_queue::event;
+  const unsigned int number = 10000;
+  std::atomic<unsigned int> counter { 0 };
+  std::vector<future<void>> futures;
+  futures.reserve(number);
+  for (unsigned int i = 0; i < number; ++i) {
+    futures.emplace_back(uv_thr_cor_do<void>(
+    [&] (auto prom) {
+      ++counter;
+      prom.set_value();
+    }));
+  }
+  wait_all(futures.cbegin(), futures.cend());
+  EXPECT_EQ(number, counter);
+}
+
+TEST(ThrQueue, UvWait)
+{
+  using namespace game_engine::thr_queue;
+  using namespace game_engine::thr_queue::event;
+  const unsigned int number = 10000;
+  std::atomic<unsigned int> counter { 0 };
+  queue q{queue_type::parallel};
+  for (unsigned int i = 0; i < number; ++i) {
+    q.submit_work([&] {
+      auto fut = uv_thr_cor_do<void>(
+      [&] (auto prom) {
+        ++counter;
+        prom.set_value();
+      });
+      fut.wait();
+    });
+  }
+  queue q_ser {queue_type::serial};
+  q_ser.append_queue(std::move(std::move(q)));
+  auto fut = q_ser.submit_work([]{});
+  schedule_queue(std::move(q_ser));
+  fut.wait();
+  EXPECT_EQ(number, counter);
 }
