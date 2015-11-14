@@ -16,7 +16,7 @@ struct generic_work_data {
   moodycamel::ConcurrentQueue<coroutine> work_queue_prio;
   std::atomic<uint64_t> work_queue_size{ 0 };
   std::atomic<uint64_t> work_queue_prio_size{ 0 };
-  std::atomic<unsigned int> waiting_threads{ 0 };
+  std::atomic<unsigned int> working_threads{ 0 };
   std::atomic<unsigned int> number_threads{ 0 };
   std::atomic<bool> shutting_down{ false };
 };
@@ -52,7 +52,7 @@ protected:
 
 namespace game_engine {
 namespace thr_queue {
-using work_data = platform::work_data;
+using work_data_combined = platform::work_data;
 
 class generic_worker_thread : public virtual base_worker_thread {
 protected:
@@ -69,7 +69,7 @@ private:
 class worker_thread final : protected generic_worker_thread, protected platform::worker_thread_impl
 {
 public:
-  worker_thread(work_data &dat);
+  worker_thread(work_data_combined &dat);
   ~worker_thread();
 
   using generic_worker_thread::get_internals;
@@ -98,13 +98,13 @@ public:
   void yield_to(coroutine next, F after_yield);
 
 private:
-  void plat_wakeup_one_thread();
+  void plat_wakeup_threads(unsigned int count);
 
 private:
   boost::mutex threads_mt;
   std::list<worker_thread> threads;
   const unsigned int hardware_concurrency;
-  work_data work_data;
+  work_data_combined work_data;
 };
 
 extern global_thread_pool global_thr_pool;

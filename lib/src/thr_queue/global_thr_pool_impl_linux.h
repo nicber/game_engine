@@ -32,8 +32,8 @@ struct work_data : generic_work_data {
 
   int epoll_fd;
   int wakeup_any_eventfd;
+  const unsigned int concurrency_max;
   epoll_access_semaphore semaphore;
-  std::atomic<unsigned int> currently_polling{0};
 };
 
 class worker_thread_impl : public virtual base_worker_thread {

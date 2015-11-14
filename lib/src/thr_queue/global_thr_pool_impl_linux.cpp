@@ -28,7 +28,7 @@ worker_thread_impl::loop() {
       LOG() << ss.str();
       throw std::runtime_error(ss.str());
     }
-    if(sigaction(SIGUSR2, &sigact, nullptr)) {
+    if(sigaction(SIGHUP, &sigact, nullptr)) {
       std::ostringstream ss;
       ss << "sigaction failed: " << strerror(errno);
       LOG() << ss.str();
@@ -44,7 +44,7 @@ worker_thread_impl::loop() {
     LOG() << ss.str();
     throw std::runtime_error(ss.str());
   }
-  if (sigaddset(&usr2_blocked_set, SIGUSR2)) {
+  if (sigaddset(&usr2_blocked_set, SIGHUP)) {
     std::ostringstream ss;
     ss << "sigaddset failed: " << strerror(errno);
     LOG() << ss.str();
@@ -63,9 +63,8 @@ worker_thread_impl::loop() {
     epoll_event epoll_entry;
 
     auto wait_cond = [&] {
-      memset(&epoll_entry, sizeof(epoll_entry), 0);
+      memset(&epoll_entry, 0, sizeof(epoll_entry));
       data.semaphore.acquire();
-      ++data.currently_polling;
       int epoll_ret;
       while(true) {
         auto wait_time = data.shutting_down ? 0 : -1;
@@ -88,15 +87,38 @@ worker_thread_impl::loop() {
       if (epoll_entry.data.ptr == &data.wakeup_any_eventfd) {
         eventfd_t val;
         int efd_read_ret = eventfd_read(data.wakeup_any_eventfd, &val);
+
+        BOOST_SCOPE_EXIT(this) {
+          epoll_event readd_wakeup_epoll;
+          readd_wakeup_epoll.events = EPOLLIN | EPOLLONESHOT;
+          readd_wakeup_epoll.data.ptr = &data.wakeup_any_eventfd;
+          int epoll_ctl_ret = epoll_ctl(data.epoll_fd, EPOLL_CTL_MOD, data.wakeup_any_eventfd,
+                                        &readd_wakeup_epoll);
+          if (epoll_ctl_ret == -1) {
+            std::ostringstream ss;
+            ss << "Error readding wakeup_any_eventfd to global epoll: " << strerror(errno);
+            LOG() << ss.str();
+            throw std::runtime_error(ss.str());
+          }
+        };
+
         if (efd_read_ret != 0) {
           std::ostringstream ss;
           ss << "Error when decreasing the wakeup_any_eventfd counter: " << strerror(errno);
           LOG() << ss.str();
-          return false;
+          throw std::runtime_error(ss.str());
         }
-        // if other threads are waiting apart from this one, then wake them up.
-        if (data.currently_polling - 1 > 0 && val > 1) {
-          int write_ret = eventfd_write(data.wakeup_any_eventfd, val - 1);
+        // if we think that other threads are waiting apart
+        // from this one, we wake them up. Otherwise we write 1 to the
+        // eventfd to avoid swallowing notifications in case of a race.
+        eventfd_t rewrite_val;
+        if (data.working_threads + 1 < data.concurrency_max) {
+          rewrite_val = val - 1;
+        } else {
+          rewrite_val = 1;
+        }
+        if (rewrite_val > 0) {
+          int write_ret = eventfd_write(data.wakeup_any_eventfd, rewrite_val);
           if (write_ret != 0) {
             std::ostringstream ss;
             ss << "Error when writing to eventfd to wakeup a thread: " << strerror(errno);
@@ -109,17 +131,17 @@ worker_thread_impl::loop() {
       return true;
     };
 
-    while (++data.waiting_threads, wait_cond()) {
-      --data.currently_polling;
-      --data.waiting_threads;
+    while (wait_cond()) {
+      ++data.working_threads;
+      BOOST_SCOPE_EXIT_ALL(&) {
+        --data.working_threads;
+      };
       if (epoll_entry.data.ptr != &data.wakeup_any_eventfd) {
         handle_io_operation(epoll_entry);
       } else {
         do_work();
       }
     }
-    --data.currently_polling;
-    --data.waiting_threads;
   } catch (std::exception &e) {
     LOG() << "caught when worker thread was stopping: " << e.what();
   }
@@ -136,7 +158,7 @@ worker_thread_impl::handle_io_operation(epoll_event epoll_ev)
 void
 worker_thread_impl::please_die()
 {
-  if (int error = pthread_kill(get_internals().thr.native_handle(), SIGUSR2)) {
+  if (int error = pthread_kill(get_internals().thr.native_handle(), SIGHUP)) {
     LOG() << "pthread_kill failed: " << strerror(error);
   }
 }
@@ -149,6 +171,7 @@ worker_thread_impl::get_data()
 
 work_data::work_data(unsigned int concurrency)
  :semaphore(concurrency)
+ ,concurrency_max(concurrency)
 {
   epoll_fd = epoll_create(1);
   if (epoll_fd == -1) {
@@ -165,7 +188,7 @@ work_data::work_data(unsigned int concurrency)
     throw std::runtime_error(ss.str());
   }
   epoll_event add_wakeup_epoll;
-  add_wakeup_epoll.events = EPOLLIN | EPOLLET;
+  add_wakeup_epoll.events = EPOLLIN | EPOLLONESHOT;
   add_wakeup_epoll.data.ptr = &wakeup_any_eventfd;
   int epoll_ctl_ret = epoll_ctl(epoll_fd, EPOLL_CTL_ADD, wakeup_any_eventfd,
                                 &add_wakeup_epoll);
@@ -264,9 +287,10 @@ epoll_access_semaphore::release()
 }
 
 void
-global_thread_pool::plat_wakeup_one_thread()
+global_thread_pool::plat_wakeup_threads(unsigned int count)
 {
-  int write_ret = eventfd_write(work_data.wakeup_any_eventfd, 1);
+  count = std::max(count, hardware_concurrency);
+  int write_ret = eventfd_write(work_data.wakeup_any_eventfd, count);
   if (write_ret != 0) {
     std::ostringstream ss;
     ss << "Error when writing to eventfd to wakeup a thread: " << strerror(errno);

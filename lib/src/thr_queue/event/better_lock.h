@@ -9,6 +9,16 @@ class better_lock {
 public:
   better_lock(boost::mutex &m, boost::defer_lock_t) : mt(m) {}
 
+  better_lock(boost::mutex &m) : mt(m)
+  {
+    lock();
+  }
+
+  better_lock(const better_lock &) = delete;
+  better_lock(better_lock &&) = delete;
+
+  better_lock &operator=(better_lock) = delete;
+
   ~better_lock() {
     if (already_locking) {
       unlock();

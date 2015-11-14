@@ -45,16 +45,7 @@ void global_thread_pool::schedule(InputIt begin, InputIt end, bool first) {
     }
   }
 
-  decltype(count) i = 0;
-  while(true) {
-    unsigned int working = work_data.number_threads - work_data.waiting_threads;
-    if (working < hardware_concurrency && i < count) {
-      plat_wakeup_one_thread();
-      ++i;
-    } else {
-      break;
-    }
-  }
+  plat_wakeup_threads(count);
 }
 }
 }

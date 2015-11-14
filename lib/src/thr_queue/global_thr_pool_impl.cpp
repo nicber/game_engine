@@ -78,7 +78,7 @@ generic_worker_thread::get_internals()
   return *internals;
 }
 
-worker_thread::worker_thread(work_data & dat)
+worker_thread::worker_thread(work_data_combined & dat)
  :platform::worker_thread_impl(dat)
 {
   start_thread();
@@ -111,6 +111,7 @@ global_thread_pool::~global_thread_pool()
   work_data.shutting_down = true;
   for (auto it = threads.begin(); it != threads.end();) {
     if (it->get_internals().stopped) {
+      it->get_internals().thr.join();
       it = threads.erase(it);
       continue;
     }
@@ -124,7 +125,7 @@ global_thread_pool::~global_thread_pool()
     l.lock();
     threads.pop_back();
   }
-  assert(work_data.waiting_threads == 0);
+  assert(work_data.working_threads == 0);
   assert(work_data.number_threads == 0);
 }
 
@@ -134,6 +135,7 @@ void global_thread_pool::schedule(coroutine cor, bool first) {
 }
 
 void global_thread_pool::yield() {
+  assert(running_coroutine_or_yielded_from != nullptr);
   assert(running_coroutine_or_yielded_from != master_coroutine &&
          "we can't yield from the master_coroutine");
   master_coroutine->switch_to_from(*running_coroutine_or_yielded_from);
