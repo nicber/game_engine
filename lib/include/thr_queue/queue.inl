@@ -64,6 +64,7 @@ void queue::work<F>::operator()() {
   catch (std::exception &e) {
     LOG() << "queue worker caught exception: " << e.what();
     prom.set_exception(std::current_exception());
+    abort();
   }
 }
 
