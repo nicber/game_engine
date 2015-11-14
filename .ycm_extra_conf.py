@@ -55,17 +55,17 @@ flags = [
 'c++',
 # include paths, copied from compilation_commands.json
 '-I',
-'/mnt/940AA1EF0AA1CF14/boost_1_57_0',
-'-I',
 '/usr/include/GL',
 '-I',
 '/usr/include/libdrm',
 '-I',
-'/win_dirs/d/libuv/include',
+'/home/nicolas/repos/GameEngine/lib/include',
 '-I',
-'/win_dirs/d/GameEngine/lib/include',
+'/home/nicolas/repos/GameEngine/external/gtest/gtest-1.7.0/include',
 '-I',
-'/win_dirs/d/GameEngine/external/gtest/gtest-1.7.0/include'
+'/home/nicolas/kdevelop/include',
+'-I',
+'/home/nicolas/repos/concurrentqueue'
 ]
 
 
