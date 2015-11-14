@@ -31,7 +31,8 @@ void condition_variable::wait(boost::unique_lock<mutex> &lock) {
 
 void condition_variable::notify() {
   boost::unique_lock<boost::mutex> mt_lock(mt);
-  auto wc = std::move(waiting_cors);
+  decltype(waiting_cors) wc;
+  swap(wc, waiting_cors);
   mt_lock.unlock();
 
   auto begin_move = std::make_move_iterator(wc.begin());
