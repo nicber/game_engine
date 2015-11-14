@@ -20,7 +20,7 @@ struct future_promise_priv_shared {
   functor_ptr wait_callback = nullptr;
   std::exception_ptr except_ptr;
   bool promise_alive = true;
-  bool set_flag = false;
+  std::atomic<bool> set_flag { false };
 };
 
 template <typename R>
