@@ -32,7 +32,7 @@ option(GAME_ENGINE_BUILD_TESTS "Build the GameEngine test library" ON)
 option(GAME_ENGINE_BUILD_DOCS "Build the GameEngine documentation" OFF)
 
 add_subdirectory(external)
-# GAME_ENGINE_DEP_LIBS will be set after the previous line.
+# GAME_ENGINE_DEP_LIBS and GAME_ENGINE_LIBRARY_DIRS will be set after the previous line.
 
 if(GAME_ENGINE_BUILD_TESTS)
 	enable_testing()
@@ -56,6 +56,7 @@ endif()
 set(GAME_ENGINE_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
 include_directories("${GAME_ENGINE_ROOT}/lib/include")
 include_directories(SYSTEM ${GAME_ENGINE_INCLUDE})
+link_directories(${GAME_ENGINE_LIBRARY_DIRS})
 add_definitions(${GAME_ENGINE_DEFINITIONS})
 # Binaries
 
