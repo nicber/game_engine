@@ -295,12 +295,11 @@ active_tcp_socket::read(aio_buffer::size_type min_read, aio_buffer::size_type ma
 
         if (stop_read) {
           uv_read_stop((uv_stream_t*)&data_ptr->socket);
-          read_state->prom.set_value(std::move(read_state->result));
-          read_state.reset();
+          auto read_state_ptr = std::move(read_state);
+          read_state_ptr->prom.set_value(std::move(read_state_ptr->result));
         }
       };
 
-      uv_read_start((uv_stream_t*)&d->socket, alloc_cb, read_cb);
       int uv_read_ret = uv_read_start((uv_stream_t*)&d->socket, alloc_cb, read_cb);
       if (uv_read_ret < 0) {
         std::ostringstream ss;
