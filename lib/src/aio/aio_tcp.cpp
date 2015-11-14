@@ -21,6 +21,41 @@ passive_tcp_socket::passive_tcp_socket()
   }).wait();
 }
 
+passive_tcp_socket::~passive_tcp_socket()
+{
+  using namespace thr_queue::event;
+  if (!d) {
+    return;
+  }
+  uv_thr_cor_do<void>([&] (auto prom)  {
+    d->closing_prom = std::move(prom);
+    uv_close((uv_handle_t *)&d->socket, [] (uv_handle_t *h) {
+      ((data *)h->data)->closing_prom.set_value();
+    });
+  }).wait();
+}
+
+passive_tcp_socket::passive_tcp_socket(passive_tcp_socket &&other)
+ :passive_tcp_socket(private_constructor())
+{
+  swap(*this, other);
+}
+
+passive_tcp_socket &passive_tcp_socket::operator=(passive_tcp_socket rhs)
+{
+  swap(*this, rhs);
+  return *this;
+}
+
+passive_tcp_socket::passive_tcp_socket(passive_tcp_socket::private_constructor)
+ :d(nullptr)
+{}
+
+void swap(passive_tcp_socket &lhs, passive_tcp_socket &rhs) noexcept
+{
+  swap(lhs.d, rhs.d);
+}
+
 aio_operation<passive_tcp_socket::bind_listen_result>
 passive_tcp_socket::bind_and_listen(uint16_t port)
 {
@@ -73,10 +108,10 @@ passive_tcp_socket::accept()
   return make_aio_operation([d_l = d]() mutable {
     promise<accept_result> prom;
     auto fut = prom.get_future();
-    thr_queue::queue q(thr_queue::queue_type::serial);
 
     auto d = std::move(d_l);
-    q.submit_work([d_l = std::move(d), prom = std::move(prom)]() mutable {
+    thr_queue::default_par_queue().submit_work(
+    [d_l = std::move(d), prom = std::move(prom)]() mutable {
       accept_result proposed_result;
       bool successful_accept;
       do {
@@ -99,7 +134,6 @@ passive_tcp_socket::accept()
       prom.set_value(std::move(proposed_result));
     });
 
-    thr_queue::schedule_queue_first(std::move(q));
     return fut;
   });
 }
@@ -121,6 +155,32 @@ active_tcp_socket::active_tcp_socket()
   }).wait();
 }
 
+active_tcp_socket::~active_tcp_socket()
+{
+  if (!d) {
+    return;
+  }
+  assert(!d->read_state);
+  thr_queue::event::uv_thr_cor_do<void>([d = d](auto prom) {
+    d->closing_prom = std::move(prom);
+    uv_close((uv_handle_t*)&d->socket, [] (uv_handle_t *handle) {
+      ((data *)handle->data)->closing_prom.set_value();
+    });
+  }).wait();
+}
+
+active_tcp_socket::active_tcp_socket(active_tcp_socket &&other)
+ :active_tcp_socket(private_constructor())
+{
+  swap(*this, other);
+}
+
+active_tcp_socket&
+active_tcp_socket::operator=(active_tcp_socket rhs)
+{
+  swap(*this, rhs);
+  return *this;
+}
 aio_operation<active_tcp_socket::bind_result>
 active_tcp_socket::bind(uint16_t port)
 {
@@ -241,6 +301,13 @@ active_tcp_socket::read(aio_buffer::size_type min_read, aio_buffer::size_type ma
       };
 
       uv_read_start((uv_stream_t*)&d->socket, alloc_cb, read_cb);
+      int uv_read_ret = uv_read_start((uv_stream_t*)&d->socket, alloc_cb, read_cb);
+      if (uv_read_ret < 0) {
+        std::ostringstream ss;
+        ss << "uv_read callback: " << uv_strerror(uv_read_ret);
+        LOG() << ss.str();
+        prom.set_exception(aio_runtime_error(ss.str()));
+      }
     });
   });
 }
@@ -254,6 +321,7 @@ active_tcp_socket::write(aio_buffer buf)
 }
 
 struct write_internal_state {
+  std::shared_ptr<active_tcp_socket::data> keep_data_alive;
   std::vector<aio_buffer> bufs;
   thr_queue::event::promise<active_tcp_socket::write_result> prom;
 };
@@ -261,6 +329,7 @@ struct write_internal_state {
 aio_operation<active_tcp_socket::write_result>
 active_tcp_socket::write(std::vector<aio_buffer> buffers)
 {
+  assert(d);
   return make_aio_operation([buffers = std::move(buffers), d = d]() mutable {
     auto dl = std::move(d);
     auto bufs = std::move(buffers);
@@ -269,7 +338,10 @@ active_tcp_socket::write(std::vector<aio_buffer> buffers)
       uv_write_t *write_req = new uv_write_t;
       auto *bufs_ptr = buffers.data();
       auto nbufs = buffers.size();
-      write_req->data = new write_internal_state{std::move(buffers), std::move(prom)};
+      auto socket_ptr = &d->socket;
+      write_req->data = new write_internal_state{std::move(d),
+                                                 std::move(buffers),
+                                                 std::move(prom)};
 
       auto write_cb = [](uv_write_t* req, int status) {
         auto &istate = *(write_internal_state*)req->data;
@@ -277,13 +349,25 @@ active_tcp_socket::write(std::vector<aio_buffer> buffers)
           LOG() << "uv_write callback: " << uv_strerror(status);
         }
         istate.prom.set_value({status == 0, status});
+        if (istate.keep_data_alive.use_count() == 1) {
+          LOG() << "WARNING: write request is keeping socket alive.";
+        }
         delete &istate;
         delete req;
       };
 
-      uv_write(write_req, (uv_stream_t*)&d->socket, bufs_ptr, nbufs, write_cb);
+      uv_write(write_req, (uv_stream_t*)socket_ptr, bufs_ptr, nbufs, write_cb);
     });
   });
+}
+
+active_tcp_socket::active_tcp_socket(private_constructor)
+ :d(nullptr) {}
+
+void
+swap(active_tcp_socket &lhs, active_tcp_socket &rhs) noexcept
+{
+  swap(lhs.d, rhs.d);
 }
 }
 }

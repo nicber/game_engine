@@ -163,6 +163,12 @@ public:
 
   virtual ~aio_operation_t() = 0;
 
+  aio_operation_t() = default;
+  aio_operation_t(aio_operation_t&&) = delete;
+  aio_operation_t(const aio_operation_t&) = delete;
+  aio_operation_t &operator=(aio_operation_t&&) = delete;
+  aio_operation_t &operator=(const aio_operation_t&) = delete;
+
 protected:
   virtual aio_result_future do_perform_nonblock() = 0;
   virtual void do_perform_may_block(perform_helper<T> &helper) = 0;
