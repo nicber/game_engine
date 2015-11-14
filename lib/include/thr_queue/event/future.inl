@@ -105,6 +105,9 @@ typename std::allocator_traits<InIt>::reference_type wait_any(InIt first, InIt l
 template<typename InIt>
 void wait_all(InIt first, InIt last)
 {
+  std::for_each(first, last, [](auto fut) {
+    fut.wait();
+  });
 }
 
 template<typename... Rs>
