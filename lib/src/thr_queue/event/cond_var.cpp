@@ -1,22 +1,19 @@
 #include "../global_thr_pool_impl.h"
 #include "lock_unlocker.h"
+#include "better_lock.h"
 #include "thr_queue/coroutine.h"
 #include "thr_queue/event/cond_var.h"
 
 namespace game_engine {
 namespace thr_queue {
-
-static boost::mutex cond_var_global_mt;
-static std::deque<coroutine> cor_queue;
-
 namespace event {
 void condition_variable::wait(boost::unique_lock<mutex> &lock) {
   assert(lock.owns_lock());
-  boost::unique_lock<boost::mutex> lock_std(mt);
+  better_lock lock_std(mt);
   global_thr_pool.yield([&] {
     // running_coroutine_or_yielded from still points to this coroutine even
     // after having yielded.
-    lock_unlocker<boost::unique_lock<boost::mutex>> l_unlock_std_mt(lock_std);
+    lock_unlocker<better_lock> l_unlock_std_mt(lock_std);
     lock_unlocker<boost::unique_lock<mutex>> l_unlock_co_mt(lock);
 
     waiting_cors.emplace_back(std::move(*running_coroutine_or_yielded_from));
@@ -27,7 +24,8 @@ void condition_variable::wait(boost::unique_lock<mutex> &lock) {
   // not have been yet acknowledged by the resuming thread. 
   // This special case will lead to a difficult to debug race condition involving
   // the owns_lock member variable.
-  boost::lock_guard<boost::mutex> hack(mt);
+  assert(!lock_std.owns_lock());
+  lock_std.lock();
   lock.lock();
 }
 
@@ -42,7 +40,7 @@ void condition_variable::notify() {
 }
 
 condition_variable::~condition_variable() {
-  boost::lock_guard<boost::mutex> lock(mt);
+  boost::lock_guard<boost::mutex> mt_lock(mt);
   assert(waiting_cors.size() == 0 &&
          "coroutines can't be destroyed by the condition variable.");
 }
