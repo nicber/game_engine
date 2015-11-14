@@ -21,6 +21,13 @@ generic_worker_thread::start_thread()
   internals->thr = boost::thread([this] { loop(); });
 }
 
+void
+generic_worker_thread::schedule_coroutine(coroutine cor)
+{
+  ++get_internals().thread_queue_size;
+  get_internals().thread_queue.enqueue(std::move(cor));
+  wakeup();
+}
 
 void
 generic_worker_thread::do_work()
