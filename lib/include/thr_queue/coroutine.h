@@ -11,6 +11,7 @@ namespace thr_queue {
 namespace platform {
 class worker_thread_impl;
 }
+class worker_thread;
 
 enum class coroutine_type {
   user,
@@ -40,12 +41,13 @@ public:
   /** \brief Switches from this coroutine to the one passed as an argument.
    */
   void switch_to_from(coroutine &from);
-  
+
   friend void swap(coroutine &lhs, coroutine &rhs);
 
 private:
   /** \brief Constructs a master coroutine. */
   coroutine();
+  friend class global_thread_pool;
   friend class generic_worker_thread;
   friend class platform::worker_thread_impl;
 
@@ -69,8 +71,8 @@ private:
   std::unique_ptr<functor> function;
 
   coroutine_type typ;
+  worker_thread *bound_thread = nullptr;
 };
-void set_cor_type(coroutine_type cor_typ);
 }
 }
 

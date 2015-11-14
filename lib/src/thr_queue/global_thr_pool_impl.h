@@ -29,13 +29,15 @@ struct worker_thread_internals {
   moodycamel::ProducerToken ptok;
   moodycamel::ConsumerToken ctok_prio;
   moodycamel::ProducerToken ptok_prio;
+  moodycamel::ConcurrentQueue<coroutine> thread_queue;
+  std::atomic<unsigned int> thread_queue_size;
   boost::thread thr;
 };
 
 class base_worker_thread {
 protected:
   virtual void loop() = 0;
-  virtual void please_die() = 0;
+  virtual void wakeup() = 0;
   virtual void do_work() = 0;
   virtual void start_thread() = 0;
   virtual generic_work_data &get_data() = 0;
@@ -59,6 +61,7 @@ protected:
   void do_work() final override;
   worker_thread_internals &get_internals() final override;
   void start_thread() final override;
+  void schedule_coroutine(coroutine cor);
 
 private:
   boost::optional<worker_thread_internals> internals;
@@ -73,7 +76,8 @@ public:
   ~worker_thread();
 
   using generic_worker_thread::get_internals;
-  using platform::worker_thread_impl::please_die;
+  using generic_worker_thread::schedule_coroutine;
+  using platform::worker_thread_impl::wakeup;
 };
 #pragma warning( pop )
 

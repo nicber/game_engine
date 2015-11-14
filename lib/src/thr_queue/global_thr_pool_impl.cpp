@@ -38,6 +38,13 @@ generic_worker_thread::do_work()
     }
 
     do {
+      if (get_internals().thread_queue.try_dequeue(work_to_do)) {
+        --get_internals().thread_queue_size;
+        goto do_work;
+      }
+    } while (get_internals().thread_queue_size > 0);
+
+    do {
       if (get_data().work_queue_prio.try_dequeue_from_producer(internals->ptok_prio, work_to_do)
           || get_data().work_queue_prio.try_dequeue(work_to_do)) {
         --get_data().work_queue_prio_size;
@@ -115,7 +122,7 @@ global_thread_pool::~global_thread_pool()
       it = threads.erase(it);
       continue;
     }
-    it->please_die();
+    it->wakeup();
     ++it;
   }
   while (threads.size()) {

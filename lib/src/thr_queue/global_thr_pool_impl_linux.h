@@ -44,7 +44,7 @@ public:
 protected:
   void loop() override;
   void handle_io_operation(epoll_event epoll_ev);
-  void please_die() override;
+  void wakeup() override;
   generic_work_data &get_data() override;
 
 private:

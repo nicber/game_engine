@@ -18,7 +18,7 @@ public:
 protected:
   void loop() override;
   void handle_io_operation(OVERLAPPED_ENTRY olapped_entry);
-  void please_die() override;
+  void wakeup() override;
   generic_work_data &get_data() override;
 
 private:

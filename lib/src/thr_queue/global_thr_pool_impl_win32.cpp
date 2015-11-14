@@ -73,7 +73,7 @@ worker_thread_impl::handle_io_operation(OVERLAPPED_ENTRY olapped_entry)
 }
 
 void
-worker_thread_impl::please_die()
+worker_thread_impl::wakeup()
 {
   QueueUserAPC([](ULONG_PTR) {}, get_internals().thr.native_handle(), 0);
 }

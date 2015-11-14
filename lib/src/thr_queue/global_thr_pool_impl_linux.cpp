@@ -1,3 +1,5 @@
+#define BOOST_SCOPE_EXIT_CONFIG_USE_LAMBDAS
+#include <boost/scope_exit.hpp>
 #include "global_thr_pool_impl.h"
 #include <logging/log.h>
 #include <poll.h>
@@ -67,6 +69,10 @@ worker_thread_impl::loop() {
       data.semaphore.acquire();
       int epoll_ret;
       while(true) {
+        if (get_internals().thread_queue_size > 0) {
+          epoll_entry.data.ptr = &data.wakeup_any_eventfd;
+          return true;
+        }
         auto wait_time = data.shutting_down ? 0 : -1;
         epoll_ret = epoll_pwait(data.epoll_fd, &epoll_entry, 1, wait_time,
                                 &original_set);
@@ -156,7 +162,7 @@ worker_thread_impl::handle_io_operation(epoll_event epoll_ev)
 }
 
 void
-worker_thread_impl::please_die()
+worker_thread_impl::wakeup()
 {
   if (int error = pthread_kill(get_internals().thr.native_handle(), SIGHUP)) {
     LOG() << "pthread_kill failed: " << strerror(error);

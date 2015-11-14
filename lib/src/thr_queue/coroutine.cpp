@@ -33,6 +33,11 @@ coroutine::~coroutine() {
 coroutine_type coroutine::type() const { return typ; }
 
 void coroutine::switch_to_from(coroutine &other) {
+  if (bound_thread) {
+    assert(bound_thread == this_wthread);
+  } else {
+    bound_thread = this_wthread;
+  }
   auto func_ptr = reinterpret_cast<intptr_t>(function.get());
   boost::context::jump_fcontext(&other.ctx, ctx, func_ptr, true);
 }
@@ -54,13 +59,7 @@ void swap(coroutine &lhs, coroutine &rhs) {
   swap(lhs.stack, rhs.stack);
   swap(lhs.function, rhs.function);
   swap(lhs.typ, rhs.typ);
-}
-
-void set_cor_type(coroutine_type cor_typ) {
-	global_thr_pool.yield([ cor_typ ] {
-	  running_coroutine_or_yielded_from->typ = cor_typ;
-	  global_thr_pool.schedule(std::move(*running_coroutine_or_yielded_from), true);
-	});
+  swap(lhs.bound_thread, rhs.bound_thread);
 }
 }
 }
