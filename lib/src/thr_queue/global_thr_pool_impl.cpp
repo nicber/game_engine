@@ -24,9 +24,13 @@ generic_worker_thread::start_thread()
 void
 generic_worker_thread::schedule_coroutine(coroutine cor)
 {
+#ifdef _WIN32
+  abort();
+#else
   ++get_internals().thread_queue_size;
   get_internals().thread_queue.enqueue(std::move(cor));
   wakeup();
+#endif
 }
 
 void

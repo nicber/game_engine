@@ -33,11 +33,13 @@ coroutine::~coroutine() {
 coroutine_type coroutine::type() const { return typ; }
 
 void coroutine::switch_to_from(coroutine &other) {
+#ifndef _WIN32
   if (bound_thread) {
     assert(bound_thread == this_wthread);
   } else {
     bound_thread = this_wthread;
   }
+#endif
   auto func_ptr = reinterpret_cast<intptr_t>(function.get());
   boost::context::jump_fcontext(&other.ctx, ctx, func_ptr, true);
 }

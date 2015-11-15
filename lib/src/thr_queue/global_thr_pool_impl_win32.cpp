@@ -1,12 +1,15 @@
+#include <boost/scope_exit.hpp>
 #include "global_thr_pool_impl.h"
 #include <logging/log.h>
 
 namespace game_engine {
 namespace thr_queue {
 void
-global_thread_pool::plat_wakeup_one_thread()
+global_thread_pool::plat_wakeup_threads(unsigned int count)
 {
-  PostQueuedCompletionStatus(work_data.iocp, 0, work_data.queue_completionkey, nullptr);
+  while (work_data.working_threads < hardware_concurrency && count--) {
+    PostQueuedCompletionStatus(work_data.iocp, 0, work_data.queue_completionkey, nullptr);
+  }
 }
 
 namespace platform {
@@ -19,7 +22,7 @@ void
 worker_thread_impl::loop() {
   ++data.number_threads;
   try {
-    this_wthread = static_cast<thr_queue::worker_thread*>(this);
+    this_wthread = (thr_queue::worker_thread*)(this);
     coroutine master_cor;
     std::function<void()> after_yield_f;
     master_coroutine = &master_cor;
@@ -28,8 +31,6 @@ worker_thread_impl::loop() {
     OVERLAPPED_ENTRY olapped_entry;
 
     auto wait_cond = [&] {
-      ++data.waiting_threads;
-
       while (true) {
         auto wait_time = data.shutting_down ? 0 : INFINITE;
         ULONG removed_entries;
@@ -39,7 +40,6 @@ worker_thread_impl::loop() {
           if (err == WAIT_IO_COMPLETION) {
             continue;
           } else {
-            --data.waiting_threads;
             if (err != WAIT_TIMEOUT) {
               LOG() << "GetQueuedCompletionStatus: " << err;
             }
@@ -49,11 +49,14 @@ worker_thread_impl::loop() {
           break;
         }
       }
-      --data.waiting_threads;
       return true;
     };
 
     do {
+      ++data.working_threads;
+      BOOST_SCOPE_EXIT_ALL(&) {
+        --data.working_threads;
+      };
       if (olapped_entry.lpCompletionKey != data.queue_completionkey) {
         handle_io_operation(olapped_entry);
       } else {

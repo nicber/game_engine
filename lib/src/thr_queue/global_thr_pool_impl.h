@@ -30,7 +30,7 @@ struct worker_thread_internals {
   moodycamel::ConsumerToken ctok_prio;
   moodycamel::ProducerToken ptok_prio;
   moodycamel::ConcurrentQueue<coroutine> thread_queue;
-  std::atomic<unsigned int> thread_queue_size;
+  std::atomic<unsigned int> thread_queue_size{ 0 };
   boost::thread thr;
 };
 
