@@ -1,6 +1,10 @@
 find_package(PkgConfig REQUIRED)
 
-pkg_check_modules(UV REQUIRED libuv)
+if (WIN32)
+    pkg_check_modules(UV libuv)
+else()
+    pkg_check_modules(UV REQUIRED libuv)
+endif()
 
 set(GAME_ENGINE_INCLUDE ${GAME_ENGINE_INCLUDE} ${UV_INCLUDE_DIRS} PARENT_SCOPE)
 
