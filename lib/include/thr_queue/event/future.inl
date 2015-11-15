@@ -32,9 +32,8 @@ promise_base<R>::~promise_base()
 
 template<typename R>
 promise_base<R>::promise_base(promise_base && rhs) noexcept
+ :promise_base(private_constructor())
 {
-  promise_base<R> other;
-  swap(*this, other);
   swap(*this, rhs);
 }
 
@@ -71,6 +70,9 @@ void promise_base<R>::set_wait_callback(F f)
 template<typename R>
 future<R> promise_base<R>::get_future() const
 {
+  if (!d) {
+    throw std::runtime_error("attempting to get future from a moved-from promise");
+  }
   return future<R>(const_cast<promise_base<R>*>(this)->d);
 }
 
@@ -88,6 +90,12 @@ void game_engine::thr_queue::event::promise_base<R>::notify_all_cvs()
       ++it;
     }
   }
+}
+
+template<typename R>
+promise_base<R>::promise_base(private_constructor)
+ :d(nullptr)
+{
 }
 
 template<typename R>

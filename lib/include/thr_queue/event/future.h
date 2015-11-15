@@ -81,6 +81,10 @@ protected:
   friend void swap<R>(promise_base<R> &lhs, promise_base<R> &rhs);
   void notify_all_cvs();
   std::shared_ptr<future_promise_priv<R>> d;
+
+private:
+  struct private_constructor {};
+  promise_base(private_constructor);
 };
 
 template <typename R>
