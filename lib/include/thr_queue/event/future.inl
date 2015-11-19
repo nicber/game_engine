@@ -19,7 +19,7 @@ template<typename R>
 promise_base<R>::~promise_base()
 {
   if (d) {
-    auto work_to_do = [d = d] {
+    auto work_to_do = [this] {
       d->promise_alive = false;
       if (!d->set_flag && d.use_count() > 1) {
         const char *msg = "promise died before the future was set";
@@ -49,7 +49,7 @@ template<typename R>
 void promise_base<R>::set_exception(std::exception_ptr e)
 {
   std::exception_ptr except_ptr = nullptr;
-  this->d->notify_all_cvs(make_functor([&except_ptr, d = this->d, e = std::move(e)] {
+  this->d->notify_all_cvs(make_functor([&except_ptr, this, e = std::move(e)] {
     if (d->set_flag) {
        except_ptr = std::make_exception_ptr(
                     promise_already_set("the promise has already been set to a value"));
@@ -172,13 +172,13 @@ void promise<R>::set_value(R val)
 {
   std::exception_ptr except_ptr = nullptr;
   this->d->notify_all_cvs(
-    make_functor([&except_ptr, d = this->d, val = std::move(val)] () mutable {
-    if (d->set_flag) {
+    make_functor([&except_ptr, this, val = std::move(val)] () mutable {
+    if (this->d->set_flag) {
        except_ptr = std::make_exception_ptr(
                     promise_already_set("the promise has already been set to a value"));
        return;
     }
-    d->val = std::move(val);
+    this->d->val = std::move(val);
   }));
   if (except_ptr) {
     std::rethrow_exception(except_ptr);

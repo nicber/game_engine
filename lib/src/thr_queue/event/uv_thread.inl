@@ -56,7 +56,6 @@ uv_thr_cor_do(F func)
 
     auto functor_ptr = make_functor(std::move(lambda));
     thr.init_start_requests.emplace_back(std::move(functor_ptr));
-    LOG() << "uv +1";
   }
 
   uv_async_send(thr.global_async.get());

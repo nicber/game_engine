@@ -8,15 +8,15 @@ namespace event {
 void
 future_promise_priv_shared::notify_all_cvs(functor_ptr func)
 {
-  auto notify_work = [d = shared_from_this(), func = std::move(func)] {
-    boost::unique_lock<mutex> l(d->mt);
+  auto notify_work = [this, func = std::move(func)] {
+    boost::unique_lock<mutex> l(mt);
     (*func)();
-    d->set_flag = true;
-    d->cv.notify();
-    for (auto it = d->when_any_callbacks.begin(); it != d->when_any_callbacks.end();) {
+    set_flag = true;
+    cv.notify();
+    for (auto it = when_any_callbacks.begin(); it != when_any_callbacks.end();) {
       std::shared_ptr<condition_variable> cv_ptr(*it);
       if (!cv_ptr) {
-        it = d->when_any_callbacks.erase(it);
+        it = when_any_callbacks.erase(it);
       } else {
         cv_ptr->notify();
         ++it;
@@ -34,7 +34,7 @@ future_promise_priv_shared::notify_all_cvs(functor_ptr func)
 void promise<void>::set_value()
 {
   std::exception_ptr except_ptr = nullptr;
-  this->d->notify_all_cvs(make_functor([&except_ptr, d = this->d] {
+  this->d->notify_all_cvs(make_functor([&except_ptr, this] {
     if (d->set_flag) {
        except_ptr = std::make_exception_ptr(
                     promise_already_set("attempting to set an already set promise<void>"));
