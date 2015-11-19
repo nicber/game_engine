@@ -73,15 +73,21 @@ worker_thread_impl::loop() {
           epoll_entry.data.ptr = &data.wakeup_any_eventfd;
           return true;
         }
-        auto wait_time = data.shutting_down ? 0 : -1;
+        auto wait_time = data.shutting_down ? 0 : 1000;
         epoll_ret = epoll_pwait(data.epoll_fd, &epoll_entry, 1, wait_time,
                                 &original_set);
         if (epoll_ret == 0) {
-          return false;
+          if (wait_time == 0) {
+            return false;
+          } else  {
+            epoll_entry.data.ptr = &data.wakeup_any_eventfd;
+            return true;
+          }
         } else if (epoll_ret == 1) { //success
           break;
         } else if (errno == EINTR) {
-          continue;
+          epoll_entry.data.ptr = &data.wakeup_any_eventfd;
+          return true;
         } else {
           std::ostringstream ss;
           ss << "Error epolling: " << strerror(errno);
