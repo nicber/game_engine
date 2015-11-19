@@ -9,12 +9,13 @@ namespace thr_queue {
 namespace event {
 void condition_variable::wait(boost::unique_lock<mutex> &lock) {
   assert(lock.owns_lock());
+  boost::unique_lock<mutex> local_lock(*lock.release(), boost::adopt_lock);
   better_lock lock_std(mt);
   global_thr_pool.yield([&] {
     // running_coroutine_or_yielded from still points to this coroutine even
     // after having yielded.
     lock_unlocker<better_lock> l_unlock_std_mt(lock_std);
-    lock_unlocker<boost::unique_lock<mutex>> l_unlock_co_mt(lock);
+    lock_unlocker<boost::unique_lock<mutex>> l_unlock_co_mt(local_lock);
 
     waiting_cors.emplace_back(std::move(*running_coroutine_or_yielded_from));
   });
@@ -24,9 +25,9 @@ void condition_variable::wait(boost::unique_lock<mutex> &lock) {
   // not have been yet acknowledged by the resuming thread. 
   // This special case will lead to a difficult to debug race condition involving
   // the owns_lock member variable.
-  assert(!lock_std.owns_lock());
-  lock_std.lock();
-  lock.lock();
+  // This is why we use local_lock.
+  assert(!local_lock.owns_lock());
+  lock = boost::unique_lock<mutex>(*local_lock.release());
 }
 
 void condition_variable::notify() {
