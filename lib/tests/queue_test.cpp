@@ -127,7 +127,7 @@ TEST(ThrQueue, DefaultParQueue) {
 }
 
 TEST(ThrQueue, SerQueue) {
-  const int n_tasks = 1000000;
+  const int n_tasks = 10000;
   auto q_ser = game_engine::thr_queue::ser_queue();
   boost::mutex mt;
   boost::condition_variable cv;
