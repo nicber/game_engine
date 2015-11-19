@@ -38,6 +38,7 @@ generic_worker_thread::do_work()
 {
   bool could_work;
   int number_units_of_work = 0;
+  bool ran_destroy_work = false;
   do {
     could_work = false;
 
@@ -49,22 +50,22 @@ generic_worker_thread::do_work()
       goto do_work;
     }
 
-    do {
+    while (get_internals().thread_queue_size > 0) {
       if (get_internals().thread_queue.try_dequeue(work_to_do)) {
         --get_internals().thread_queue_size;
         goto do_work;
       }
-    } while (get_internals().thread_queue_size > 0);
+    }
 
-    do {
+    while (get_data().work_queue_prio_size > 0) {
       if (get_data().work_queue_prio.try_dequeue_from_producer(internals->ptok_prio, work_to_do)
           || get_data().work_queue_prio.try_dequeue(work_to_do)) {
         --get_data().work_queue_prio_size;
         goto do_work;
       }
-    } while (get_data().work_queue_prio_size > 0);
+    }
 
-    do {
+    while (get_data().work_queue_size > 0) {
       if (get_data().work_queue.try_dequeue_from_producer(internals->ptok, work_to_do)
           || get_data().work_queue.try_dequeue(work_to_do)) {
         --get_data().work_queue_size;
@@ -75,22 +76,32 @@ generic_worker_thread::do_work()
         --get_data().work_queue_prio_size;
         goto do_work;
       }
-    } while (get_data().work_queue_size > 0);
+    }
+
     could_work = false;
     break;
     do_work:
     ++number_units_of_work;
     could_work = true;
     running_coroutine_or_yielded_from = &work_to_do;
+    ran_destroy_work = false;
     work_to_do.switch_to_from(*master_coroutine);
     if (*after_yield) {
       (*after_yield)();
       *after_yield = std::function<void()>();
     }
     running_coroutine_or_yielded_from = master_coroutine;
+    // we cant destroy the recently ran coroutine from the master coroutine.
+    // if the coroutine type is 'user' then we may have to destroy a captured variable.
+    if (!ran_destroy_work && work_to_do.type() == coroutine_type::user) {
+      coroutine destroy_work {[&ran_destroy_work, work_to_destroy = std::move(work_to_do)] () mutable {
+        ran_destroy_work = true;
+        auto tmp = std::move(work_to_destroy);
+      }};
+      ++get_internals().thread_queue_size;
+      get_internals().thread_queue.enqueue(std::move(destroy_work));
+    }
   } while (could_work);
-  if (number_units_of_work) 
-    LOG() << number_units_of_work;
 }
 
 worker_thread_internals & 

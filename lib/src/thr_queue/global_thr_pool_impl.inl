@@ -29,8 +29,6 @@ void global_thread_pool::schedule(InputIt begin, InputIt end, bool first) {
   	return;
   }
 
-  LOG() << "+" << count;
-
 #ifndef _WIN32
   std::vector<coroutine> tmp_buffer;
   tmp_buffer.reserve(count);
