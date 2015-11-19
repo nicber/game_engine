@@ -28,7 +28,7 @@ public:
    * will be cor_typ.
    */
   template <typename F>
-  coroutine(F func, coroutine_type cor_typ = coroutine_type::user);
+  coroutine(F func);
 
   coroutine(coroutine &&other) noexcept;
   coroutine &operator=(coroutine &&rhs) noexcept;
@@ -42,32 +42,29 @@ public:
    */
   void switch_to_from(coroutine &from);
 
+  std::intptr_t get_id() const noexcept;
+
   friend void swap(coroutine &lhs, coroutine &rhs);
 
+  struct stackctx;
 private:
   /** \brief Constructs a master coroutine. */
   coroutine();
+
+  /** \brief Helper for the templated constructor. */
+  coroutine(std::unique_ptr<functor> func);
+
   friend class global_thread_pool;
   friend class generic_worker_thread;
   friend class platform::worker_thread_impl;
 
-  /** \brief Changes the coroutine's type to that passed as an argument.
-   * It to the master coroutine, changes the coroutine's type and calls
-   * schedule for it to be scheduled with maximum priority.
-   */
-  friend void set_cor_type(coroutine_type cor_typ);
-  
-  static size_t default_stacksize();
   static void finish_coroutine();
 
 private:
-  /** \brief A pointer to the boost context that handles the context switching.
-   * If this is a master coroutine then it's been new'ed and needs to be
-   * deleted by the destructor. Otherwise it's stored in the topmost part of the stack
-   * and just deleting that takes care of the context.
-   */
-  boost::context::fcontext_t ctx;
-  std::unique_ptr<char[]> stack;
+  union {
+    boost::context::fcontext_t ctx;
+    std::unique_ptr<stackctx> stack_and_ctx;
+  };
   std::unique_ptr<functor> function;
 
   coroutine_type typ;
