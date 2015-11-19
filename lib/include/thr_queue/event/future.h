@@ -12,15 +12,16 @@
 namespace game_engine {
 namespace thr_queue {
 namespace event {
-struct future_promise_priv_shared {
-  boost::mutex os_mt;
-  mutex co_mt;
+struct future_promise_priv_shared : std::enable_shared_from_this<future_promise_priv_shared> {
+  mutex mt;
   condition_variable cv;
   std::list<std::weak_ptr<condition_variable>> when_any_callbacks;
   functor_ptr wait_callback = nullptr;
   std::exception_ptr except_ptr;
   bool promise_alive = true;
-  std::atomic<bool> set_flag { false };
+  bool set_flag = false;
+
+  void notify_all_cvs(functor_ptr func);
 };
 
 template <typename R>
@@ -79,7 +80,6 @@ public:
 
 protected:
   friend void swap<R>(promise_base<R> &lhs, promise_base<R> &rhs);
-  void notify_all_cvs();
   std::shared_ptr<future_promise_priv<R>> d;
 
 private:

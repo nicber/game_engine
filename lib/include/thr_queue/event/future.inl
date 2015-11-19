@@ -19,14 +19,15 @@ template<typename R>
 promise_base<R>::~promise_base()
 {
   if (d) {
-    boost::lock_guard<boost::mutex> l(d->os_mt);
-    d->promise_alive = false;
-    if (!d->set_flag && d.use_count() > 1) {
-      const char *msg = "promise died before the future was set";
-      LOG() << msg;
-      d->except_ptr = std::make_exception_ptr(promise_dead_before_completion(msg));
-    }
-    notify_all_cvs();
+    auto work_to_do = [d = d] {
+      d->promise_alive = false;
+      if (!d->set_flag && d.use_count() > 1) {
+        const char *msg = "promise died before the future was set";
+        LOG() << msg;
+        d->except_ptr = std::make_exception_ptr(promise_dead_before_completion(msg));
+      }
+    };
+    d->notify_all_cvs(make_functor(std::move(work_to_do)));
   }
 }
 
@@ -47,9 +48,18 @@ promise_base<R> &promise_base<R>::operator=(promise_base<R> &&rhs) noexcept
 template<typename R>
 void promise_base<R>::set_exception(std::exception_ptr e)
 {
-  boost::lock_guard<boost::mutex> l(d->os_mt);
-  d->except_ptr = std::move(e);
-  notify_all_cvs();
+  std::exception_ptr except_ptr = nullptr;
+  this->d->notify_all_cvs(make_functor([&except_ptr, d = this->d, e = std::move(e)] {
+    if (d->set_flag) {
+       except_ptr = std::make_exception_ptr(
+                    promise_already_set("the promise has already been set to a value"));
+       return;
+    }
+    d->except_ptr = std::move(e);
+  }));
+  if (except_ptr) {
+    std::rethrow_exception(except_ptr);
+  }
 }
 
 template<typename R>
@@ -63,7 +73,7 @@ template<typename R>
 template<typename F>
 void promise_base<R>::set_wait_callback(F f)
 {
-  boost::lock_guard<boost::mutex> l(d->os_mt);
+  boost::lock_guard<mutex> l(d->mt);
   d->wait_callback = make_functor(std::move(f));
 }
 
@@ -74,22 +84,6 @@ future<R> promise_base<R>::get_future() const
     throw std::runtime_error("attempting to get future from a moved-from promise");
   }
   return future<R>(const_cast<promise_base<R>*>(this)->d);
-}
-
-template<typename R>
-void game_engine::thr_queue::event::promise_base<R>::notify_all_cvs()
-{
-  d->set_flag = true;
-  d->cv.notify();
-  for (auto it = d->when_any_callbacks.begin(); it != d->when_any_callbacks.end();) {
-    std::shared_ptr<condition_variable> cv_ptr(*it);
-    if (!cv_ptr) {
-      it = d->when_any_callbacks.erase(it);
-    } else {
-      cv_ptr->notify();
-      ++it;
-    }
-  }
 }
 
 template<typename R>
@@ -175,14 +169,20 @@ void wait_all(const future<Rs>&... futs)
 
 template<typename R>
 void promise<R>::set_value(R val)
-
 {
-  boost::lock_guard<boost::mutex> l(this->d->os_mt);
-  if (this->d->set_flag) {
-    throw promise_already_set("the promise has already been set to a value");
+  std::exception_ptr except_ptr = nullptr;
+  this->d->notify_all_cvs(
+    make_functor([&except_ptr, d = this->d, val = std::move(val)] () mutable {
+    if (d->set_flag) {
+       except_ptr = std::make_exception_ptr(
+                    promise_already_set("the promise has already been set to a value"));
+       return;
+    }
+    d->val = std::move(val);
+  }));
+  if (except_ptr) {
+    std::rethrow_exception(except_ptr);
   }
-  this->d->val = std::move(val);
-  this->notify_all_cvs();
 }
 
 template<typename R>
@@ -200,7 +200,7 @@ template<typename R>
 R future<R>::get()
 {
   this->wait();
-  boost::lock_guard<boost::mutex> l(this->d->os_mt);
+  boost::lock_guard<mutex> l(this->d->mt);
   if (this->d->except_ptr) {
     std::rethrow_exception(this->d->except_ptr);
     abort();
@@ -217,7 +217,7 @@ template<typename R>
 const R &future<R>::peek() const
 {
   this->wait();
-  boost::lock_guard<boost::mutex> l(this->d->os_mt);
+  boost::lock_guard<mutex> l(this->d->mt);
   if (this->d->except_ptr) {
     std::rethrow_exception(this->d->except_ptr);
     abort();
