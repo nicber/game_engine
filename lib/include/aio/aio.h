@@ -70,8 +70,7 @@ private:
 using aio_buffer_ptr = std::shared_ptr<aio_buffer>;
 
 struct perform_helper_base : public platform::perform_helper_impl {
-  /** \brief In unix it immediately schedules the coroutine that called the aio_operation
-   * in the global thread pool.
+  /** \brief In unix it does nothing since coroutines cannot be moved between threads.
    * In Windows, it schedules an APC that will run when the thread is blocked for IO.
    * That APC is responsible for scheduling the coroutine in the global thread pool.
    * This lets us only schedule the coroutine to another thread only if the operation
