@@ -22,6 +22,10 @@ void texture::create_empty(cube_map_side side, GLsizei size, GLuint level,
                            texture_internal_format i_f)
 
 {
+  if (type != static_cast<GLenum>(texture_type::cube_map)) {
+    throw std::logic_error("this is not a cube map texture");
+  }
+
   bind();
 
   glTexImage2D(static_cast<GLenum>(side),
@@ -39,6 +43,10 @@ void texture::create_empty(cube_map_side side, GLsizei size, GLuint level,
 void texture::create_empty(GLsizei width, GLsizei height, GLuint level,
                            texture_internal_format i_f)
 {
+  if (type != static_cast<GLenum>(texture_type::two_d)) {
+    throw std::logic_error("this is not a 2D texture");
+  }
+
   bind();
 
   glTexImage2D(static_cast<GLenum>(type),
@@ -52,6 +60,7 @@ void texture::create_empty(GLsizei width, GLsizei height, GLuint level,
                GL_UNSIGNED_BYTE,
                nullptr);
 }
+
 void texture::bind()
 {
   glBindTexture(type, texture_id);
