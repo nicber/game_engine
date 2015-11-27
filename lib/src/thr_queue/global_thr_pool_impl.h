@@ -67,8 +67,10 @@ private:
   boost::optional<worker_thread_internals> internals;
 };
 
+#ifdef _MSC_VER
 #pragma warning( push )
 #pragma warning( disable : 4250 )
+#endif
 class worker_thread final : protected generic_worker_thread, protected platform::worker_thread_impl
 {
 public:
@@ -79,7 +81,9 @@ public:
   using generic_worker_thread::schedule_coroutine;
   using platform::worker_thread_impl::wakeup;
 };
+#ifdef _MSC_VER
 #pragma warning( pop )
+#endif
 
 class global_thread_pool {
 public:

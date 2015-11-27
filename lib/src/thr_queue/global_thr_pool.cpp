@@ -6,10 +6,10 @@
 
 namespace game_engine {
 namespace thr_queue {
-static std::vector<coroutine> queue_to_vec_cor(queue q,
-                                               event::condition_variable *cv,
-                                               event::mutex *mt,
-                                               size_t min) {
+std::vector<coroutine> queue_to_vec_cor(queue q,
+                                        event::condition_variable *cv,
+                                        event::mutex *mt,
+                                        size_t min) {
   if (cv) {
     assert(mt);
   }

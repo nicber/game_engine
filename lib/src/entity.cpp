@@ -14,14 +14,15 @@ namespace game_engine
 			throw std::runtime_error("Entity not added to any game.");
 		}
 
-		void entity::add_component(std::unique_ptr<component> comp)
+		void entity::add_component(std::unique_ptr<component> comp_ptr)
 		{
-			auto& ptr = components[typeid(*comp)];
+      auto &comp = *comp_ptr;
+			auto& ptr = components[typeid(comp)];
 			if (ptr)
 			{
 				throw component_exists("Component already exists in the entity.");
 			}
-			ptr = std::move(comp);
+			ptr = std::move(comp_ptr);
 			ptr->parent_ent = this;
 
 			if (parent_game)

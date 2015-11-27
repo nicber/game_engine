@@ -17,16 +17,6 @@ class queue;
 
 namespace game_engine {
 namespace thr_queue {
-/** We have to declare this private function here because we need it to be
- * static we we friend it inside queue.
- * Otherwise the compiler will complain about an extern function (declared by
- * the friend declaration) and the static function we define conflicting.
- * */
-static std::vector<coroutine> queue_to_vec_cor(queue qu,
-                                               event::condition_variable *cv,
-                                               event::mutex *mt,
-                                               size_t min);
-
 enum class queue_type {
   serial,
   parallel

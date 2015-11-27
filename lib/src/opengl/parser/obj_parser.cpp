@@ -202,9 +202,9 @@ obj_model parse_obj_format(const char *str) {
         throw parse_error("0-based indices not allowed in .obj format", str, pos);
       }
 
-      faces.emplace_back(face{v_vt_n_indices{v_i[0], vt_i[0], n_i[0]},
+      faces.emplace_back(face{{v_vt_n_indices{v_i[0], vt_i[0], n_i[0]},
                               v_vt_n_indices{v_i[1], vt_i[1], n_i[1]},
-                              v_vt_n_indices{v_i[2], vt_i[2], n_i[2]}});
+                              v_vt_n_indices{v_i[2], vt_i[2], n_i[2]}}});
       pos += delta_pos;
     } else if (std::strcmp("v", def_type) == 0) {
       --pos;

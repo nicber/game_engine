@@ -86,7 +86,7 @@ protected:
   {
     return function();
   }
-  void do_perform_may_block(perform_helper<result_type> &helper) final override
+  void do_perform_may_block(perform_helper<result_type> &) final override
   {
     abort();
   }

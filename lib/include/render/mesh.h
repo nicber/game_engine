@@ -56,7 +56,7 @@ private:
   void init(const uni_buff_vector &uni_buffs_);
 
 private:
-  friend class mesh_constructor;
+  friend struct mesh_constructor;
   friend class game_engine::logic::subsystems::render::render_subsystem;
 
   std::shared_ptr<const opengl::program> prog;

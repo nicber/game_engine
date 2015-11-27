@@ -163,8 +163,9 @@ worker_thread_impl::loop() {
 }
 
 void
-worker_thread_impl::handle_io_operation(epoll_event epoll_ev)
+worker_thread_impl::handle_io_operation(epoll_event)
 {
+  abort();
 }
 
 void
@@ -182,8 +183,8 @@ worker_thread_impl::get_data()
 }
 
 work_data::work_data(unsigned int concurrency)
- :semaphore(concurrency)
- ,concurrency_max(concurrency)
+ :concurrency_max(concurrency)
+ ,semaphore(concurrency)
 {
   epoll_fd = epoll_create(1);
   if (epoll_fd == -1) {

@@ -24,7 +24,7 @@ void texture::create_empty(cube_map_side side, GLsizei size, GLuint level,
 {
   bind();
 
-  glTexImage2D(static_cast<GLenum>(type),
+  glTexImage2D(static_cast<GLenum>(side),
                level,
                static_cast<GLenum>(i_f),
                size,

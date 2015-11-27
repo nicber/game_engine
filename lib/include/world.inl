@@ -47,7 +47,10 @@ namespace game_engine
 		{
 			auto& tid = typeid(T);
 			auto it = std::find_if(subsystems.begin(), subsystems.end(),
-				[&tid](std::unique_ptr<subsystem>& subsys){ return tid == typeid(*subsys); });
+				[&tid](std::unique_ptr<subsystem>& subsys_ptr){ 
+          auto &subsys = *subsys_ptr;
+          return tid == typeid(subsys);
+        });
 
 			if (it == subsystems.end())
 			{

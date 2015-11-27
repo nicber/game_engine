@@ -5,7 +5,7 @@
 using namespace game_engine::aio;
 using namespace game_engine;
 
-int main(int argc, const char *argv[])
+int main(int argc, const char *[])
 {
   const uint16_t port = 4000;
   const size_t data_transmit = 1024 * 2; // 1 MB

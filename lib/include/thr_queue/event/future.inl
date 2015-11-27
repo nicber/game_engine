@@ -99,7 +99,7 @@ void swap(promise_base<R>& lhs, promise_base<R>& rhs)
 }
 
 template<typename InIt>
-typename std::allocator_traits<InIt>::reference_type wait_any(InIt first, InIt last)
+typename std::allocator_traits<InIt>::reference_type wait_any(InIt, InIt)
 {
   return typename std::allocator_traits<InIt>::reference_type();
 }
@@ -145,6 +145,7 @@ size_t wait_any(const future<Rs>&... futs)
   };
 
   int l{(preproc(futs),0)...};
+  (void) l;
   boost::lock(begin(locks), end(locks));
   for (auto *cv_vec : cv_vectors) {
     cv_vec->emplace_back(shared_cv);

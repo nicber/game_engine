@@ -275,7 +275,7 @@ active_tcp_socket::read(aio_buffer::size_type min_read, aio_buffer::size_type ma
         *buf = data_ptr->read_state->result.buf.get_subbuffer(already_read);
       };
 
-      auto read_cb = [](uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf) {
+      auto read_cb = [](uv_stream_t* stream, ssize_t nread, const uv_buf_t*) {
         auto data_ptr = (data *)stream->data;
         auto &read_state = data_ptr->read_state;
         bool stop_read = false;
