@@ -87,6 +87,12 @@ future<R> promise_base<R>::get_future() const
 }
 
 template<typename R>
+bool
+promise_base<R>::already_set() const
+{
+  return d->set_flag;
+}
+template<typename R>
 promise_base<R>::promise_base(private_constructor)
  :d(nullptr)
 {

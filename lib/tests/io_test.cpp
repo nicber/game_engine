@@ -85,13 +85,16 @@ TEST(AIOSubsystem, EchoServer)
 }
 
 TEST(AIOSubsystem, ReallyBlocking) {
-#ifdef _WIN32
   auto blocking_op = make_aio_operation([] (perform_helper<void> &help){
     thr_queue::event::promise<void> prom;
     help.set_future(prom.get_future());
     help.about_to_block();
+#ifdef _WIN32
     SleepEx(INFINITE, true);
     Sleep(10);
+#else
+    usleep(1000);
+#endif
     help.cant_block_anymore();
     prom.set_value();
   });
@@ -101,5 +104,4 @@ TEST(AIOSubsystem, ReallyBlocking) {
     EXPECT_EQ(false, fut.ready());
     fut.wait();
   }).wait();
-#endif
 }

@@ -13,17 +13,29 @@ aio_operation_t<T>::perform()
   if (!may_block()) {
     return do_perform_nonblock();
   } else {
-    boost::optional<aio_result_future> fut_storage;
-    auto helper = std::make_unique<perform_helper<T>>(fut_storage);
+    thr_queue::event::promise<aio_result_future> prom_fut;
+    auto fut_fut = prom_fut.get_future();
+    auto helper = std::make_unique<perform_helper<T>>(std::move(prom_fut));
     auto helper_ptr = helper.get();
+    (void) helper_ptr; // Silence warning in unix.
     auto cor_work = [helper = std::move(helper), aio_op = this->shared_from_this()]{
-      aio_op->do_perform_may_block(*helper);
-      helper->done();
+      try {
+        aio_op->do_perform_may_block(*helper);
+        helper->done();
+      } catch (std::exception &e) {
+        LOG() << "Coroutine that was running an aio operation that could block caught this exception: " << e.what();
+        throw;
+      }
     };
+#ifdef _WIN32
     replace_running_cor_and_jump(*helper_ptr, std::move(cor_work));
-    // After the previous function returns we know that fut_storage stores a future.
-    assert(fut_storage);
-    return std::move(fut_storage).get();
+    assert(fut_fut.ready());
+#else
+    thr_queue::queue q (thr_queue::queue_type::parallel);
+    q.submit_work(std::move(cor_work));
+    thr_queue::schedule_queue_first(std::move(q));
+#endif
+    return fut_fut.get();
   }
 }
 
@@ -33,7 +45,7 @@ aio_operation_t<T>::~aio_operation_t()
 }
 
 template<typename T>
-void 
+void
 aio_operation_t<T>::perform_on_destruction_if_need()
 {
   if (get_perform_on_destruction() && !already_performed) {
@@ -42,27 +54,23 @@ aio_operation_t<T>::perform_on_destruction_if_need()
 }
 
 template<typename T>
-perform_helper<T>::perform_helper(opt_fut_T & fut)
- :fut_storage(fut)
+perform_helper<T>::perform_helper(prom_fut_T fut_prom)
+ :prom_fut(std::move(fut_prom))
 {
-  assert(!fut_storage);
 }
 
 template<typename T>
-void 
+void
 perform_helper<T>::set_future(thr_queue::event::future<T> fut)
 {
-  if (fut_storage) {
-    std::logic_error("future has already been set");
-  }
-  fut_storage = std::move(fut);
+  prom_fut.set_value(std::move(fut));
 }
 
 template<typename T>
 bool
 perform_helper<T>::future_already_set()
 {
-  return fut_storage.is_initialized();
+  return prom_fut.already_set();
 }
 
 /** \brief Implementation detail for make_aio_operation. Do not use.

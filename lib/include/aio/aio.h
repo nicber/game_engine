@@ -111,8 +111,8 @@ private:
 template <typename T>
 struct perform_helper : perform_helper_base {
   using type = T;
-  using opt_fut_T = boost::optional<thr_queue::event::future<T>>;
-  perform_helper(opt_fut_T &fut);
+  using prom_fut_T = thr_queue::event::promise<thr_queue::event::future<T>>;
+  perform_helper(prom_fut_T fut);
 
   /** \brief Sets the future that is to be returned by aio_operation::perform().
    */
@@ -120,7 +120,7 @@ struct perform_helper : perform_helper_base {
 
 private:
   bool future_already_set() final override;
-  opt_fut_T &fut_storage;
+  prom_fut_T prom_fut;
 };
 
 class aio_operation_base {

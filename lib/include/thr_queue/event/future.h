@@ -19,7 +19,7 @@ struct future_promise_priv_shared : std::enable_shared_from_this<future_promise_
   functor_ptr wait_callback = nullptr;
   std::exception_ptr except_ptr;
   bool promise_alive = true;
-  bool set_flag = false;
+  std::atomic<bool> set_flag { false };
 
   void notify_all_cvs(functor_ptr func);
 };
@@ -77,6 +77,8 @@ public:
   void set_wait_callback(F f);
 
   future<R> get_future() const;
+
+  bool already_set() const;
 
 protected:
   friend void swap<R>(promise_base<R> &lhs, promise_base<R> &rhs);
