@@ -87,6 +87,7 @@ worker_thread_impl::loop() {
           break;
         } else if (errno == EINTR) {
           epoll_entry.data.ptr = &data.wakeup_any_eventfd;
+          LOG() << "recv HUP " << boost::this_thread::get_id();
           return true;
         } else {
           std::ostringstream ss;
@@ -99,6 +100,7 @@ worker_thread_impl::loop() {
       if (epoll_entry.data.ptr == &data.wakeup_any_eventfd) {
         eventfd_t val;
         int efd_read_ret = eventfd_read(data.wakeup_any_eventfd, &val);
+        LOG() << boost::this_thread::get_id() << ' ' << val;
 
         BOOST_SCOPE_EXIT(this) {
           epoll_event readd_wakeup_epoll;
@@ -120,6 +122,7 @@ worker_thread_impl::loop() {
           LOG() << ss.str();
           throw std::runtime_error(ss.str());
         }
+
         // if we think that other threads are waiting apart
         // from this one, we wake them up. Otherwise we write 1 to the
         // eventfd to avoid swallowing notifications in case of a race.
@@ -131,6 +134,7 @@ worker_thread_impl::loop() {
         }
         if (rewrite_val > 0) {
           int write_ret = eventfd_write(data.wakeup_any_eventfd, rewrite_val);
+          LOG() << "Wrote to eventfd: " << rewrite_val;
           if (write_ret != 0) {
             std::ostringstream ss;
             ss << "Error when writing to eventfd to wakeup a thread: " << strerror(errno);
@@ -174,6 +178,7 @@ worker_thread_impl::wakeup()
   if (int error = pthread_kill(get_internals().thr.native_handle(), SIGHUP)) {
     LOG() << "pthread_kill failed: " << strerror(error);
   }
+  LOG() << "HUP " << get_internals().thr.get_id();
 }
 
 generic_work_data &
@@ -304,6 +309,7 @@ global_thread_pool::plat_wakeup_threads(unsigned int count)
 {
   count = std::max(count, hardware_concurrency);
   int write_ret = eventfd_write(work_data.wakeup_any_eventfd, count);
+  LOG() << "Wrote to eventfd: " << count;
   if (write_ret != 0) {
     std::ostringstream ss;
     ss << "Error when writing to eventfd to wakeup a thread: " << strerror(errno);

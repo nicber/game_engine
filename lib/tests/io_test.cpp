@@ -10,8 +10,6 @@ using namespace game_engine;
 
 TEST(AIOSubsystem, EchoServer)
 {
-  game_engine::logging::set_default_for_file(__FILE__,
-                                             game_engine::logging::policy::disable);
   const uint16_t port = 4000;
   const size_t data_transmit = 1024 * 2; // 1 MB
   aio_buffer sent_data;
@@ -87,21 +85,27 @@ TEST(AIOSubsystem, EchoServer)
 TEST(AIOSubsystem, ReallyBlocking) {
   auto blocking_op = make_aio_operation([] (perform_helper<void> &help){
     thr_queue::event::promise<void> prom;
+    LOG() << "Setting fut_fut " << boost::this_thread::get_id();
     help.set_future(prom.get_future());
     help.about_to_block();
 #ifdef _WIN32
     SleepEx(INFINITE, true);
     Sleep(10);
 #else
-    usleep(1000);
+    LOG() << "Sleeping";
+    usleep(10000);
+    LOG() << "Slept";
 #endif
     help.cant_block_anymore();
+    LOG() << "Setting value from thread:  " << boost::this_thread::get_id();
     prom.set_value();
   });
 
   thr_queue::default_par_queue().submit_work([&] {
     auto fut = blocking_op->perform();
-    EXPECT_EQ(false, fut.ready());
+    LOG() << "Querying state from thread: " << boost::this_thread::get_id();
+    auto fut_state = fut.ready();
+    EXPECT_EQ(false, fut_state);
     fut.wait();
   }).wait();
 }
