@@ -50,6 +50,9 @@ void global_thread_pool::schedule(InputIt begin, InputIt end, bool first) {
   auto tmp_size = count;
 #endif
 
+  if (tmp_size == 0)
+    return;
+
   if (this_wthread) {
     if (first) {
       work_data.work_queue_prio_size += tmp_size;
