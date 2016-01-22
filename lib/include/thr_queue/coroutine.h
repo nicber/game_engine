@@ -42,6 +42,15 @@ public:
    */
   void switch_to_from(coroutine &from);
 
+  /** \brief Makes it so the coroutine cannot be run by the passed thread.
+   * The forbidden thread is reset once the coroutine is run by any thread.
+   * There can only be one forbidden thread per coroutine.
+   */
+  void set_forbidden_thread(worker_thread *thr);
+
+  /** \brief Returns whether this coroutine can be run by the passed thread. */
+  bool can_be_run_by_thread(worker_thread *thr) const;
+
   std::intptr_t get_id() const noexcept;
 
   friend void swap(coroutine &lhs, coroutine &rhs);
@@ -69,6 +78,10 @@ private:
 
   coroutine_type typ;
   worker_thread *bound_thread = nullptr;
+
+  //used in the linux implementation of blocking aio operations.
+  //see aio_operation_t<T>::perform() for further information.
+  worker_thread *forbidden_thread = nullptr;
 };
 }
 }

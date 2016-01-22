@@ -68,6 +68,18 @@ void coroutine::switch_to_from(coroutine &other) {
   boost::context::jump_fcontext(&other_ctx, this_ctx, func_ptr, true);
 }
 
+void
+coroutine::set_forbidden_thread(worker_thread *thr)
+{
+  forbidden_thread = thr;
+}
+
+bool
+coroutine::can_be_run_by_thread(worker_thread *thr) const
+{
+  return thr != forbidden_thread;
+}
+
 std::intptr_t
 coroutine::get_id() const noexcept
 {
@@ -120,6 +132,7 @@ void swap(coroutine &lhs, coroutine &rhs) {
   swap(lhs.function, rhs.function);
   swap(lhs.typ, rhs.typ);
   swap(lhs.bound_thread, rhs.bound_thread);
+  swap(lhs.forbidden_thread, rhs.forbidden_thread);
 }
 }
 }

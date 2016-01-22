@@ -140,6 +140,7 @@ public:
 protected:
   virtual bool may_block() = 0;
   void replace_running_cor_and_jump(perform_helper_base &helper, thr_queue::coroutine work_cor);
+  void perform_mayblock_aio_platform(perform_helper_base &helper, thr_queue::coroutine cor);
 
   bool already_performed = false;
 private:

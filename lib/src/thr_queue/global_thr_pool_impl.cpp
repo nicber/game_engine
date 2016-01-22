@@ -39,6 +39,7 @@ generic_worker_thread::do_work()
   bool could_work;
   int number_units_of_work = 0;
   bool ran_destroy_work = false;
+  bool only_run_thread_queue = false;
   do {
     could_work = false;
 
@@ -57,7 +58,7 @@ generic_worker_thread::do_work()
       }
     }
 
-    while (get_data().work_queue_prio_size > 0) {
+    while (get_data().work_queue_prio_size > 0 && !only_run_thread_queue) {
       if (get_data().work_queue_prio.try_dequeue_from_producer(internals->ptok_prio, work_to_do)
           || get_data().work_queue_prio.try_dequeue(work_to_do)) {
         --get_data().work_queue_prio_size;
@@ -65,7 +66,7 @@ generic_worker_thread::do_work()
       }
     }
 
-    while (get_data().work_queue_size > 0) {
+    while (get_data().work_queue_size > 0 && !only_run_thread_queue) {
       if (get_data().work_queue.try_dequeue_from_producer(internals->ptok, work_to_do)
           || get_data().work_queue.try_dequeue(work_to_do)) {
         --get_data().work_queue_size;
@@ -81,10 +82,19 @@ generic_worker_thread::do_work()
     could_work = false;
     break;
     do_work:
+    if (!work_to_do.can_be_run_by_thread(this_wthread)) {
+      // we reschedule it and hope it is run by a different thread.
+      global_thr_pool.schedule(std::move(work_to_do), true);
+      only_run_thread_queue = true;
+      continue;
+    }
     ++number_units_of_work;
     could_work = true;
     running_coroutine_or_yielded_from = &work_to_do;
     ran_destroy_work = false;
+
+    work_to_do.set_forbidden_thread(nullptr);
+
     work_to_do.switch_to_from(*master_coroutine);
     if (*after_yield) {
       (*after_yield)();
@@ -102,6 +112,7 @@ generic_worker_thread::do_work()
       get_internals().thread_queue.enqueue(std::move(destroy_work));
     }
   } while (could_work);
+  LOG() << "Thread " << boost::this_thread::get_id() << " performed " << number_units_of_work;
 }
 
 worker_thread_internals & 

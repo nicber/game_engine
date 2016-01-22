@@ -17,7 +17,6 @@ aio_operation_t<T>::perform()
     auto fut_fut = prom_fut.get_future();
     auto helper = std::make_unique<perform_helper<T>>(std::move(prom_fut));
     auto helper_ptr = helper.get();
-    (void) helper_ptr; // Silence warning in unix.
     auto cor_work = [helper = std::move(helper), aio_op = this->shared_from_this()]{
       try {
         aio_op->do_perform_may_block(*helper);
@@ -27,14 +26,7 @@ aio_operation_t<T>::perform()
         throw;
       }
     };
-#ifdef _WIN32
-    replace_running_cor_and_jump(*helper_ptr, std::move(cor_work));
-    assert(fut_fut.ready());
-#else
-    thr_queue::queue q (thr_queue::queue_type::parallel);
-    q.submit_work(std::move(cor_work));
-    thr_queue::schedule_queue_first(std::move(q));
-#endif
+    perform_mayblock_aio_platform(*helper_ptr, std::move(cor_work));
     return fut_fut.get();
   }
 }
