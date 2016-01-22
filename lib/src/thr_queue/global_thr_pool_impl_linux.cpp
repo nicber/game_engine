@@ -124,15 +124,10 @@ worker_thread_impl::loop() {
         }
 
         // if we think that other threads are waiting apart
-        // from this one, we wake them up. Otherwise we write 1 to the
-        // eventfd to avoid swallowing notifications in case of a race.
-        eventfd_t rewrite_val;
-        if (data.working_threads + 1 < data.concurrency_max) {
-          rewrite_val = val - 1;
-        } else {
+        // from this one, we wake them up.
+        if (data.work_queue_size + data.work_queue_prio_size > data.working_threads + 1) {
+          eventfd_t rewrite_val;
           rewrite_val = 1;
-        }
-        if (rewrite_val > 0) {
           int write_ret = eventfd_write(data.wakeup_any_eventfd, rewrite_val);
           LOG() << "Wrote to eventfd: " << rewrite_val;
           if (write_ret != 0) {
@@ -307,7 +302,7 @@ epoll_access_semaphore::release()
 void
 global_thread_pool::plat_wakeup_threads(unsigned int count)
 {
-  count = std::max(count, hardware_concurrency);
+  count = std::min(count, hardware_concurrency);
   int write_ret = eventfd_write(work_data.wakeup_any_eventfd, count);
   LOG() << "Wrote to eventfd: " << count;
   if (write_ret != 0) {
