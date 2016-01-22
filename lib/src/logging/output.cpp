@@ -10,7 +10,7 @@ public:
     std::ostringstream ss;
     ss << '[' << me->file << ": " << me->line << "] " << me->ss.str()
               << std::endl;
-    printf("%s", ss.str().c_str());
+    fprintf(stderr, "%s", ss.str().c_str());
   }
 };
 
