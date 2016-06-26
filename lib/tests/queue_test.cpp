@@ -73,8 +73,8 @@ TEST(ThrQueue, SerialQinParallel) {
     }
 
     q_ser.submit_work([&] {
-      ++done;
       boost::lock_guard<boost::mutex> lock(mt);
+      ++done;
       cv.notify_one();
     });
 
