@@ -34,10 +34,7 @@ int main(int argc, const char *[])
             left_to_read -= rres.already_read;
             LOG() << "Read " << rres.already_read;
           } else if (rres.last_status < 0) {
-            std::ostringstream ss;
-            ss << "Error reading: " << uv_strerror(rres.last_status);
-            LOG() << ss.str();
-            throw aio_runtime_error(ss.str());
+            throw aio_runtime_error(rres.last_status, "Error reading");
           }
         }
       }
@@ -57,13 +54,11 @@ int main(int argc, const char *[])
         while (!successful_connection) {
           auto connect_res = client.connect(addr)->perform().get();
           if (!connect_res.success) {
-            std::ostringstream ss;
-            ss << "Error connecting: " << uv_strerror(connect_res.status);
-            LOG() << ss.str();
+            LOG() << "Error connecting: " << uv_strerror(connect_res.status);
             if(connect_res.status == UV_ECONNREFUSED) {
               return;
             } else {
-              throw aio_runtime_error(ss.str());
+              throw aio_runtime_error(connect_res.status, "connect");
             }
           }
           successful_connection = true;
