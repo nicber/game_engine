@@ -148,6 +148,12 @@ class future<void> : public future_base<void> {
   using future_base::future_base;
 };
 
+template<typename T>
+future<T> future_with_value(T val);
+
+template<typename T, typename E>
+future<T> future_with_exception(E e);
+
 template <typename InIt>
 typename std::allocator_traits<InIt>::reference_type wait_any(InIt first, InIt last);
 

@@ -234,6 +234,26 @@ const R &future<R>::peek() const
     throw future_was_emptied_before("the future was emptied before");
   }
 }
+
+template<typename T>
+future<T>
+future_with_value(T val)
+{
+  promise<T> prom;
+  auto fut = prom.get_future();
+  prom.set_value(std::move(val));
+  return fut;
+}
+
+template<typename T, typename E>
+future<T>
+future_with_exception(E e)
+{
+  promise<T> prom;
+  auto fut = prom.get_future();
+  prom.set_value(std::move(e));
+  return fut;
+}
 }
 }
 }
