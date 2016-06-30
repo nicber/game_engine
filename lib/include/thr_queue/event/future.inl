@@ -251,7 +251,7 @@ future_with_exception(E e)
 {
   promise<T> prom;
   auto fut = prom.get_future();
-  prom.set_value(std::move(e));
+  prom.set_exception(std::move(e));
   return fut;
 }
 }
