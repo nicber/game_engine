@@ -18,8 +18,8 @@ namespace game_engine {
 namespace aio {
 /** \brief A class that is used for all exceptions that are caused by IO failures.
  */
-struct aio_runtime_error : std::runtime_error {
-  using std::runtime_error::runtime_error;
+struct aio_runtime_error : std::system_error {
+  aio_runtime_error(int er, const std::string& what);
 };
 
 /** \brief Represents a buffer that owns its contents.

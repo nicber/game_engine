@@ -37,10 +37,7 @@ TEST(AIOSubsystem, EchoServer)
           rres.buf.len = rres.already_read;
           received_data.append(std::move(rres.buf));
         } else if (rres.last_status < 0) {
-          std::ostringstream ss;
-          ss << "Error reading: " << uv_strerror(rres.last_status);
-          LOG() << ss.str();
-          throw aio_runtime_error(ss.str());
+          throw aio_runtime_error(rres.last_status, "Error reading");
         }
       }
     }
@@ -55,10 +52,7 @@ TEST(AIOSubsystem, EchoServer)
     LOG() << "Connecting...";
     auto connect_res = client.connect(addr)->perform().get();
     if (!connect_res.success) {
-      std::ostringstream ss;
-      ss << "Error connecting: " << uv_strerror(connect_res.status);
-      LOG() << ss.str();
-      throw aio_runtime_error(ss.str());
+      throw aio_runtime_error(connect_res.status, "Error connecting");
     }
 
     LOG() << "Connected OK";

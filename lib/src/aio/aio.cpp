@@ -3,6 +3,12 @@
 
 namespace game_engine {
 namespace aio {
+aio_runtime_error::aio_runtime_error(int er, const std::string& what)
+ :std::system_error(-er, std::system_category(), std::move(what))
+{
+  LOG() << "aio error: " << this->what();
+}
+
 aio_buffer::aio_buffer(uv_buf_t &&buf)
  :uv_buf_t(buf)
 {

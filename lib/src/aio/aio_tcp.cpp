@@ -10,11 +10,8 @@ passive_tcp_socket::passive_tcp_socket()
   using namespace thr_queue::event;
   uv_thr_cor_do<void>([d = d](auto prom) {
     if (int err = uv_tcp_init(uv_default_loop(), &d->socket)) {
-      std::ostringstream ss;
-      ss << "uv_tcp_init: " << uv_strerror(err);
-      LOG() << ss.str();
-      prom.set_exception(aio_runtime_error(ss.str()));
-    };
+     prom.set_exception(tcp_init_failure(err, "passive_tcp_socket: uv_tcp_init"));
+    }
 
     d->socket.data = d.get();
     prom.set_value();
@@ -68,10 +65,7 @@ passive_tcp_socket::bind_and_listen(uint16_t port)
       uv_ip4_addr("0.0.0.0", port, &addr);
 
       if (int err = uv_tcp_bind(&d_l->socket, (sockaddr *)&addr, 0)) {
-        std::ostringstream ss;
-        ss << "uv_tcp_bind: " << uv_strerror(err);
-        LOG() << ss.str();
-        prom.set_exception(aio_runtime_error(ss.str()));
+        prom.set_exception(tcp_bind_failure(err, "uv_tcp_bind"));
         return;
       }
 
@@ -88,10 +82,7 @@ passive_tcp_socket::bind_and_listen(uint16_t port)
 
       const uint8_t backlog_size = 10;
       if (int err = uv_listen((uv_stream_t*)&d_l->socket, backlog_size, listen_cb)) {
-        std::ostringstream ss;
-        ss << "uv_listen: " << uv_strerror(err);
-        LOG() << ss.str();
-        prom.set_exception(aio_runtime_error(ss.str()));
+        prom.set_exception(tcp_listen_failure(err, "uv_listen"));
         return;
       }
 
@@ -144,10 +135,7 @@ active_tcp_socket::active_tcp_socket()
   using namespace thr_queue::event;
   uv_thr_cor_do<void>([d = d](auto prom) {
     if (int err = uv_tcp_init(uv_default_loop(), &d->socket)) {
-      std::ostringstream ss;
-      ss << "uv_tcp_init: " << uv_strerror(err);
-      LOG() << ss.str();
-      prom.set_exception(aio_runtime_error(ss.str()));
+      prom.set_exception(tcp_init_failure(err, "uv_tcp_init"));
       return;
     }
     d->socket.data = d.get();
@@ -181,23 +169,20 @@ active_tcp_socket::operator=(active_tcp_socket rhs)
   swap(*this, rhs);
   return *this;
 }
-aio_operation<active_tcp_socket::bind_result>
+aio_operation<void>
 active_tcp_socket::bind(uint16_t port)
 {
   using namespace thr_queue::event;
   return make_aio_operation([d = d, port]() mutable {
     auto d_l = std::move(d);
-    return uv_thr_cor_do<bind_result>([d = std::move(d_l), port](auto prom) {
+    return uv_thr_cor_do<void>([d = std::move(d_l), port](auto prom) {
       sockaddr_in addr;
       uv_ip4_addr("0.0.0.0", port, &addr);
       if (int err = uv_tcp_bind(&d->socket, (sockaddr *)&addr, 0)) {
-        std::ostringstream ss;
-        ss << "uv_tcp_bind: " << uv_strerror(err);
-        LOG() << ss.str();
-        prom.set_exception(aio_runtime_error(ss.str()));
+        prom.set_exception(tcp_bind_failure(err, "uv_tcp_bind"));
         return;
       }
-      prom.set_value(bind_result{});
+      prom.set_value();
     });
   });
 }
@@ -231,10 +216,7 @@ active_tcp_socket::connect(sockaddr_storage addr)
 
       if (int err = uv_tcp_connect(&uv_conn_req->first, &d->socket,
           (const sockaddr*)&addr, connect_cb)) {
-        std::ostringstream ss;
-        ss << "uv_tcp_connect: " << uv_strerror(err);
-        LOG() << ss.str();
-        uv_conn_req->second.set_exception(aio_runtime_error(ss.str()));
+        uv_conn_req->second.set_exception(tcp_connect_failure(err, "uv_tcp_connect"));
         delete uv_conn_req;
         return fut;
       }
@@ -302,10 +284,7 @@ active_tcp_socket::read(aio_buffer::size_type min_read, aio_buffer::size_type ma
 
       int uv_read_ret = uv_read_start((uv_stream_t*)&d->socket, alloc_cb, read_cb);
       if (uv_read_ret < 0) {
-        std::ostringstream ss;
-        ss << "uv_read callback: " << uv_strerror(uv_read_ret);
-        LOG() << ss.str();
-        prom.set_exception(aio_runtime_error(ss.str()));
+        prom.set_exception(tcp_read_failure(uv_read_ret, "uv_read callback"));
       }
     });
   });

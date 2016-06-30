@@ -6,11 +6,20 @@
 
 namespace game_engine {
 namespace aio {
+#define TCP_FAILURE(X) \
+struct tcp_ ## X ## _failure : aio_runtime_error \
+{ using aio_runtime_error::aio_runtime_error; }
+
+TCP_FAILURE(init);
+TCP_FAILURE(bind);
+TCP_FAILURE(listen);
+TCP_FAILURE(connect);
+TCP_FAILURE(read);
+
+#undef TCP_FAILURE
 
 class active_tcp_socket {
 public:
-  struct bind_result{};
-
   struct connect_result {
     bool success;
     int status;
@@ -33,7 +42,7 @@ public:
   active_tcp_socket(active_tcp_socket &&other);
   active_tcp_socket &operator=(active_tcp_socket rhs);
 
-  aio_operation<bind_result> bind(uint16_t port);
+  aio_operation<void> bind(uint16_t port);
 
   aio_operation<connect_result> connect(sockaddr_storage addr);
 
