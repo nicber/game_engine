@@ -108,9 +108,7 @@ protected:
 public:
   void wait() const;
 
-  void wait_noexcept() const;
-
-  std::exception_ptr get_exception();
+  std::exception_ptr get_exception() const;
 
   bool ready() const;
 };

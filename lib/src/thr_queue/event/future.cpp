@@ -51,9 +51,7 @@ void future_generic_base::wait() const
   if (running_coroutine_or_yielded_from) {
     auto &d = get_priv();
     boost::unique_lock<mutex> l(d.mt);
-    if (d.set_flag) {
-      return;
-    } else {
+    while (!d.set_flag) {
       d.cv.wait(l);
     }
   } else {
@@ -66,6 +64,29 @@ void future_generic_base::wait() const
     });
     schedule_queue_first(std::move(q));
     fut.wait();
+  }
+}
+
+std::exception_ptr
+future_generic_base::get_exception() const
+{
+  if (running_coroutine_or_yielded_from) {
+    auto &d = get_priv();
+    boost::unique_lock<mutex> l(d.mt);
+    while (!d.set_flag) {
+      d.cv.wait(l);
+    }
+    return d.except_ptr;
+  } else {
+    boost::promise<std::exception_ptr> prom;
+    auto fut = prom.get_future();
+    queue q(queue_type::parallel);
+    q.submit_work([this, &prom] {
+      auto ptr = get_exception();
+      prom.set_value(std::move(ptr));
+    });
+    schedule_queue_first(std::move(q));
+    return fut.get();
   }
 }
 

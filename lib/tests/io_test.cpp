@@ -1,9 +1,11 @@
-#include <logging/control_log.h>
-#include <thr_queue/util_queue.h>
 #include <aio/aio_tcp.h>
-
+#include <aio/aio_file.h>
+#include <cstring>
+#include <boost/filesystem.hpp>
 #include <gtest/gtest.h>
+#include <logging/control_log.h>
 #include <random>
+#include <thr_queue/util_queue.h>
 
 using namespace game_engine::aio;
 using namespace game_engine;
@@ -72,7 +74,7 @@ TEST(AIOSubsystem, EchoServer)
 
   ASSERT_EQ(data_transmit, sent_data.len);
   ASSERT_EQ(data_transmit, received_data.len);
-  
+
   ASSERT_TRUE(std::equal(sent_data.base, sent_data.base + sent_data.len, received_data.base));
 }
 
@@ -102,4 +104,62 @@ TEST(AIOSubsystem, ReallyBlocking) {
     EXPECT_EQ(false, fut_state);
     fut.wait();
   }).wait();
+}
+
+TEST(AIOSubsystem, OpenReadFile) {
+  auto tmp_dir = boost::filesystem::temp_directory_path();
+  auto file_path = tmp_dir.append("file");
+  std::ofstream file_stream(file_path.c_str());
+  file_stream << "hello world!";
+  file_stream.close();
+
+  thr_queue::default_par_queue().submit_work([&] {
+    auto aio_file = aio::open(file_path, file_access::read_only,
+        file_mode::open_existing)->perform().get();
+    auto read_res = aio::read(aio_file, 100, 0)->perform().get();
+    ASSERT_EQ(12, read_res.read_total);
+    std::string read_string(read_res.buf.base, 12);
+    ASSERT_EQ("hello world!", read_string);
+    aio::close(aio_file)->perform().wait();
+  }).wait();
+}
+
+TEST(AIOSubsystem, OpenWriteFile) {
+  auto tmp_dir = boost::filesystem::temp_directory_path();
+  auto file_path = tmp_dir.append("file");
+
+  thr_queue::default_par_queue().submit_work([&] {
+    auto aio_file = aio::open(file_path, file_access::write_only,
+        file_mode::create_or_truncate)->perform().get();
+    aio_buffer buf(12);
+    strncpy(buf.base, "hello world!", buf.len);
+    auto write_res = aio::write(aio_file, std::move(buf), 0)->perform().get();
+    ASSERT_EQ(12, write_res.total_written);
+    aio::close(aio_file)->perform().wait();
+  }).wait();
+
+  std::string read_string;
+  std::ifstream file_stream(file_path.c_str());
+  std::getline(file_stream, read_string);
+  ASSERT_EQ("hello world!", read_string);
+}
+
+TEST(AIOSubsystem, OpenTruncateFile) {
+  auto tmp_dir = boost::filesystem::temp_directory_path();
+  auto file_path = tmp_dir.append("file");
+  std::ofstream file_stream(file_path.c_str());
+  file_stream << "hello world!";
+  file_stream.close();
+
+  thr_queue::default_par_queue().submit_work([&] {
+    auto aio_file = aio::open(file_path, file_access::write_only,
+        file_mode::open_existing)->perform().get();
+    aio::truncate(aio_file, 5)->perform().wait();
+    aio::close(aio_file)->perform().wait();
+  }).wait();
+
+  std::string read_string;
+  std::ifstream file_stream2(file_path.c_str());
+  std::getline(file_stream2, read_string);
+  ASSERT_EQ("hello", read_string);
 }
