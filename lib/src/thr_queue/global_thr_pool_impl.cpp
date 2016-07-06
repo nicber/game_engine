@@ -24,6 +24,7 @@ generic_worker_thread::start_thread()
 void
 generic_worker_thread::schedule_coroutine(coroutine cor)
 {
+  LOG() << "Scheduled cor: " << cor.get_id();
 #ifdef _WIN32
   abort();
 #else
@@ -84,6 +85,8 @@ generic_worker_thread::do_work()
     do_work:
     if (!work_to_do.can_be_run_by_thread(this_wthread)) {
       // we reschedule it and hope it is run by a different thread.
+      LOG() << "Rescheduling cor: " << work_to_do.get_id() << " thr id: " <<
+        boost::this_thread::get_id();
       global_thr_pool.schedule(std::move(work_to_do), true);
       only_run_thread_queue = true;
       continue;
