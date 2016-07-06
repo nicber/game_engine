@@ -157,6 +157,39 @@ TEST(ThrQueue, SerQueue) {
   EXPECT_EQ(true, correct_order);
 }
 
+TEST(ThrQueue, SerQueueAllAtOnce) {
+  const int n_tasks = 10000;
+  game_engine::thr_queue::queue q_ser(game_engine::thr_queue::queue_type::serial);
+
+  boost::mutex mt;
+  boost::condition_variable cv;
+  boost::unique_lock<boost::mutex> lock(mt);
+  // we use atomics to be sure that a possible bug in the implementation isn't
+  // "hiding" itself by means of a race condition.
+  std::atomic<int> last_exec(-1);
+  std::atomic<bool> correct_order(true);
+  std::atomic<bool> done(false);
+
+  for (int i = 0; i < n_tasks; ++i) {
+    q_ser.submit_work([&, i] {
+      if (last_exec.exchange(i) != i - 1) {
+        correct_order = false;
+      }
+      if (i == n_tasks - 1) {
+        boost::lock_guard<boost::mutex> lock(mt);
+        done = true;
+        cv.notify_one();
+      }
+    });
+  }
+
+  game_engine::thr_queue::schedule_queue(std::move(q_ser));
+  cv.wait(lock, [&]()->bool { return done; });
+
+  EXPECT_EQ(n_tasks - 1, last_exec);
+  EXPECT_EQ(true, correct_order);
+}
+
 TEST(ThrQueue, LockUnlock) {
   using e_mutex = game_engine::thr_queue::event::mutex;
   using game_engine::thr_queue::queue;
