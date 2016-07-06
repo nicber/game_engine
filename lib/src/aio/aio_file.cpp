@@ -480,7 +480,7 @@ unlink(path p)
   });
 }
 
-#define STAT_COMMON(OP, EXTRA_ARGS...)                                        \
+#define STAT_COMMON(ptr, OP, EXTRA_ARGS...)                                        \
       using stat_struct = fcb_req_wrapper<stat_result, void>;                 \
       auto stat_struct_ptr = stat_struct::create_fcb_req_wrapper(ptr,         \
           std::move(prom));                                                   \
@@ -519,17 +519,19 @@ stat(path p)
 {
   return make_aio_operation([p = std::move(p)] () mutable {
     auto uv_code = [p = std::move(p)](auto prom) mutable {
-    std::shared_ptr<file::file_control_block> ptr = nullptr;
-  STAT_COMMON(stat, p.c_str());
+  STAT_COMMON(nullptr, stat, p.c_str());
 }
 
 aio_operation<stat_result>
 fstat(file &f)
 {
   return make_aio_operation([cblock = f.cblock] () mutable {
+    if (!cblock->increment_counter()) {
+      auto excpt = file_truncate_failure(-EBADF, "fstat: already closed");
+      return thr_queue::event::future_with_exception<uv_stat_t>(std::move(excpt));
+    }
     auto uv_code = [cblock = std::move(cblock)](auto prom) mutable {
-    std::shared_ptr<file::file_control_block> ptr = nullptr;
-  STAT_COMMON(fstat, stat_struct_ptr->fcb_ptr->fd);
+  STAT_COMMON(cblock, fstat, stat_struct_ptr->fcb_ptr->fd);
 }
 
 aio_operation<stat_result>
@@ -537,8 +539,7 @@ lstat(path p)
 {
   return make_aio_operation([p = std::move(p)] () mutable {
     auto uv_code = [p = std::move(p)](auto prom) mutable {
-    std::shared_ptr<file::file_control_block> ptr = nullptr;
-  STAT_COMMON(lstat, p.c_str());
+  STAT_COMMON(nullptr, lstat, p.c_str());
 }
 }
 }

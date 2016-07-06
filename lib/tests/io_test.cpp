@@ -163,3 +163,59 @@ TEST(AIOSubsystem, OpenTruncateFile) {
   std::getline(file_stream2, read_string);
   ASSERT_EQ("hello", read_string);
 }
+
+TEST(AIOSubsystem, OpenStat) {
+  auto tmp_dir = boost::filesystem::temp_directory_path();
+  auto file_path = tmp_dir.append("file");
+  std::ofstream file_stream(file_path.c_str());
+  file_stream << "hello world!";
+  file_stream.close();
+
+  boost::promise<aio::stat_result> fstat_prom;
+  boost::promise<aio::stat_result> stat_prom;
+
+  thr_queue::default_par_queue().submit_work([&] {
+    auto stat_res = aio::stat(file_path)->perform().get();
+    stat_prom.set_value(std::move(stat_res));
+  }).wait();
+
+  thr_queue::default_par_queue().submit_work([&] {
+    auto aio_file = aio::open(file_path, file_access::write_only,
+        file_mode::open_existing)->perform().get();
+    auto fstat_res = aio::fstat(aio_file)->perform().get();
+    fstat_prom.set_value(std::move(fstat_res));
+    aio::close(aio_file)->perform().wait();
+  }).wait();
+
+  auto fstat_res = fstat_prom.get_future().get();
+  auto stat_res  = stat_prom.get_future().get();
+
+#ifndef _WIN32
+  struct stat natstat_res;
+  EXPECT_EQ(0, stat(file_path.c_str(), &natstat_res));
+
+  EXPECT_EQ(stat_res.st_dev          , natstat_res.st_dev);
+  EXPECT_EQ(stat_res.st_mode         , natstat_res.st_mode);
+  EXPECT_EQ(stat_res.st_nlink        , natstat_res.st_nlink);
+  EXPECT_EQ(stat_res.st_uid          , natstat_res.st_uid);
+  EXPECT_EQ(stat_res.st_gid          , natstat_res.st_gid);
+  EXPECT_EQ(stat_res.st_rdev         , natstat_res.st_rdev);
+  EXPECT_EQ(stat_res.st_ino          , natstat_res.st_ino);
+  EXPECT_EQ(stat_res.st_size         , (uint64_t) natstat_res.st_size);
+  EXPECT_EQ(stat_res.st_blksize      , (uint64_t) natstat_res.st_blksize);
+  EXPECT_EQ(stat_res.st_blocks       , (uint64_t) natstat_res.st_blocks);
+  //EXPECT_EQ(stat_res.st_flags      , natstat_res.st_flags);
+  //EXPECT_EQ(stat_res.st_gen        , natstat_res.st_gen);
+  EXPECT_EQ(stat_res.st_atim.tv_sec  , natstat_res.st_atim.tv_sec);
+  EXPECT_EQ(stat_res.st_atim.tv_nsec , natstat_res.st_atim.tv_nsec);
+  EXPECT_EQ(stat_res.st_mtim.tv_sec  , natstat_res.st_mtim.tv_sec);
+  EXPECT_EQ(stat_res.st_mtim.tv_nsec , natstat_res.st_mtim.tv_nsec);
+  EXPECT_EQ(stat_res.st_ctim.tv_sec  , natstat_res.st_ctim.tv_sec);
+  EXPECT_EQ(stat_res.st_ctim.tv_nsec , natstat_res.st_ctim.tv_nsec);
+  //EXPECT_EQ(stat_res.st_birthtim   , natstat_res.st_birthtim);
+#else
+  static_assert(false, "implement WIN32 stat");
+#endif
+
+  EXPECT_EQ(0, memcmp(&fstat_res, &stat_res, sizeof(uv_stat_t)));
+}
