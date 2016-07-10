@@ -284,9 +284,6 @@ read(file &file, size_t quantity, int64_t offset)
         };
 
         if (req->result < 0) {
-          std::ostringstream ss;
-          ss << "uv_fs_read: " << uv_strerror(req->result);
-          LOG() << ss.str();
           fcb_read_struct_ptr->init_prom
             .set_exception(file_read_failure(req->result, "uv_fs_read"));
           return;
