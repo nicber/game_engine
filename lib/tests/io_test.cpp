@@ -106,12 +106,31 @@ TEST(AIOSubsystem, ReallyBlocking) {
   }).wait();
 }
 
-TEST(AIOSubsystem, OpenReadFile) {
+static
+boost::filesystem::path
+create_path()
+{
   auto tmp_dir = boost::filesystem::temp_directory_path();
   auto file_path = tmp_dir.append("file");
+  boost::filesystem::remove(file_path);
+  EXPECT_FALSE(boost::filesystem::exists(file_path));
+  return file_path;
+}
+
+static
+boost::filesystem::path
+create_file()
+{
+  auto file_path = create_path();
   std::ofstream file_stream(file_path.c_str());
   file_stream << "hello world!";
   file_stream.close();
+  EXPECT_TRUE(boost::filesystem::exists(file_path));
+  return file_path;
+}
+
+TEST(AIOSubsystem, OpenReadFile) {
+  auto file_path = create_file();
 
   thr_queue::default_par_queue().submit_work([&] {
     auto aio_file = aio::open(file_path, file_access::read_only,
@@ -125,8 +144,7 @@ TEST(AIOSubsystem, OpenReadFile) {
 }
 
 TEST(AIOSubsystem, OpenWriteFile) {
-  auto tmp_dir = boost::filesystem::temp_directory_path();
-  auto file_path = tmp_dir.append("file");
+  auto file_path = create_path();
 
   thr_queue::default_par_queue().submit_work([&] {
     auto aio_file = aio::open(file_path, file_access::write_only,
@@ -145,12 +163,8 @@ TEST(AIOSubsystem, OpenWriteFile) {
 }
 
 TEST(AIOSubsystem, OpenTruncateFile) {
-  auto tmp_dir = boost::filesystem::temp_directory_path();
-  auto file_path = tmp_dir.append("file");
-  std::ofstream file_stream(file_path.c_str());
-  file_stream << "hello world!";
-  file_stream.close();
-
+  auto file_path = create_file();
+  
   thr_queue::default_par_queue().submit_work([&] {
     auto aio_file = aio::open(file_path, file_access::write_only,
         file_mode::open_existing)->perform().get();
@@ -165,11 +179,7 @@ TEST(AIOSubsystem, OpenTruncateFile) {
 }
 
 TEST(AIOSubsystem, OpenStat) {
-  auto tmp_dir = boost::filesystem::temp_directory_path();
-  auto file_path = tmp_dir.append("file");
-  std::ofstream file_stream(file_path.c_str());
-  file_stream << "hello world!";
-  file_stream.close();
+  auto file_path = create_file();
 
   boost::promise<aio::stat_result> fstat_prom;
   boost::promise<aio::stat_result> stat_prom;
@@ -218,4 +228,28 @@ TEST(AIOSubsystem, OpenStat) {
 #endif
 
   EXPECT_EQ(0, memcmp(&fstat_res, &stat_res, sizeof(uv_stat_t)));
+}
+
+TEST(AIOSubsystem, Unlink) {
+  auto file_path = create_file();
+
+  thr_queue::default_par_queue().submit_work([&] {
+    aio::unlink(file_path)->perform().wait();
+  }).wait();
+  
+  EXPECT_FALSE(boost::filesystem::exists(file_path));
+}
+
+TEST(AIOSubsystem, TruncateWhenOpening) {
+  auto file_path = create_file();
+  thr_queue::default_par_queue().submit_work([&] {
+    auto aio_file = aio::open(file_path, file_access::write_only,
+        file_mode::truncate)->perform().get();
+    aio::close(aio_file)->perform().wait();
+  }).wait();
+   
+  std::string read_string;
+  std::ifstream file_stream(file_path.c_str());
+  std::getline(file_stream, read_string);
+  EXPECT_EQ("", read_string);
 }
