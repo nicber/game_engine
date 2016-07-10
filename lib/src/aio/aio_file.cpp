@@ -250,7 +250,7 @@ open(path p, file_access access, file_mode mode)
 
       int flags = access_and_mode_to_flags(access, mode);
       uv_fs_open(uv_default_loop(), &fcb_init_struct_ptr->req, p.c_str(),
-          flags, 0x664, open_cb);
+          flags, 0664, open_cb);
     };
     return thr_queue::event::uv_thr_cor_do<file>(std::move(uv_code));
   });
