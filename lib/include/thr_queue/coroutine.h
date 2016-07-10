@@ -30,6 +30,9 @@ public:
   template <typename F>
   coroutine(F func);
 
+  /** \brief Construct a coroutine based on a functor. */
+  coroutine(std::unique_ptr<functor> func);
+
   coroutine(coroutine &&other) noexcept;
   coroutine &operator=(coroutine &&rhs) noexcept;
   ~coroutine();
@@ -59,9 +62,6 @@ public:
 private:
   /** \brief Constructs a master coroutine. */
   coroutine();
-
-  /** \brief Helper for the templated constructor. */
-  coroutine(std::unique_ptr<functor> func);
 
   friend class global_thread_pool;
   friend class generic_worker_thread;

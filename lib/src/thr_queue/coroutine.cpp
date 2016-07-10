@@ -1,3 +1,4 @@
+#include <boost/lexical_cast.hpp>
 #include <cassert>
 #include "thr_queue/coroutine.h"
 #include "global_thr_pool_impl.h"
@@ -5,6 +6,29 @@
 
 static boost::mutex cor_mt;
 static std::set<game_engine::thr_queue::coroutine::stackctx*> cor_set;
+static bool coroutine_debug() 
+{
+  static bool res = [] {
+    auto ptr = getenv("COROUTINE_DEBUG");
+    int parse_res;
+    bool res = false;
+    if (ptr && boost::conversion::try_lexical_convert(ptr, parse_res)) {
+      if (parse_res == 1) {
+        res = true;
+        LOG() << "enabling coroutine debugging: COROUTINE_DEBUG=" << 1;
+      } else {
+        res = false;
+        LOG() << "disabling coroutine debugging: COROUTINE_DEBUG=" << parse_res;
+      }
+    } else if (ptr != nullptr) {
+      LOG() << "disabling coroutine debugging: COROUTINE_DEBUG=" << ptr;
+    } else {
+      LOG() << "disabling coroutine debugging: COROUTINE_DEBUG is empty";
+    }
+    return res;
+  } ();
+  return res;
+}
 
 namespace game_engine {
 namespace thr_queue {
@@ -14,15 +38,19 @@ struct coroutine::stackctx {
   char stack[64*1024]; //64kb
 
   stackctx() {
-    boost::lock_guard<boost::mutex> l(cor_mt);
-    auto ret = cor_set.insert(this);
-    assert(ret.second);
+    if (coroutine_debug()) {
+      boost::lock_guard<boost::mutex> l(cor_mt);
+      auto ret = cor_set.insert(this);
+      assert(ret.second);
+    }
   }
 
   ~stackctx() {
-    boost::lock_guard<boost::mutex> l(cor_mt);
-    auto ret = cor_set.erase(this);
-    assert(ret == 1);
+    if (coroutine_debug()) {
+      boost::lock_guard<boost::mutex> l(cor_mt);
+      auto ret = cor_set.erase(this);
+      assert(ret == 1);
+    }
   }
 };
 

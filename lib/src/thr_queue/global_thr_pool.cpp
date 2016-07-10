@@ -50,10 +50,7 @@ std::vector<coroutine> queue_to_vec_cor(queue q,
       }
     } else {
       for (auto &work : q.work_queue) {
-        auto func = [work = std::move(work)]() mutable {
-          (*work)();
-        };
-        cors.emplace_back(std::move(func));
+        cors.emplace_back(std::move(work));
       }
     }
   }
