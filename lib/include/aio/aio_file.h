@@ -40,7 +40,7 @@ FILE_FAILURE(lstat);
 
 #undef FILE_FAILURE
 
-aio_operation<file> open(path p, file_access access, file_mode mode);
+aio_operation<file> open(path &p, file_access access, file_mode mode);
 
 struct read_result {
   aio_buffer buf;
@@ -59,13 +59,13 @@ aio_operation<void> truncate(file &file, int64_t offset);
 
 aio_operation<void> close(file &);
 
-aio_operation<void> unlink(path p);
+aio_operation<void> unlink(path &p);
 
 using stat_result = uv_stat_t;
 
-aio_operation<stat_result> stat(path p);
+aio_operation<stat_result> stat(path &p);
 aio_operation<stat_result> fstat(file &file);
-aio_operation<stat_result> lstat(path p);
+aio_operation<stat_result> lstat(path &p);
 
 template <typename T, typename U>
 struct fcb_req_wrapper;
@@ -85,7 +85,7 @@ private:
   using fcb_shr_ptr = std::shared_ptr<file_control_block>;
   file(fcb_shr_ptr fcb_ptr);
 
-  friend aio_operation<file> open(path p, file_access access,
+  friend aio_operation<file> open(path &p, file_access access,
       file_mode mode);
   friend aio_operation<read_result> read(file &file, size_t quantity,
       int64_t offset);
