@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <boost/context/all.hpp>
 #include <iostream>
 #include "gtest/gtest.h"
 #include "thr_queue/coroutine.h"
@@ -124,6 +125,16 @@ TEST(ThrQueue, DefaultParQueue) {
   }
 
   EXPECT_EQ(10000, count);
+}
+
+TEST(ThrQueue, FillStack)
+{
+  game_engine::thr_queue::default_par_queue().submit_work([] {
+    uint8_t test[100*4096];
+    for (size_t i = 0; i < sizeof(test); ++i) {
+      test[sizeof(test) - i] = 0;
+    }
+  }).wait();
 }
 
 TEST(ThrQueue, SerQueue) {

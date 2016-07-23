@@ -1,6 +1,8 @@
 #include <atomic>
+#include <boost/context/stack_traits.hpp>
 #include <cassert>
 #include <concurrentqueue.h>
+#include <logging/log.h>
 #include "stack_allocator.h"
 #include <Windows.h>
 
@@ -10,7 +12,8 @@ namespace game_engine {
 namespace thr_queue {
 static std::atomic<DWORD> dwPageSize = 0;
 static std::atomic<size_t> max_stack_size_in_pages = 0;
-static std::atomic<double> ewma_stack_size = 5;
+static std::atomic<double> ewma_stack_size = 0;
+static std::atomic<size_t> min_stack_size_in_pages = 0;
 
 allocated_stack::allocated_stack()
 {
@@ -18,13 +21,16 @@ allocated_stack::allocated_stack()
     SYSTEM_INFO sys_info;
     GetSystemInfo(&sys_info);
     dwPageSize = sys_info.dwPageSize;
-    max_stack_size_in_pages = 8 * 1024 * 1024 / dwPageSize;
+    uint32_t mssip = 
+    max_stack_size_in_pages = (8 * 1024 * 1024) / dwPageSize;
+    min_stack_size_in_pages = (double) boost::context::stack_traits::minimum_size()
+                              / dwPageSize;
   }
 
   while (max_stack_size_in_pages == 0);
 
   sc.size = max_stack_size_in_pages * dwPageSize;
-  bottom_of_stack = (uint8_t*) VirtualAlloc(nullptr, sc.size, MEM_RESERVE, PAGE_NOACCESS);
+  bottom_of_stack = (uint8_t*) VirtualAlloc(nullptr, sc.size, MEM_RESERVE, PAGE_READWRITE);
   assert(bottom_of_stack);
   sc.sp = bottom_of_stack + sc.size;
 
@@ -71,8 +77,25 @@ allocated_stack::filter_except_add_page(_EXCEPTION_POINTERS * ep)
     return EXCEPTION_CONTINUE_SEARCH;
   }
   auto op = ep->ExceptionRecord->ExceptionInformation[0];
-  auto vaddress = ep->ExceptionRecord->ExceptionInformation[1];
+  auto vaddress = (uint8_t*) ep->ExceptionRecord->ExceptionInformation[1];
   if (op != 0 && op != 1) {
+    return EXCEPTION_CONTINUE_SEARCH;
+  }
+  //leave a guard page
+  if (bottom_of_stack + dwPageSize < vaddress && vaddress < sc.sp) {
+    auto bottom_of_page = (uint8_t*) ((std::intptr_t)vaddress / dwPageSize
+                          * dwPageSize);
+    auto numbytes = (std::intptr_t)sc.sp - (std::intptr_t)bottom_of_page;
+    assert(numbytes % dwPageSize == 0);
+    auto ret = VirtualAlloc(bottom_of_page, (size_t) numbytes,
+                            MEM_COMMIT, PAGE_READWRITE);
+    if (!ret) {
+      return EXCEPTION_CONTINUE_SEARCH;
+    } else {
+      pages = numbytes / dwPageSize;
+      return EXCEPTION_CONTINUE_EXECUTION;
+    }
+  } else {
     return EXCEPTION_CONTINUE_SEARCH;
   }
 }
@@ -87,6 +110,7 @@ allocated_stack::release()
     ewma = ewma_stack_size;
     new_ewma = (double)pages * (1 - a) + a*ewma;
   } while (!ewma_stack_size.compare_exchange_weak(ewma, new_ewma));
+  LOG() << "New ewma: " << new_ewma;
   last_release = std::chrono::system_clock::now();
 }
 
@@ -108,11 +132,15 @@ allocated_stack::commit_pages()
                            " (maybe a master coroutine?)");
   }
   initially_commited_pages = std::ceil(ewma_stack_size);
-  initially_commited_pages = std::max((uint8_t) 1, initially_commited_pages);
+  initially_commited_pages = std::max(min_stack_size_in_pages.load(),
+                                      initially_commited_pages);
   auto commit_bytes = initially_commited_pages * dwPageSize;
   auto ret = VirtualAlloc((uint8_t*)sc.sp - commit_bytes, commit_bytes,
                           MEM_COMMIT, PAGE_READWRITE);
   assert(ret);
+  DWORD old_prot;
+  bool ret2 = VirtualProtect((uint8_t*)sc.sp - commit_bytes, 1,
+                             PAGE_READWRITE | PAGE_GUARD, &old_prot);
 }
 
 allocated_stack

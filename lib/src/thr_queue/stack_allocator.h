@@ -28,8 +28,8 @@ private:
   friend struct cor_data;
 
 private:
-  uint8_t pages = 0;
-  uint8_t initially_commited_pages = 0;
+  size_t pages = 0;
+  size_t initially_commited_pages = 0;
   std::chrono::system_clock::time_point last_release;
   boost::context::stack_context sc;
   uint8_t *bottom_of_stack;
