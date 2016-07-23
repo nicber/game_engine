@@ -4,10 +4,10 @@
 namespace game_engine {
 namespace aio {
 void
-aio_operation_base::perform_mayblock_aio_platform(perform_helper_base &, thr_queue::coroutine cor)
+aio_operation_base::perform_mayblock_aio_platform(perform_helper_base &helper, thr_queue::coroutine cor)
 {
   replace_running_cor_and_jump(helper, std::move(cor));
-  assert(fut_fut.ready());
+  assert(helper.future_already_set());
 }
 
 namespace platform {

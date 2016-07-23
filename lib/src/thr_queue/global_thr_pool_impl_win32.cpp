@@ -1,3 +1,4 @@
+#define BOOST_SCOPE_EXIT_CONFIG_USE_LAMBDAS
 #include <boost/scope_exit.hpp>
 #include "global_thr_pool_impl.h"
 #include <logging/log.h>
@@ -5,9 +6,10 @@
 namespace game_engine {
 namespace thr_queue {
 void
-global_thread_pool::plat_wakeup_threads(unsigned int count)
+global_thread_pool::plat_wakeup_threads()
 {
-  while (work_data.working_threads < hardware_concurrency && count--) {
+  auto ammount_work = work_data.work_queue_size + work_data.work_queue_prio_size;
+  if (work_data.working_threads < ammount_work) {
     PostQueuedCompletionStatus(work_data.iocp, 0, work_data.queue_completionkey, nullptr);
   }
 }
@@ -53,10 +55,6 @@ worker_thread_impl::loop() {
     };
 
     do {
-      ++data.working_threads;
-      BOOST_SCOPE_EXIT_ALL(&) {
-        --data.working_threads;
-      };
       if (olapped_entry.lpCompletionKey != data.queue_completionkey) {
         handle_io_operation(olapped_entry);
       } else {

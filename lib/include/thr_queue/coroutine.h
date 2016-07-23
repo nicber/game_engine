@@ -2,8 +2,6 @@
 
 #include "thr_queue/functor.h"
 
-#include <boost/context/all.hpp>
-#include <chrono>
 #include <memory>
 
 namespace game_engine {
@@ -18,6 +16,11 @@ enum class coroutine_type {
   master
 };
 
+struct cor_data;
+struct cor_data_deleter {
+  void operator()(cor_data *);
+};
+
 /** \brief A class that represents a coroutine.
  * No data transfer is implemented by this class. That is the responsibility
  * of its user.
@@ -30,12 +33,13 @@ public:
   template <typename F>
   coroutine(F func);
 
-  /** \brief Construct a coroutine based on a functor. */
-  coroutine(std::unique_ptr<functor> func);
-
-  coroutine(coroutine &&other) noexcept;
-  coroutine &operator=(coroutine &&rhs) noexcept;
   ~coroutine();
+
+  /** \brief Construct a coroutine based on a functor. */
+  coroutine(functor_ptr func);
+
+  coroutine(coroutine &&other) = default;
+  coroutine &operator=(coroutine &&rhs) = default;
   
   /** \brief Returns the coroutine's type.
    */
@@ -56,9 +60,6 @@ public:
 
   std::intptr_t get_id() const noexcept;
 
-  friend void swap(coroutine &lhs, coroutine &rhs);
-
-  struct stackctx;
 private:
   /** \brief Constructs a master coroutine. */
   coroutine();
@@ -66,22 +67,10 @@ private:
   friend class global_thread_pool;
   friend class generic_worker_thread;
   friend class platform::worker_thread_impl;
-
-  static void finish_coroutine();
+  friend struct cor_data;
 
 private:
-  union {
-    boost::context::fcontext_t ctx;
-    std::unique_ptr<stackctx> stack_and_ctx;
-  };
-  std::unique_ptr<functor> function;
-
-  coroutine_type typ;
-  worker_thread *bound_thread = nullptr;
-
-  //used in the linux implementation of blocking aio operations.
-  //see aio_operation_t<T>::perform() for further information.
-  worker_thread *forbidden_thread = nullptr;
+	std::unique_ptr<cor_data, cor_data_deleter> data_ptr;
 };
 }
 }

@@ -105,8 +105,7 @@ public:
   template <typename F>
   void yield_to(coroutine next, F after_yield);
 
-private:
-  void plat_wakeup_threads(unsigned int count);
+  void plat_wakeup_threads();
 
 private:
   boost::mutex threads_mt;

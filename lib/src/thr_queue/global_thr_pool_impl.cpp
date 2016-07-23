@@ -1,6 +1,8 @@
 #include "global_thr_pool_impl.h"
 
 #include <algorithm>
+#define BOOST_SCOPE_EXIT_CONFIG_USE_LAMBDAS
+#include <boost/scope_exit.hpp>
 #include <iterator>
 #include <logging/log.h>
 
@@ -39,7 +41,6 @@ generic_worker_thread::do_work()
 {
   bool could_work;
   int number_units_of_work = 0;
-  bool ran_destroy_work = false;
   bool only_run_thread_queue = false;
   do {
     could_work = false;
@@ -82,7 +83,9 @@ generic_worker_thread::do_work()
 
     could_work = false;
     break;
+
     do_work:
+    ++get_data().working_threads;
     if (!work_to_do.can_be_run_by_thread(this_wthread)) {
       // we reschedule it and hope it is run by a different thread.
       LOG() << "Rescheduling cor: " << work_to_do.get_id() << " thr id: " <<
@@ -94,7 +97,6 @@ generic_worker_thread::do_work()
     ++number_units_of_work;
     could_work = true;
     running_coroutine_or_yielded_from = &work_to_do;
-    ran_destroy_work = false;
 
     work_to_do.set_forbidden_thread(nullptr);
 
@@ -104,16 +106,14 @@ generic_worker_thread::do_work()
       *after_yield = std::function<void()>();
     }
     running_coroutine_or_yielded_from = master_coroutine;
-    // we cant destroy the recently ran coroutine from the master coroutine.
-    // if the coroutine type is 'user' then we may have to destroy a captured variable.
-    if (!ran_destroy_work && work_to_do.type() == coroutine_type::user) {
-      coroutine destroy_work {[&ran_destroy_work, work_to_destroy = std::move(work_to_do)] () mutable {
-        ran_destroy_work = true;
-        auto tmp = std::move(work_to_destroy);
-      }};
-      ++get_internals().thread_queue_size;
-      get_internals().thread_queue.enqueue(std::move(destroy_work));
-    }
+
+    // if we think that other threads are waiting apart
+    // from this one, we wake them up.
+    global_thr_pool.plat_wakeup_threads();
+
+    BOOST_SCOPE_EXIT_ALL(&) {
+      --get_data().working_threads;
+    };
   } while (could_work);
   LOG() << "Thread " << boost::this_thread::get_id() << " performed " << number_units_of_work;
 }

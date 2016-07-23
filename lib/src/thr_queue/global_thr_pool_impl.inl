@@ -71,7 +71,7 @@ void global_thread_pool::schedule(InputIt begin, InputIt end, bool first) {
     }
   }
 
-  plat_wakeup_threads(tmp_size);
+  plat_wakeup_threads();
 }
 }
 }

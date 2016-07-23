@@ -6,8 +6,10 @@ list(APPEND GAME_ENGINE_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/util_queue.cpp)
 
 if (WIN32)
   list(APPEND GAME_ENGINE_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/global_thr_pool_impl_win32.cpp)
+  list(APPEND GAME_ENGINE_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/stack_allocator_win32.cpp)
 else()
   list(APPEND GAME_ENGINE_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/global_thr_pool_impl_linux.cpp)
+  list(APPEND GAME_ENGINE_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/stack_allocator_linux.cpp)
 endif()
 
 add_subdirectory(event)

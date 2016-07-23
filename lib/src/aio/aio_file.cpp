@@ -1,6 +1,7 @@
 #include "../thr_queue/event/uv_thread.h"
 #include <aio/aio_file.h>
 #include <boost/scope_exit.hpp>
+#include <fcntl.h>
 #include <thr_queue/event/future.h>
 #include <thr_queue/util_queue.h>
 
@@ -219,12 +220,13 @@ get_fcb_req_wrapper_from_req(uv_fs_t* req, bool move)
 }
 
 aio_operation<file>
-open(path p, file_access access, file_mode mode)
+open(path &p, file_access access, file_mode mode)
 {
-  return make_aio_operation([=, p = std::move(p)]() {
+  auto p_str = p.string();
+  return make_aio_operation([=, p_str = std::move(p_str)]() mutable {
     using access_mode_pair = std::pair<file_access, file_mode>;
     using fcb_init_struct = fcb_req_wrapper<file, access_mode_pair>;
-    auto uv_code = [=, p = std::move(p)] (auto prom) {
+    auto uv_code = [=, p_str = std::move(p_str)] (thr_queue::event::promise<file> prom) {
       auto open_cb = [](uv_fs_t* req) {
         auto fcb_is_ptr =
           get_fcb_req_wrapper_from_req<fcb_init_struct>(req, true);
@@ -249,17 +251,18 @@ open(path p, file_access access, file_mode mode)
             {access, mode});
 
       int flags = access_and_mode_to_flags(access, mode);
-      uv_fs_open(uv_default_loop(), &fcb_init_struct_ptr->req, p.c_str(),
-          flags, 0664, open_cb);
+      uv_fs_open(uv_default_loop(), &fcb_init_struct_ptr->req, p_str.c_str(),
+          flags, 0x664, open_cb);
     };
     return thr_queue::event::uv_thr_cor_do<file>(std::move(uv_code));
+    return thr_queue::event::future_with_exception<file>(std::runtime_error(""));
   });
 }
 
 aio_operation<read_result>
 read(file &file, size_t quantity, int64_t offset)
 {
-  return make_aio_operation([=, cblock = file.cblock] {
+  return make_aio_operation([=, cblock = file.cblock] () mutable {
     if (!cblock->increment_counter()) {
       auto excpt = file_read_failure(-EBADF, "read: already closed");
       auto fut = thr_queue::event::future_with_exception<read_result>(std::move(excpt));
@@ -268,9 +271,14 @@ read(file &file, size_t quantity, int64_t offset)
 
     auto uv_code = [=, cblock = std::move(cblock)](auto prom) {
       using fcb_read_struct = fcb_req_wrapper<read_result, read_result>;
+
+      read_result rres;
+      rres.buf = aio_buffer(quantity);
+      rres.read_total = 0;
+
       auto fcb_read_struct_ptr =
       fcb_read_struct::create_fcb_req_wrapper(std::move(cblock),
-          std::move(prom), read_result{{quantity}, 0});
+          std::move(prom), std::move(rres));
 
       auto read_cb = [] (uv_fs_t *req) {
         auto fcb_read_struct_ptr =
@@ -284,6 +292,9 @@ read(file &file, size_t quantity, int64_t offset)
         };
 
         if (req->result < 0) {
+          std::ostringstream ss;
+          ss << "uv_fs_read: " << uv_strerror(req->result);
+          LOG() << ss.str();
           fcb_read_struct_ptr->init_prom
             .set_exception(file_read_failure(req->result, "uv_fs_read"));
           return;
@@ -335,7 +346,9 @@ write(file &file, aio_buffer buf, int64_t offset)
             .set_exception(file_write_failure(req->result, "uv_fs_write"));
           return;
         } else {
-          fcb_write_struct_ptr->init_prom.set_value({req->result});
+          write_result wres;
+          wres.total_written = req->result;
+          fcb_write_struct_ptr->init_prom.set_value(wres);
           return;
         }
       };
@@ -444,10 +457,11 @@ close(file & fil)
 }
 
 aio_operation<void>
-unlink(path p)
+unlink(path &p)
 {
-  return make_aio_operation([p = std::move(p)] () mutable {
-    auto uv_code = [p = std::move(p)](auto prom) mutable {
+  auto p_str = p.string();
+  return make_aio_operation([p_str = std::move(p_str)] () mutable {
+    auto uv_code = [p_str = std::move(p_str)](auto prom) mutable {
       using unlink_struct = fcb_req_wrapper<void, void>;
       auto unlink_struct_ptr = unlink_struct::create_fcb_req_wrapper(nullptr,
           std::move(prom));
@@ -470,14 +484,14 @@ unlink(path p)
         }
       };
 
-      uv_fs_unlink(uv_default_loop(), &unlink_struct_ptr->req, p.c_str(),
+      uv_fs_unlink(uv_default_loop(), &unlink_struct_ptr->req, p_str.c_str(),
           unlink_cb);
     };
     return thr_queue::event::uv_thr_cor_do<void>(std::move(uv_code));
   });
 }
 
-#define STAT_COMMON(ptr, OP, EXTRA_ARGS...)                                        \
+#define STAT_COMMON(ptr, OP, ...)                                             \
       using stat_struct = fcb_req_wrapper<stat_result, void>;                 \
       auto stat_struct_ptr = stat_struct::create_fcb_req_wrapper(ptr,         \
           std::move(prom));                                                   \
@@ -505,18 +519,19 @@ unlink(path p)
         }                                                                     \
       };                                                                      \
                                                                               \
-      uv_fs_ ## OP(uv_default_loop(), &stat_struct_ptr->req, EXTRA_ARGS,      \
+      uv_fs_ ## OP(uv_default_loop(), &stat_struct_ptr->req, __VA_ARGS__,     \
           stat_cb);                                                           \
     };                                                                        \
     return thr_queue::event::uv_thr_cor_do<stat_result>(std::move(uv_code));  \
   })
 
 aio_operation<stat_result>
-stat(path p)
+stat(path &p)
 {
-  return make_aio_operation([p = std::move(p)] () mutable {
-    auto uv_code = [p = std::move(p)](auto prom) mutable {
-  STAT_COMMON(nullptr, stat, p.c_str());
+  auto p_str = p.string();
+  return make_aio_operation([p_str = std::move(p_str)] () mutable {
+    auto uv_code = [p_str = std::move(p_str)](auto prom) mutable {
+  STAT_COMMON(nullptr, stat, p_str.c_str());
 }
 
 aio_operation<stat_result>
@@ -532,11 +547,12 @@ fstat(file &f)
 }
 
 aio_operation<stat_result>
-lstat(path p)
+lstat(path &p)
 {
-  return make_aio_operation([p = std::move(p)] () mutable {
-    auto uv_code = [p = std::move(p)](auto prom) mutable {
-  STAT_COMMON(nullptr, lstat, p.c_str());
+  auto p_str = p.string();
+  return make_aio_operation([p_str = std::move(p_str)] () mutable {
+    auto uv_code = [p_str = std::move(p_str)](auto prom) mutable {
+  STAT_COMMON(nullptr, lstat, p_str.c_str());
 }
 }
 }

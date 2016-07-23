@@ -122,31 +122,12 @@ worker_thread_impl::loop() {
           LOG() << ss.str();
           throw std::runtime_error(ss.str());
         }
-
-        // if we think that other threads are waiting apart
-        // from this one, we wake them up.
-        if (data.work_queue_size + data.work_queue_prio_size > data.working_threads + 1) {
-          eventfd_t rewrite_val;
-          rewrite_val = 1;
-          int write_ret = eventfd_write(data.wakeup_any_eventfd, rewrite_val);
-          LOG() << "Wrote to eventfd: " << rewrite_val;
-          if (write_ret != 0) {
-            std::ostringstream ss;
-            ss << "Error when writing to eventfd to wakeup a thread: " << strerror(errno);
-            LOG() << ss.str();
-            throw std::runtime_error(ss.str());
-          }
-        }
       }
 
       return true;
     };
 
     while (wait_cond()) {
-      ++data.working_threads;
-      BOOST_SCOPE_EXIT_ALL(&) {
-        --data.working_threads;
-      };
       if (epoll_entry.data.ptr != &data.wakeup_any_eventfd) {
         handle_io_operation(epoll_entry);
       } else {
@@ -300,16 +281,18 @@ epoll_access_semaphore::release()
 }
 
 void
-global_thread_pool::plat_wakeup_threads(unsigned int count)
+global_thread_pool::plat_wakeup_threads()
 {
-  count = std::min(count, hardware_concurrency);
-  int write_ret = eventfd_write(work_data.wakeup_any_eventfd, count);
-  LOG() << "Wrote to eventfd: " << count;
-  if (write_ret != 0) {
-    std::ostringstream ss;
-    ss << "Error when writing to eventfd to wakeup a thread: " << strerror(errno);
-    LOG() << ss.str();
-    throw std::runtime_error(ss.str());
+  auto ammount_work = work_data.work_queue_size + work_data.work_queue_prio_size;
+  if (work_data.working_threads < ammount_work) {
+    int write_ret = eventfd_write(work_data.wakeup_any_eventfd, 1);
+    LOG() << "Wrote to eventfd: " << count;
+    if (write_ret != 0) {
+      std::ostringstream ss;
+      ss << "Error when writing to eventfd to wakeup a thread: " << strerror(errno);
+      LOG() << ss.str();
+      throw std::runtime_error(ss.str());
+    }
   }
 }
 }

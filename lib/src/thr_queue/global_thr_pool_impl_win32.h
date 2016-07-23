@@ -1,4 +1,5 @@
 #pragma once
+#include <windows.h>
 
 namespace game_engine {
 namespace thr_queue {
