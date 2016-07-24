@@ -142,17 +142,5 @@ allocated_stack::commit_pages()
   bool ret2 = VirtualProtect((uint8_t*)sc.sp - commit_bytes, 1,
                              PAGE_READWRITE | PAGE_GUARD, &old_prot);
 }
-
-allocated_stack
-allocate_stack()
-{
-  return allocated_stack();
-}
-
-void
-release_stack(allocated_stack)
-{
-
-}
 }
 }

@@ -53,14 +53,5 @@ allocated_stack &allocated_stack::operator=(allocated_stack rhs)
   rhs.sc.size = 0;
   return *this;
 }
-
-allocated_stack allocate_stack()
-{
-  return allocated_stack();
-}
-
-void release_stack(allocated_stack)
-{
-}
 }
 }
