@@ -1,5 +1,7 @@
 #pragma once
 
+#include "coroutine.h"
+#include "functor.h"
 #include <type_traits>
 
 namespace game_engine {
@@ -16,7 +18,7 @@ wrap_func(F func)
     spec_functor<F>>::type;
 
   auto wf_tmp = std::make_unique<wrapped_functor>(std::move(func));
-  return wf_tmp;
+  return functor_ptr(wf_tmp.release());
 }
 
 template <typename F>

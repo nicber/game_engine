@@ -286,7 +286,7 @@ global_thread_pool::plat_wakeup_threads()
   auto ammount_work = work_data.work_queue_size + work_data.work_queue_prio_size;
   if (work_data.working_threads < ammount_work) {
     int write_ret = eventfd_write(work_data.wakeup_any_eventfd, 1);
-    LOG() << "Wrote to eventfd: " << count;
+    LOG() << "Wrote to eventfd";
     if (write_ret != 0) {
       std::ostringstream ss;
       ss << "Error when writing to eventfd to wakeup a thread: " << strerror(errno);

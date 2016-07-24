@@ -14,9 +14,12 @@ bool enabled(const char *file, unsigned int line)
 }
 
 static std::atomic<bool> iterating(false);
-static policy default_policy = policy::disable;
+static policy default_policy = policy::enable;
 using line_map = std::unordered_map<unsigned int, policy>;
-static std::unordered_map<std::string, line_map> file_line_policies;
+static std::unordered_map<std::string, line_map> file_line_policies
+= {{"../lib/src/thr_queue/global_thr_pool_impl.cpp",       {{0, policy::disable}}},
+   {"../lib/src/thr_queue/global_thr_pool_impl_linux.cpp", {{0, policy::disable}}}};
+
 static boost::recursive_mutex policy_mutex;
 
 static void check_not_iterating()

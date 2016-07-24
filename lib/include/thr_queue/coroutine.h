@@ -1,7 +1,6 @@
 #pragma once
 
 #include "thr_queue/functor.h"
-
 #include <memory>
 
 namespace game_engine {

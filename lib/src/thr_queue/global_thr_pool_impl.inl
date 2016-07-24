@@ -2,7 +2,7 @@
 
 #include <algorithm>
 #include "global_thr_pool_impl.h"
-#include <logging/log.h>
+#include "cor_data.h"
 
 namespace game_engine {
 namespace thr_queue {
@@ -35,8 +35,8 @@ void global_thread_pool::schedule(InputIt begin, InputIt end, bool first) {
 
   for (auto it = begin; it != end; ++it) {
     auto cor = *it;
-    if (cor.bound_thread) {
-      auto *thr = cor.bound_thread;
+    if (cor.data_ptr->bound_thread) {
+      auto *thr = cor.data_ptr->bound_thread;
       thr->schedule_coroutine(std::move(cor));
     } else {
       tmp_buffer.emplace_back(std::move(cor));
