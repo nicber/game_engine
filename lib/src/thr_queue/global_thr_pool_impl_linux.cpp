@@ -5,6 +5,7 @@
 #include <poll.h>
 #include <signal.h>
 #include <sys/eventfd.h>
+#include <boost/core/ignore_unused.hpp>
 
 namespace game_engine {
 namespace thr_queue {
@@ -87,7 +88,7 @@ worker_thread_impl::loop() {
           break;
         } else if (errno == EINTR) {
           epoll_entry.data.ptr = &data.wakeup_any_eventfd;
-          LOG() << "recv HUP " << boost::this_thread::get_id();
+          LOG() << "recv USR2 " << boost::this_thread::get_id();
           return true;
         } else {
           std::ostringstream ss;
@@ -234,6 +235,7 @@ epoll_access_semaphore::~epoll_access_semaphore()
           << initial_state;
   }
   int sem_destroy_ret = sem_destroy(&sem);
+  boost::ignore_unused(sem_destroy_ret);
   assert (sem_destroy_ret == 0);
   // sem_destroy only fails if sem is not a semaphore.
 }
@@ -259,6 +261,7 @@ epoll_access_semaphore::acquire()
     }
     lock.lock();
     auto emplace_res = acquiring_threads.emplace(boost::this_thread::get_id());
+    boost::ignore_unused(emplace_res);
     assert(emplace_res.second);
   } else {
     return;
@@ -271,8 +274,10 @@ epoll_access_semaphore::release()
   boost::unique_lock<boost::mutex> lock(mt);
   if (acquiring_threads.count(boost::this_thread::get_id()) == 1) {
     int sem_post_ret = sem_post(&sem);
+    boost::ignore_unused(sem_post_ret);
     assert(sem_post_ret == 0);
     auto erase_ret = acquiring_threads.erase(boost::this_thread::get_id());
+    boost::ignore_unused(erase_ret);
     assert(erase_ret == 1);
   } else {
     LOG() << "Warning: a thread that has not acquired the semaphore has tried to release it";

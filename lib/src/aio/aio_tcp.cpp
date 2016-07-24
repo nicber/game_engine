@@ -1,6 +1,7 @@
 #include <aio/aio_tcp.h>
 #include "../thr_queue/event/uv_thread.h"
 #include <thr_queue/util_queue.h>
+#include <boost/core/ignore_unused.hpp>
 
 namespace game_engine {
 namespace aio {
@@ -71,6 +72,8 @@ passive_tcp_socket::bind_and_listen(uint16_t port)
 
       auto listen_cb = [](uv_stream_t* stream, int status) {
         //TODO: handle status < 0.
+        boost::ignore_unused(status);
+        assert(status >= 0);
         auto &data = *static_cast<passive_tcp_socket::data*>(stream->data);
         assert(status == 0);
         thr_queue::default_par_queue().submit_work([&] {

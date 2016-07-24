@@ -5,6 +5,7 @@
 #include <thr_queue/thread_api.h>
 #include <stdlib.h>
 #include <logging/log.h>
+#include <boost/core/ignore_unused.hpp>
 
 namespace game_engine {
 namespace thr_queue {
@@ -46,10 +47,12 @@ cor_data::cor_data(game_engine::thr_queue::functor_ptr func)
     if (coroutine_debug()) {
       boost::lock_guard<boost::mutex> l(cor_mt);
       auto                            ret = cor_set.insert(this);
+      boost::ignore_unused_variable_warning(ret);
       assert(ret.second);
     }
 
     auto start_func = [](exec_ctx came_from, game_engine::thr_queue::functor_ptr f, game_engine::thr_queue::allocated_stack *stc_ptr) {
+      boost::ignore_unused(stc_ptr);
       auto actual_start = came_from(nullptr, nullptr);
       assert(std::get<1>(actual_start) == nullptr);
       *last_jump_from = std::move(std::get<0>(actual_start));
@@ -83,6 +86,7 @@ cor_data::~cor_data() {
   if (coroutine_debug()) {
     boost::lock_guard<boost::mutex> l(cor_mt);
     auto                            ret = cor_set.erase(this);
+    boost::ignore_unused(ret);
     assert(ret == 1);
   }
   auto exectx = std::move(ctx);
