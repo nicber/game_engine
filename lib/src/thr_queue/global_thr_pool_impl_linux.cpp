@@ -31,7 +31,7 @@ worker_thread_impl::loop() {
       LOG() << ss.str();
       throw std::runtime_error(ss.str());
     }
-    if(sigaction(SIGHUP, &sigact, nullptr)) {
+    if(sigaction(SIGUSR2, &sigact, nullptr)) {
       std::ostringstream ss;
       ss << "sigaction failed: " << strerror(errno);
       LOG() << ss.str();
@@ -39,6 +39,7 @@ worker_thread_impl::loop() {
     }
     return 0;
   }();
+  boost::ignore_unused(set_usr2_sigaction);
   assert(set_usr2_sigaction == 0);
   sigset_t usr2_blocked_set, original_set;
   if (sigemptyset(&usr2_blocked_set) || sigemptyset(&original_set)) {
@@ -47,7 +48,7 @@ worker_thread_impl::loop() {
     LOG() << ss.str();
     throw std::runtime_error(ss.str());
   }
-  if (sigaddset(&usr2_blocked_set, SIGHUP)) {
+  if (sigaddset(&usr2_blocked_set, SIGUSR2)) {
     std::ostringstream ss;
     ss << "sigaddset failed: " << strerror(errno);
     LOG() << ss.str();
@@ -152,10 +153,10 @@ worker_thread_impl::handle_io_operation(epoll_event)
 void
 worker_thread_impl::wakeup()
 {
-  if (int error = pthread_kill(get_internals().thr.native_handle(), SIGHUP)) {
+  if (int error = pthread_kill(get_internals().thr.native_handle(), SIGUSR2)) {
     LOG() << "pthread_kill failed: " << strerror(error);
   }
-  LOG() << "HUP " << get_internals().thr.get_id();
+  LOG() << "USR2 " << get_internals().thr.get_id();
 }
 
 generic_work_data &
