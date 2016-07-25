@@ -38,12 +38,12 @@ static bool coroutine_debug()
 }
 
 cor_data::cor_data()
-  :alloc_stc(game_engine::thr_queue::allocated_stack::empty_stack())
+  :alloc_stc()
 {}
 
 cor_data::cor_data(game_engine::thr_queue::functor_ptr func)
 :alloc_stc(game_engine::thr_queue::allocate_stack())
-  {
+{
     if (coroutine_debug()) {
       boost::lock_guard<boost::mutex> l(cor_mt);
       auto                            ret = cor_set.insert(this);
@@ -93,6 +93,7 @@ cor_data::~cor_data() {
   if (exectx) {
     LOG() << "destroying coroutine that has not finished yet";
   }
+  release_stack(std::move(alloc_stc));
 }
 
 }
