@@ -129,12 +129,15 @@ TEST(ThrQueue, DefaultParQueue) {
 
 TEST(ThrQueue, FillStack)
 {
+  // boost bug #12340 doesn't let us grow the stack.
+#ifndef _WIN32
   game_engine::thr_queue::default_par_queue().submit_work([] {
     uint8_t test[100*4096];
     for (size_t i = 0; i < sizeof(test); ++i) {
       test[sizeof(test) - i] = 0;
     }
   }).wait();
+#endif
 }
 
 TEST(ThrQueue, SerQueue) {

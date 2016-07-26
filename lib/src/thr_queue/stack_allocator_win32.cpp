@@ -1,9 +1,12 @@
 #include <atomic>
 #include <boost/context/stack_traits.hpp>
+#include <boost/core/ignore_unused.hpp>
 #include <cassert>
 #include <concurrentqueue.h>
 #include <logging/log.h>
 #include "stack_allocator.h"
+#include <thr_queue/thread_api.h>
+#include <random>
 #include <Windows.h>
 
 // see https://msdn.microsoft.com/en-us/library/windows/desktop/aa366803(v=vs.85).aspx
@@ -12,9 +15,9 @@ namespace game_engine {
 namespace thr_queue {
 std::atomic<double> ewma_stack_size{1};
 
-allocated_stack::allocated_stack()
+allocated_stack::allocated_stack(alloc)
 {
-  sc.size = stack_size;
+  sc.size = stack_props.stack_size; 
   bottom_of_stack = (uint8_t *) VirtualAlloc(nullptr, sc.size, MEM_RESERVE, PAGE_READWRITE);
   assert(bottom_of_stack);
   sc.sp = bottom_of_stack + sc.size;
@@ -23,13 +26,17 @@ allocated_stack::allocated_stack()
     throw std::logic_error("trying to commit pages of an empty stack"
                              " (maybe a master coroutine?)");
   }
-  initially_commited_pages = std::ceil(ewma_stack_size);
-  initially_commited_pages = std::max(stack_props.min_stack_size_in_pages, initially_commited_pages);
-  auto commit_bytes = initially_commited_pages * stack_props;
+  pages_were_committed = commit_pages_prob();
+  if (pages_were_committed) {
+    pages = (size_t) std::ceil(ewma_stack_size);
+  } else {
+    pages = 1;
+  }
+  pages = std::max(stack_props.min_stack_size_in_pages, pages);
+  auto commit_bytes = pages * stack_props.page_size;
   auto ret          = VirtualAlloc((uint8_t *) sc.sp - commit_bytes, commit_bytes, MEM_COMMIT, PAGE_READWRITE);
+  boost::ignore_unused(ret);
   assert(ret);
-  DWORD old_prot;
-  bool  ret2        = VirtualProtect((uint8_t *) sc.sp - commit_bytes, 1, PAGE_READWRITE | PAGE_GUARD, &old_prot);
 }
 
 allocated_stack::~allocated_stack()
@@ -41,7 +48,7 @@ allocated_stack::~allocated_stack()
   assert(ret);
 }
 
-int platform::SEH_filter_except_add_page(_EXCEPTION_POINTERS *ep)
+int platform::SEH_filter_except_add_page(thr_queue::allocated_stack *stc, _EXCEPTION_POINTERS *ep)
 {
   if (ep->ExceptionRecord->ExceptionCode != EXCEPTION_ACCESS_VIOLATION) {
     return EXCEPTION_CONTINUE_SEARCH;
@@ -52,15 +59,15 @@ int platform::SEH_filter_except_add_page(_EXCEPTION_POINTERS *ep)
     return EXCEPTION_CONTINUE_SEARCH;
   }
   //leave a guard page
-  if (bottom_of_stack + dwPageSize < vaddress && vaddress < sc.sp) {
+  if (stc->bottom_of_stack + stack_props.page_size < vaddress && vaddress < stc->sc.sp) {
     auto bottom_of_page = (uint8_t *) ((std::intptr_t) vaddress / stack_props.page_size * stack_props.page_size);
-    auto numbytes       = (std::intptr_t) sc.sp - (std::intptr_t) bottom_of_page;
-    assert(numbytes % dwPageSize == 0);
+    auto numbytes       = (std::intptr_t) stc->sc.sp - (std::intptr_t) bottom_of_page;
+    assert(numbytes % stack_props.page_size == 0);
     auto ret = VirtualAlloc(bottom_of_page, (size_t) numbytes, MEM_COMMIT, PAGE_READWRITE);
     if (!ret) {
       return EXCEPTION_CONTINUE_SEARCH;
     } else {
-      pages = numbytes / dwPageSize;
+      stc->pages = numbytes / stack_props.page_size;
       return EXCEPTION_CONTINUE_EXECUTION;
     }
   } else {
@@ -70,10 +77,11 @@ int platform::SEH_filter_except_add_page(_EXCEPTION_POINTERS *ep)
 
 void platform::allocated_stack::plat_release()
 {
-  if (!bottom_of_stack) {
+  if (pages_were_committed) {
     return;
   }
-  if (pages_were_committed) {
+  auto *up_ptr = static_cast<thr_queue::allocated_stack*>(this);
+  if (!up_ptr->bottom_of_stack) {
     return;
   }
   const double a = 0.94;
@@ -94,11 +102,6 @@ bool platform::allocated_stack::commit_pages_prob()
   static std::mt19937                mt{std::random_device().operator()()};
   static std::bernoulli_distribution d(0.01);
   return d(mt);
-}
-
-double platform::allocated_stack::committed_pages()
-{
-  return pages_were_committed ? (double) pages * 1.2 : (double) pages;
 }
 }
 }

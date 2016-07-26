@@ -63,7 +63,7 @@ cor_data::cor_data(game_engine::thr_queue::functor_ptr func)
       auto func = [f_ptr = f.get(), stc_ptr] {
         __try {
           (*f_ptr)();
-        } __except (stc_ptr->filter_except_add_page(GetExceptionInformation())) {
+        } __except (platform::SEH_filter_except_add_page(stc_ptr, GetExceptionInformation())) {
           abort();
         }
       };

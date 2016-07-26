@@ -22,14 +22,18 @@ struct stack_props_t {
   stack_props_t()
     : page_size(boost::context::stack_traits::page_size())
     , max_stack_size_in_pages(stack_size / page_size)
-    , min_stack_size_in_pages(boost::context::stack_traits::minimum_size() / page_size)
+#ifndef _WIN32
+    , min_stack_size_in_pages(0)
+#else
+    , min_stack_size_in_pages(20) // boost bug #12340
+#endif
   {
   }
 };
 
 extern const stack_props_t stack_props;
 
-class allocated_stack : protected platform::allocated_stack {
+class allocated_stack : public platform::allocated_stack {
 public:
   struct empty_stack {
   };
@@ -56,6 +60,11 @@ private:
 
   friend struct cor_data;
 
+  friend struct platform::allocated_stack;
+
+#ifdef _WIN32
+  friend int platform::SEH_filter_except_add_page(thr_queue::allocated_stack *stc, _EXCEPTION_POINTERS *ep);
+#endif
 private:
   std::chrono::system_clock::time_point last_release;
   boost::context::stack_context         sc;
