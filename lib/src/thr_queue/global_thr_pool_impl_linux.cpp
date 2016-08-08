@@ -1,17 +1,15 @@
 #define BOOST_SCOPE_EXIT_CONFIG_USE_LAMBDAS
+
 #include <boost/scope_exit.hpp>
 #include "global_thr_pool_impl.h"
 #include <logging/log.h>
-#include <poll.h>
-#include <signal.h>
 #include <sys/eventfd.h>
-#include <boost/core/ignore_unused.hpp>
 
 namespace game_engine {
 namespace thr_queue {
 namespace platform {
-worker_thread_impl::worker_thread_impl(work_data & dat)
- :data(dat)
+worker_thread_impl::worker_thread_impl(work_data &dat)
+  : data(dat)
 {
 }
 
@@ -20,18 +18,20 @@ worker_thread_impl::~worker_thread_impl()
 }
 
 void
-worker_thread_impl::loop() {
+worker_thread_impl::loop()
+{
   static int set_usr2_sigaction = [] {
     struct sigaction sigact;
-    sigact.sa_handler = [] (int) {};
-    sigact.sa_flags = 0;
+    sigact.sa_handler = [](int) {
+    };
+    sigact.sa_flags   = 0;
     if (sigemptyset(&sigact.sa_mask)) {
       std::ostringstream ss;
       ss << "sigemptyset failed: " << strerror(errno);
       LOG() << ss.str();
       throw std::runtime_error(ss.str());
     }
-    if(sigaction(SIGUSR2, &sigact, nullptr)) {
+    if (sigaction(SIGUSR2, &sigact, nullptr)) {
       std::ostringstream ss;
       ss << "sigaction failed: " << strerror(errno);
       LOG() << ss.str();
@@ -58,11 +58,11 @@ worker_thread_impl::loop() {
 
   ++data.number_threads;
   try {
-    this_wthread = (thr_queue::worker_thread*)(this);
-    coroutine master_cor;
+    this_wthread = (thr_queue::worker_thread *) (this);
+    coroutine             master_cor;
     std::function<void()> after_yield_f;
     master_coroutine = &master_cor;
-    after_yield = &after_yield_f;
+    after_yield      = &after_yield_f;
 
     epoll_event epoll_entry;
 
@@ -70,18 +70,17 @@ worker_thread_impl::loop() {
       memset(&epoll_entry, 0, sizeof(epoll_entry));
       data.semaphore.acquire();
       int epoll_ret;
-      while(true) {
+      while (true) {
         if (get_internals().thread_queue_size > 0) {
           epoll_entry.data.ptr = &data.wakeup_any_eventfd;
           return true;
         }
         auto wait_time = data.shutting_down ? 0 : 1000;
-        epoll_ret = epoll_pwait(data.epoll_fd, &epoll_entry, 1, wait_time,
-                                &original_set);
+        epoll_ret = epoll_pwait(data.epoll_fd, &epoll_entry, 1, wait_time, &original_set);
         if (epoll_ret == 0) {
           if (wait_time == 0) {
             return false;
-          } else  {
+          } else {
             epoll_entry.data.ptr = &data.wakeup_any_eventfd;
             return true;
           }
@@ -101,22 +100,22 @@ worker_thread_impl::loop() {
 
       if (epoll_entry.data.ptr == &data.wakeup_any_eventfd) {
         eventfd_t val;
-        int efd_read_ret = eventfd_read(data.wakeup_any_eventfd, &val);
+        int       efd_read_ret = eventfd_read(data.wakeup_any_eventfd, &val);
         LOG() << boost::this_thread::get_id() << ' ' << val;
 
         BOOST_SCOPE_EXIT(this) {
-          epoll_event readd_wakeup_epoll;
-          readd_wakeup_epoll.events = EPOLLIN | EPOLLONESHOT;
-          readd_wakeup_epoll.data.ptr = &data.wakeup_any_eventfd;
-          int epoll_ctl_ret = epoll_ctl(data.epoll_fd, EPOLL_CTL_MOD, data.wakeup_any_eventfd,
-                                        &readd_wakeup_epoll);
-          if (epoll_ctl_ret == -1) {
-            std::ostringstream ss;
-            ss << "Error readding wakeup_any_eventfd to global epoll: " << strerror(errno);
-            LOG() << ss.str();
-            throw std::runtime_error(ss.str());
-          }
-        };
+                                 epoll_event readd_wakeup_epoll;
+                                 readd_wakeup_epoll.events   = EPOLLIN | EPOLLONESHOT;
+                                 readd_wakeup_epoll.data.ptr = &data.wakeup_any_eventfd;
+                                 int epoll_ctl_ret = epoll_ctl(data.epoll_fd, EPOLL_CTL_MOD, data.wakeup_any_eventfd,
+                                                               &readd_wakeup_epoll);
+                                 if (epoll_ctl_ret == -1) {
+                                   std::ostringstream ss;
+                                   ss << "Error readding wakeup_any_eventfd to global epoll: " << strerror(errno);
+                                   LOG() << ss.str();
+                                   throw std::runtime_error(ss.str());
+                                 }
+                               };
 
         if (efd_read_ret != 0) {
           std::ostringstream ss;
@@ -166,8 +165,8 @@ worker_thread_impl::get_data()
 }
 
 work_data::work_data(unsigned int concurrency)
- :concurrency_max(concurrency)
- ,semaphore(concurrency)
+  : concurrency_max(concurrency)
+  , semaphore(concurrency)
 {
   epoll_fd = epoll_create(1);
   if (epoll_fd == -1) {
@@ -184,10 +183,9 @@ work_data::work_data(unsigned int concurrency)
     throw std::runtime_error(ss.str());
   }
   epoll_event add_wakeup_epoll;
-  add_wakeup_epoll.events = EPOLLIN | EPOLLONESHOT;
+  add_wakeup_epoll.events   = EPOLLIN | EPOLLONESHOT;
   add_wakeup_epoll.data.ptr = &wakeup_any_eventfd;
-  int epoll_ctl_ret = epoll_ctl(epoll_fd, EPOLL_CTL_ADD, wakeup_any_eventfd,
-                                &add_wakeup_epoll);
+  int epoll_ctl_ret = epoll_ctl(epoll_fd, EPOLL_CTL_ADD, wakeup_any_eventfd, &add_wakeup_epoll);
   if (epoll_ctl_ret == -1) {
     std::ostringstream ss;
     ss << "Error adding wakeup_any_eventfd to global epoll: " << strerror(errno);
@@ -215,7 +213,7 @@ work_data::~work_data()
 }
 
 epoll_access_semaphore::epoll_access_semaphore(unsigned int state)
- :initial_state(state)
+  : initial_state(state)
 {
   int sem_init_ret = sem_init(&sem, 0, state);
   if (sem_init_ret != 0) {
@@ -232,8 +230,7 @@ epoll_access_semaphore::~epoll_access_semaphore()
   sem_getvalue(&sem, &sem_val);
   if ((unsigned int) sem_val != initial_state) {
     LOG() << "Warning: destructing semaphore with state that differs from "
-             "initial one: " << "current = " << sem_val << ", initial = "
-          << initial_state;
+        "initial one: " << "current = " << sem_val << ", initial = " << initial_state;
   }
   int sem_destroy_ret = sem_destroy(&sem);
   boost::ignore_unused(sem_destroy_ret);
