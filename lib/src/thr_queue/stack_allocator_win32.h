@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <windows.h>
 
 namespace game_engine {
 namespace thr_queue {

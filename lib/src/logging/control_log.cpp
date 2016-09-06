@@ -14,7 +14,7 @@ bool enabled(const char *file, unsigned int line)
 }
 
 static std::atomic<bool> iterating(false);
-static policy default_policy = policy::enable;
+static policy default_policy = policy::disable;
 using line_map = std::unordered_map<unsigned int, policy>;
 static std::unordered_map<std::string, line_map> file_line_policies
 = {{"../lib/src/thr_queue/global_thr_pool_impl.cpp",       {{0, policy::disable}}},
