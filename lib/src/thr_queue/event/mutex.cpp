@@ -22,17 +22,17 @@ void mutex::lock() {
   // time to run.
   while (true) {
     assert(!lock.owns_lock());
-    assert(running_coroutine_or_yielded_from);
+    assert(running_coroutine);
     lock.lock();
 
     if (!owning_cor) {
-      owning_cor = running_coroutine_or_yielded_from;
+      owning_cor = running_coroutine;
       break;
     }
 
-    global_thr_pool.yield([&] {
+    global_thr_pool.yield([&](coroutine running) {
       lock_unlocker<better_lock> l_unlock(lock);
-      waiting_cors.emplace_back(std::move(*running_coroutine_or_yielded_from));
+      waiting_cors.emplace_back(std::move(running));
     });
   }
 
@@ -45,7 +45,7 @@ bool mutex::try_lock() {
   if (owning_cor) {
     return false;
   } else {
-    owning_cor = running_coroutine_or_yielded_from;
+    owning_cor = running_coroutine;
   }
 
   return true;
@@ -54,7 +54,7 @@ bool mutex::try_lock() {
 void mutex::unlock() {
   boost::unique_lock<boost::mutex> lock(mt);
 
-  assert(running_coroutine_or_yielded_from == owning_cor);
+  assert(running_coroutine == owning_cor);
 
   owning_cor = nullptr;
 

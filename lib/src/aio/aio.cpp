@@ -88,9 +88,10 @@ bool aio_operation_base::get_perform_on_destruction() const
 
 void aio_operation_base::replace_running_cor_and_jump(perform_helper_base & helper, thr_queue::coroutine work_cor)
 {
-  thr_queue::global_thr_pool.yield_to(std::move(work_cor), [&] {
-    helper.caller_coroutine = std::move(*thr_queue::running_coroutine_or_yielded_from);
-  });
+  thr_queue::global_thr_pool.yield_to(
+      std::move(work_cor), [&](thr_queue::coroutine running) {
+        helper.caller_coroutine = std::move(running);
+      });
 }
 
 
@@ -110,7 +111,10 @@ void perform_helper_base::done()
   if (caller_coroutine) {
     thr_queue::coroutine ccor = std::move(caller_coroutine.get());
     caller_coroutine = boost::none;
-    thr_queue::global_thr_pool.yield_to(std::move(ccor));
+    thr_queue::global_thr_pool.yield_to(std::move(ccor),
+                                        [](thr_queue::coroutine running) {
+
+                                        });
   }
 }
 

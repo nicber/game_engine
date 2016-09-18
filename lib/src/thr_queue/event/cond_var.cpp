@@ -11,19 +11,20 @@ void condition_variable::wait(boost::unique_lock<mutex> &lock) {
   assert(lock.owns_lock());
   boost::unique_lock<mutex> local_lock(*lock.release(), boost::adopt_lock);
   better_lock lock_std(mt);
-  global_thr_pool.yield([&] {
-    // running_coroutine_or_yielded from still points to this coroutine even
-    // after having yielded.
+  global_thr_pool.yield([&](coroutine running) {
     lock_unlocker<better_lock> l_unlock_std_mt(lock_std);
     lock_unlocker<boost::unique_lock<mutex>> l_unlock_co_mt(local_lock);
 
-    waiting_cors.emplace_back(std::move(*running_coroutine_or_yielded_from));
+    waiting_cors.emplace_back(std::move(running));
   });
 
-  // If this coroutine is resumed by a thread different from the one that yielded,
-  // then it is possible that the changes to internal state of the 'lock' variable will
-  // not have been yet acknowledged by the resuming thread. 
-  // This special case will lead to a difficult to debug race condition involving
+  // If this coroutine is resumed by a thread different from the one that
+  // yielded,
+  // then it is possible that the changes to internal state of the 'lock'
+  // variable will
+  // not have been yet acknowledged by the resuming thread.
+  // This special case will lead to a difficult to debug race condition
+  // involving
   // the owns_lock member variable.
   // This is why we use local_lock.
   assert(!local_lock.owns_lock());

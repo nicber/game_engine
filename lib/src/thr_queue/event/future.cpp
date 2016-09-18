@@ -28,7 +28,7 @@ future_promise_priv_shared::notify_all_cvs(functor_ptr func)
     }
   };
 
-  if (!running_coroutine_or_yielded_from) {
+  if (!running_coroutine) {
     default_par_queue().submit_work(std::move(notify_work));
   } else {
     notify_work();
@@ -46,7 +46,7 @@ void promise<void>::set_value()
 
 void future_generic_base::wait() const
 {
-  if (running_coroutine_or_yielded_from) {
+  if (running_coroutine) {
     auto &d = get_priv();
     boost::unique_lock<mutex> l(d.mt);
     while (d.prom_status == promise_status::alive_not_set) {
@@ -68,7 +68,7 @@ void future_generic_base::wait() const
 std::exception_ptr
 future_generic_base::get_exception() const
 {
-  if (running_coroutine_or_yielded_from) {
+  if (running_coroutine) {
     auto &d = get_priv();
     boost::unique_lock<mutex> l(d.mt);
     while (d.prom_status == promise_status::alive_not_set) {

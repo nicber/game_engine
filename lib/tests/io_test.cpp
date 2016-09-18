@@ -1,11 +1,12 @@
-#include <aio/aio_tcp.h>
 #include <aio/aio_file.h>
-#include <cstring>
+#include <aio/aio_tcp.h>
 #include <boost/filesystem.hpp>
+#include <cstring>
 #include <gtest/gtest.h>
 #include <logging/control_log.h>
 #include <random>
 #include <thr_queue/util_queue.h>
+#include <thread>
 
 using namespace game_engine::aio;
 using namespace game_engine;
@@ -112,7 +113,10 @@ create_path()
 {
   auto tmp_dir = boost::filesystem::temp_directory_path();
   auto file_path = tmp_dir.append("file");
-  boost::filesystem::remove(file_path);
+  if (boost::filesystem::exists(file_path)) {
+    boost::filesystem::permissions(file_path, boost::filesystem::all_all);
+    boost::filesystem::remove(file_path);
+  }
   EXPECT_FALSE(boost::filesystem::exists(file_path));
   return file_path;
 }

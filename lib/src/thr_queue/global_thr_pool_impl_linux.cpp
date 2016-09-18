@@ -60,7 +60,7 @@ worker_thread_impl::loop()
   try {
     this_wthread = (thr_queue::worker_thread *) (this);
     coroutine             master_cor;
-    std::function<void()> after_yield_f;
+    global_thread_pool::after_yield_f after_yield_f;
     master_coroutine = &master_cor;
     after_yield      = &after_yield_f;
 
