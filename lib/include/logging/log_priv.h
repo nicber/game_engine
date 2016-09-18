@@ -6,10 +6,11 @@
 
 namespace game_engine {
 namespace logging {
-struct message {
-  const char *function;
-  const char *pretty_function;
-  const char *file;
+struct message
+{
+  const char* function;
+  const char* pretty_function;
+  const char* file;
   unsigned int line;
   std::stringstream ss;
 };
@@ -17,9 +18,9 @@ struct message {
 class output
 {
 public:
-  virtual void handle_complete_message(std::unique_ptr<message> me) = 0;
+  virtual void handle_complete_message( std::unique_ptr< message > me ) = 0;
 };
 
-void handle_complete_message(std::unique_ptr<message> me);
+void handle_complete_message( std::unique_ptr< message > me );
 }
 }

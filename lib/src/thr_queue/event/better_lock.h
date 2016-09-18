@@ -5,44 +5,53 @@
 namespace game_engine {
 namespace thr_queue {
 namespace event {
-class better_lock {
+class better_lock
+{
 public:
-  better_lock(boost::mutex &m, boost::defer_lock_t) : mt(m) {}
-
-  better_lock(boost::mutex &m) : mt(m)
+  better_lock( boost::mutex& m, boost::defer_lock_t ) : mt( m )
   {
-    lock();
   }
 
-  better_lock(const better_lock &) = delete;
-  better_lock(better_lock &&) = delete;
+  better_lock( boost::mutex& m ) : mt( m )
+  {
+    lock( );
+  }
 
-  better_lock &operator=(better_lock) = delete;
+  better_lock( const better_lock& ) = delete;
+  better_lock( better_lock&& )      = delete;
 
-  ~better_lock() {
-    if (already_locking) {
-      unlock();
+  better_lock& operator=( better_lock ) = delete;
+
+  ~better_lock( )
+  {
+    if ( already_locking ) {
+      unlock( );
     }
   }
 
-  void lock() {
-    assert(!already_locking);
-    mt.lock();
+  void lock( )
+  {
+    assert( !already_locking );
+    mt.lock( );
     already_locking = true;
   }
 
-  void unlock() {
+  void unlock( )
+  {
     // ensures that every thread that sees that the mutex is unlocked will also
     // see already_locking = false. This is not guaranteed by unique_lock.
-    assert(already_locking);
+    assert( already_locking );
     already_locking = false;
-    mt.unlock();
+    mt.unlock( );
   }
 
-  bool owns_lock() { return already_locking; }
+  bool owns_lock( )
+  {
+    return already_locking;
+  }
 
 private:
-  boost::mutex &mt;
+  boost::mutex& mt;
   bool already_locking = false;
 };
 }

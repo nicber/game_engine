@@ -1,126 +1,129 @@
-#include <aio/aio.h>
 #include "../thr_queue/global_thr_pool_impl.h"
+#include <aio/aio.h>
 
 namespace game_engine {
 namespace aio {
-aio_runtime_error::aio_runtime_error(int er, const std::string& what)
- :std::system_error(-er, std::system_category(), std::move(what))
+aio_runtime_error::aio_runtime_error( int er, const std::string& what )
+  : std::system_error( -er, std::system_category( ), std::move( what ) )
 {
-  LOG() << "aio error: " << this->what();
+  LOG( ) << "aio error: " << this->what( );
 }
 
-aio_buffer::aio_buffer(uv_buf_t &&buf)
- :uv_buf_t(buf)
+aio_buffer::aio_buffer( uv_buf_t&& buf ) : uv_buf_t( buf )
 {
   buf.base = nullptr;
-  buf.len = 0;
+  buf.len  = 0;
 }
 
-aio_buffer::aio_buffer(size_type length)
- :uv_buf_t(uv_buf_init((char *)malloc(length), length))
+aio_buffer::aio_buffer( size_type length ) : uv_buf_t( uv_buf_init( (char*) malloc( length ), length ) )
 {
 }
 
-aio_buffer::aio_buffer(aio_buffer && other)
- :aio_buffer()
+aio_buffer::aio_buffer( aio_buffer&& other ) : aio_buffer( )
 {
-  swap(*this, other);
+  swap( *this, other );
 }
 
-aio_buffer & aio_buffer::operator=(aio_buffer rhs)
+aio_buffer&
+aio_buffer::operator=( aio_buffer rhs )
 {
-  swap(*this, rhs);
+  swap( *this, rhs );
   return *this;
 }
 
 void
-aio_buffer::append(const aio_buffer &other)
+aio_buffer::append( const aio_buffer& other )
 {
-  char *new_base = (char *)realloc(base, len + other.len);
-  if (!new_base) {
-    throw std::bad_alloc();
+  char* new_base = (char*) realloc( base, len + other.len );
+  if ( !new_base ) {
+    throw std::bad_alloc( );
   }
-  memcpy(new_base + len, other.base, other.len);
+  memcpy( new_base + len, other.base, other.len );
   base = new_base;
   len += other.len;
 }
 
-uv_buf_t aio_buffer::get_subbuffer(size_type shift)
+uv_buf_t
+aio_buffer::get_subbuffer( size_type shift )
 {
-  if (shift >= len) {
-    throw std::logic_error("cannot shift an amount larger than the buffer size");
+  if ( shift >= len ) {
+    throw std::logic_error( "cannot shift an amount larger than the buffer size" );
   }
 
   auto new_length = len - shift;
-  return uv_buf_init(base + shift, new_length);
+  return uv_buf_init( base + shift, new_length );
 }
 
-aio_buffer::~aio_buffer()
+aio_buffer::~aio_buffer( )
 {
-  free(base);
+  free( base );
 }
 
-aio_buffer::aio_buffer()
- :uv_buf_t(uv_buf_init(nullptr, 0))
-{}
+aio_buffer::aio_buffer( ) : uv_buf_t( uv_buf_init( nullptr, 0 ) )
+{
+}
 
-void swap(aio_buffer & lhs, aio_buffer & rhs)
+void
+swap( aio_buffer& lhs, aio_buffer& rhs )
 {
   using std::swap;
-  swap(lhs.base, rhs.base);
-  swap(lhs.len, rhs.len);
+  swap( lhs.base, rhs.base );
+  swap( lhs.len, rhs.len );
 }
 
-aio_operation_base::~aio_operation_base()
+aio_operation_base::~aio_operation_base( )
 {
-  assert(!perform_on_destr || already_performed);
+  assert( !perform_on_destr || already_performed );
 }
 
-void aio_operation_base::set_perform_on_destruction(bool flag)
+void
+aio_operation_base::set_perform_on_destruction( bool flag )
 {
   perform_on_destr = flag;
 }
 
-bool aio_operation_base::get_perform_on_destruction() const
+bool
+aio_operation_base::get_perform_on_destruction( ) const
 {
   return perform_on_destr;
 }
 
-void aio_operation_base::replace_running_cor_and_jump(perform_helper_base & helper, thr_queue::coroutine work_cor)
+void
+aio_operation_base::replace_running_cor_and_jump( perform_helper_base& helper, thr_queue::coroutine work_cor )
 {
-  thr_queue::global_thr_pool.yield_to(
-      std::move(work_cor), [&](thr_queue::coroutine running) {
-        helper.caller_coroutine = std::move(running);
-      });
+  thr_queue::global_thr_pool.yield_to( std::move( work_cor ), [&]( thr_queue::coroutine running ) {
+    helper.caller_coroutine = std::move( running );
+  } );
 }
 
-
-void perform_helper_base::about_to_block()
+void
+perform_helper_base::about_to_block( )
 {
-  plat_about_to_block();
+  plat_about_to_block( );
 }
 
-void perform_helper_base::cant_block_anymore()
+void
+perform_helper_base::cant_block_anymore( )
 {
-  plat_cant_block_anymore();
+  plat_cant_block_anymore( );
 }
 
-void perform_helper_base::done()
+void
+perform_helper_base::done( )
 {
-  cant_block_anymore();
-  if (caller_coroutine) {
-    thr_queue::coroutine ccor = std::move(caller_coroutine.get());
-    caller_coroutine = boost::none;
-    thr_queue::global_thr_pool.yield_to(std::move(ccor),
-                                        [](thr_queue::coroutine running) {
+  cant_block_anymore( );
+  if ( caller_coroutine ) {
+    thr_queue::coroutine ccor = std::move( caller_coroutine.get( ) );
+    caller_coroutine          = boost::none;
+    thr_queue::global_thr_pool.yield_to( std::move( ccor ), []( thr_queue::coroutine running ) {
 
-                                        });
+    } );
   }
 }
 
-perform_helper_base::~perform_helper_base()
+perform_helper_base::~perform_helper_base( )
 {
-  assert(!caller_coroutine);
+  assert( !caller_coroutine );
 }
 }
 }

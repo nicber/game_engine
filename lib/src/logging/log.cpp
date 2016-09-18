@@ -3,22 +3,22 @@
 
 namespace game_engine {
 namespace logging {
-logger::logger(const char *function, const char *pretty_function,
-               const char *file, unsigned int line)
- :d(new message)
+logger::logger( const char* function, const char* pretty_function, const char* file, unsigned int line )
+  : d( new message )
 {
-  d->function = function;
+  d->function        = function;
   d->pretty_function = pretty_function;
-  d->file = file;
-  d->line = line;
+  d->file            = file;
+  d->line            = line;
 }
 
-logger::~logger()
+logger::~logger( )
 {
-  handle_complete_message(std::move(d));
+  handle_complete_message( std::move( d ) );
 }
 
-std::ostream &logger::get_stream()
+std::ostream&
+logger::get_stream( )
 {
   return d->ss;
 }

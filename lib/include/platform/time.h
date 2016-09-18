@@ -10,17 +10,14 @@
 #include "platform/time/unix.h"
 #endif
 
-namespace game_engine
-{
-	namespace logic
-	{
-		namespace platform
-		{
-			/** \brief Converts from the platform specific time type to microseconds. */
-			time_type from_us(long long us) no_except;
+namespace game_engine {
+namespace logic {
+namespace platform {
+/** \brief Converts from the platform specific time type to microseconds. */
+time_type from_us( long long us ) no_except;
 
-			/** \brief Converts from microseconds to the platform specific time type. */
-			long long to_us(time_type tt) no_except;
-		}
-	}
+/** \brief Converts from microseconds to the platform specific time type. */
+long long to_us( time_type tt ) no_except;
+}
+}
 }

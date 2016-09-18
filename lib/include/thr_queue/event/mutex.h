@@ -1,24 +1,25 @@
 #pragma once
 
-#include <atomic>
 #include "thr_queue/thread_api.h"
+#include <atomic>
 
 namespace game_engine {
 namespace thr_queue {
 class coroutine;
 
 namespace event {
-class mutex {
+class mutex
+{
 public:
-  ~mutex();
-  void lock();
-  bool try_lock();
-  void unlock();
+  ~mutex( );
+  void lock( );
+  bool try_lock( );
+  void unlock( );
 
 private:
   boost::mutex mt;
-  coroutine *owning_cor = nullptr;
-  std::deque<coroutine> waiting_cors;
+  coroutine* owning_cor = nullptr;
+  std::deque< coroutine > waiting_cors;
 };
 }
 }

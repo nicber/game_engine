@@ -1,11 +1,6 @@
-define inspect-co
-  set $contx = $arg0
-  set $r12 = *(void**)($contx + 0x8)
-  set $r13 = *(void**)($contx + 0x10)
-  set $r14 = *(void**)($contx + 0x18)
-  set $r15 = *(void**)($contx + 0x20)
-  set $rbx = *(void**)($contx + 0x28)
-  set $rbp = *(void**)($contx + 0x30)
-  set $rip = *(void**)($contx + 0x38)
-  set $rsp = $contx+0x48
-end
+define inspect - co set $contx = $arg0 set $r12 =
+    *(void **)($contx + 0x8)set $r13 = *(void **)($contx + 0x10)set $r14 =
+        *(void **)($contx + 0x18)set $r15 = *(void **)($contx + 0x20)set $rbx =
+            *(void **)($contx + 0x28)set $rbp =
+                *(void **)($contx + 0x30)set $rip =
+                    *(void **)($contx + 0x38)set $rsp = $contx + 0x48 end

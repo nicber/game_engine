@@ -1,23 +1,24 @@
 #pragma once
 
-#include <deque>
 #include "thr_queue/coroutine.h"
 #include "thr_queue/event/mutex.h"
 #include "thr_queue/thread_api.h"
+#include <deque>
 
 namespace game_engine {
 namespace thr_queue {
 namespace event {
-class condition_variable {
+class condition_variable
+{
 public:
-  void notify();
-  void wait(boost::unique_lock<mutex> &lock);
+  void notify( );
+  void wait( boost::unique_lock< mutex >& lock );
 
-  ~condition_variable();
+  ~condition_variable( );
 
 private:
   boost::mutex mt;
-  std::deque<coroutine> waiting_cors;
+  std::deque< coroutine > waiting_cors;
 };
 }
 }
