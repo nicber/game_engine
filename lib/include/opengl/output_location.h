@@ -4,6 +4,7 @@
 #include <boost/optional.hpp>
 #include <boost/variant/variant_fwd.hpp>
 #include <map>
+#include <vector>
 
 namespace game_engine {
 namespace opengl {
