@@ -87,6 +87,10 @@ generic_worker_thread::do_work( )
 
   do_work:
     ++get_data( ).working_threads;
+    BOOST_SCOPE_EXIT_ALL( & )
+    {
+      --get_data( ).working_threads;
+    };
     if ( !work_to_do.can_be_run_by_thread( this_wthread ) ) {
       // we reschedule it and hope it is run by a different thread.
       LOG( ) << "Rescheduling cor: " << work_to_do.get_id( ) << " thr id: " << boost::this_thread::get_id( );
@@ -111,11 +115,6 @@ generic_worker_thread::do_work( )
     // if we think that other threads are waiting apart
     // from this one, we wake them up.
     global_thr_pool.plat_wakeup_threads( );
-
-    BOOST_SCOPE_EXIT_ALL( & )
-    {
-      --get_data( ).working_threads;
-    };
   } while ( could_work );
   LOG( ) << "Thread " << boost::this_thread::get_id( ) << " performed " << number_units_of_work;
 }
