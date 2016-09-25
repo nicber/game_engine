@@ -31,7 +31,6 @@ allocated_stack::~allocated_stack( )
   auto ret = munmap( bottom_of_stack, sc.size );
   if ( ret != 0 ) {
     LOG( ) << "munmap failed: " << strerror( errno );
-    throw std::system_error( errno, std::system_category( ) );
   }
 }
 
