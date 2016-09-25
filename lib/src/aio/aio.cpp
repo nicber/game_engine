@@ -115,7 +115,7 @@ perform_helper_base::done( )
   if ( caller_coroutine ) {
     thr_queue::coroutine ccor = std::move( caller_coroutine.get( ) );
     caller_coroutine          = boost::none;
-    thr_queue::global_thr_pool.yield_to( std::move( ccor ), []( thr_queue::coroutine running ) {
+    thr_queue::global_thr_pool.yield_to( std::move( ccor ), []( thr_queue::coroutine ) {
 
     } );
   }
