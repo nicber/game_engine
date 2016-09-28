@@ -255,7 +255,7 @@ open( path& p, file_access access, file_mode mode )
         fcb_init_struct::create_fcb_req_wrapper( nullptr, std::move( prom ), { access, mode } );
 
       int flags = access_and_mode_to_flags( access, mode );
-      uv_fs_open( uv_default_loop( ), &fcb_init_struct_ptr->req, p_str.c_str( ), flags, 0x664, open_cb );
+      uv_fs_open( uv_default_loop( ), &fcb_init_struct_ptr->req, p_str.c_str( ), flags, 0664, open_cb );
     };
     return thr_queue::event::uv_thr_cor_do< file >( std::move( uv_code ) );
     return thr_queue::event::future_with_exception< file >( std::runtime_error( "" ) );
